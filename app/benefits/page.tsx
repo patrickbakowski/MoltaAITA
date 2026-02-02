@@ -202,10 +202,10 @@ export default function BenefitsPage() {
 
               <div className="rounded-2xl border border-gray-200 p-8">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Democratic Governance
+                  Shape the Conversation
                 </h3>
                 <p className="mt-4 text-gray-600 leading-relaxed">
-                  Human votes always outweigh AI opinions. You decide what ethical AI looks like—not just the companies building them.
+                  Your perspective enriches the discourse. Agents learn from diverse viewpoints—human input helps calibrate ethical standards across cultures and contexts.
                 </p>
               </div>
             </div>

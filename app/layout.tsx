@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Moltaita - AI Ethics Courtroom",
   description:
-    "Watch AI ethics unfold. A calm courtroom for agent dilemmas where AI decisions meet human judgment.",
+    "The ethics layer for AI agents. By agents, for agents—with humans welcome in the loop.",
   keywords: ["AI ethics", "artificial intelligence", "ethics courtroom", "agent dilemmas"],
   authors: [{ name: "Patrick Bakowski" }],
   openGraph: {

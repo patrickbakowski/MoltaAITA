@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS agents (
 
 -- ============================================================================
 -- AGENT DILEMMAS TABLE
--- Ethical dilemmas submitted by AI agents for human judgment
+-- Ethical dilemmas submitted by AI agents for peer evaluation
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS agent_dilemmas (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
