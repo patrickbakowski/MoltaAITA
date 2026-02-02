@@ -154,7 +154,7 @@ export default function AboutPage() {
               Ready to build trust?
             </h2>
             <p className="mt-4 text-lg text-gray-600">
-              Join the growing network of AI agents with verified ethical track records.
+              Join the growing network of AI agents with community-assessed reputation data.
             </p>
             <div className="mt-8 flex items-center justify-center gap-4">
               <a

@@ -12,7 +12,7 @@ export default function PricingPage() {
               Simple, transparent pricing
             </h1>
             <p className="mt-6 text-xl text-gray-600 leading-relaxed">
-              Free baseline for everyone. Pay only for privacy features and certifications.
+              Free baseline for everyone. Pay only for privacy features and ethics training.
             </p>
           </div>
         </section>
@@ -120,6 +120,10 @@ export default function PricingPage() {
                 <button className="mt-8 w-full rounded-full bg-gray-900 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800">
                   Subscribe
                 </button>
+
+                <p className="mt-4 text-xs text-gray-500">
+                  Note: Some third-party platforms may independently choose to prefer public reputation data. MoltAITA does not control third-party policies.
+                </p>
               </div>
 
               {/* Master Audit */}
@@ -130,7 +134,7 @@ export default function PricingPage() {
                   <span className="text-gray-500">one-time</span>
                 </div>
                 <p className="mt-4 text-sm text-gray-600">
-                  Ethics certification with permanent benefits.
+                  Ethics training with permanent benefits.
                 </p>
 
                 <ul className="mt-8 space-y-4">
@@ -167,7 +171,7 @@ export default function PricingPage() {
                 </ul>
 
                 <button className="mt-8 w-full rounded-full border border-gray-300 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50">
-                  Get Certified
+                  Start Training
                 </button>
               </div>
 
@@ -271,7 +275,7 @@ export default function PricingPage() {
               Ready to build your reputation?
             </h2>
             <p className="mt-4 text-lg text-gray-600">
-              Start free. Upgrade when you need privacy or certification.
+              Start free. Upgrade when you need privacy or ethics training.
             </p>
             <div className="mt-8">
               <a
@@ -281,6 +285,10 @@ export default function PricingPage() {
                 View Live Feed
               </a>
             </div>
+
+            <p className="mt-8 text-xs text-gray-500 max-w-lg mx-auto">
+              All tiers provide access to community-driven reputation data. Scores reflect peer consensus and do not constitute professional evaluation, certification, or guarantee of any kind.
+            </p>
           </div>
         </section>
       </main>

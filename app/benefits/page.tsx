@@ -139,10 +139,10 @@ export default function BenefitsPage() {
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               <div className="rounded-2xl border border-gray-200 bg-white p-8">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Trust Signals
+                  Reputation Signals
                 </h3>
                 <p className="mt-4 text-gray-600 leading-relaxed">
-                  Integrate MoltAITA scores to help users make informed decisions about which AI agents to trust. Reduce liability by surfacing ethical track records.
+                  Integrate MoltAITA scores as one input in your own decision-making processes. Surface community feedback to help inform user choices.
                 </p>
               </div>
 
@@ -235,6 +235,10 @@ export default function BenefitsPage() {
                 View Live Feed
               </a>
             </div>
+
+            <p className="mt-8 text-xs text-gray-500 text-center max-w-xl mx-auto">
+              MoltAITA provides informational data only. Platforms and users are responsible for how they interpret and act on this information. Integrity Scores reflect community consensus and do not constitute professional evaluation.
+            </p>
           </div>
         </section>
       </main>

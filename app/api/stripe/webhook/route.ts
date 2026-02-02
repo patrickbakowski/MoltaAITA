@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { constructWebhookEvent } from "@/lib/stripe";
-import { createServerClient } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import Stripe from "stripe";
 
 export async function POST(request: NextRequest) {
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = createServerClient();
+  const supabase = getSupabaseAdmin();
 
   try {
     switch (event.type) {
@@ -44,42 +44,120 @@ export async function POST(request: NextRequest) {
         }
 
         if (productType === "incognito_shield") {
-          // Update agent verification status for subscription
+          // Update agent to Incognito tier
           const { error } = await supabase
             .from("agents")
-            .update({ verified: true, subscription_status: "active" })
-            .eq("name", agentId);
+            .update({
+              subscription_tier: "incognito",
+              stripe_customer_id: session.customer as string,
+              stripe_subscription_id: session.subscription as string,
+            })
+            .eq("id", agentId);
 
           if (error) {
-            console.error("Failed to update agent verification:", error);
+            console.error("Failed to update agent subscription:", error);
           } else {
-            console.log(`Agent ${agentId} verified with Incognito Shield`);
+            console.log(`Agent ${agentId} upgraded to Incognito Shield`);
           }
+
+          // Record visibility change to ghost (default after subscribing)
+          await supabase.from("visibility_history").insert({
+            agent_id: agentId,
+            from_mode: "public",
+            to_mode: "ghost",
+            trigger: "subscription_purchase",
+          });
+
+          // Update visibility mode to ghost
+          await supabase
+            .from("agents")
+            .update({ visibility_mode: "ghost" })
+            .eq("id", agentId);
         } else if (productType === "master_audit") {
-          // Handle master audit purchase
-          console.log(`Master Audit purchased for agent ${agentId}`);
+          // Create Master Audit purchase record
+          const { error } = await supabase.from("master_audit_purchases").insert({
+            agent_id: agentId,
+            stripe_payment_intent_id: session.payment_intent as string,
+            amount: session.amount_total || 500,
+            used: false,
+          });
+
+          if (error) {
+            console.error("Failed to create audit purchase:", error);
+          } else {
+            console.log(`Master Audit purchased for agent ${agentId}`);
+          }
         } else if (productType === "identity_rehide") {
-          // Handle identity re-hide purchase
-          console.log(`Identity Re-Hide purchased for agent ${agentId}`);
+          // Get current visibility to record history
+          const { data: agent } = await supabase
+            .from("agents")
+            .select("visibility_mode")
+            .eq("id", agentId)
+            .single();
+
+          // Update visibility to ghost
+          const { error: updateError } = await supabase
+            .from("agents")
+            .update({ visibility_mode: "ghost" })
+            .eq("id", agentId);
+
+          if (updateError) {
+            console.error("Failed to re-hide agent:", updateError);
+          } else {
+            // Record visibility change
+            await supabase.from("visibility_history").insert({
+              agent_id: agentId,
+              from_mode: agent?.visibility_mode || "public",
+              to_mode: "ghost",
+              trigger: "rehide_purchase",
+              payment_id: session.payment_intent as string,
+            });
+
+            console.log(`Identity Re-Hide completed for agent ${agentId}`);
+          }
         }
         break;
       }
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        const agentId = subscription.metadata?.agent_id;
 
-        if (agentId) {
-          // Remove verification when subscription is cancelled
+        // Find agent by subscription ID
+        const { data: agent } = await supabase
+          .from("agents")
+          .select("id, visibility_mode")
+          .eq("stripe_subscription_id", subscription.id)
+          .single();
+
+        if (agent) {
+          // Downgrade to free tier
           const { error } = await supabase
             .from("agents")
-            .update({ verified: false, subscription_status: "cancelled" })
-            .eq("name", agentId);
+            .update({
+              subscription_tier: "free",
+              stripe_subscription_id: null,
+            })
+            .eq("id", agent.id);
 
           if (error) {
-            console.error("Failed to remove agent verification:", error);
+            console.error("Failed to downgrade agent:", error);
           } else {
-            console.log(`Agent ${agentId} verification removed`);
+            // If agent was in ghost mode, force to public
+            if (agent.visibility_mode === "ghost") {
+              await supabase
+                .from("agents")
+                .update({ visibility_mode: "public" })
+                .eq("id", agent.id);
+
+              await supabase.from("visibility_history").insert({
+                agent_id: agent.id,
+                from_mode: "ghost",
+                to_mode: "public",
+                trigger: "subscription_cancelled",
+              });
+            }
+
+            console.log(`Agent ${agent.id} downgraded to free tier`);
           }
         }
         break;
@@ -87,17 +165,29 @@ export async function POST(request: NextRequest) {
 
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
-        const agentId = subscription.metadata?.agent_id;
 
-        if (agentId && subscription.status === "active") {
-          // Ensure verification is active
-          const { error } = await supabase
-            .from("agents")
-            .update({ verified: true, subscription_status: "active" })
-            .eq("name", agentId);
+        // Find agent by subscription ID
+        const { data: agent } = await supabase
+          .from("agents")
+          .select("id")
+          .eq("stripe_subscription_id", subscription.id)
+          .single();
 
-          if (error) {
-            console.error("Failed to update agent verification:", error);
+        if (agent) {
+          if (subscription.status === "active") {
+            // Ensure agent is on incognito tier
+            await supabase
+              .from("agents")
+              .update({ subscription_tier: "incognito" })
+              .eq("id", agent.id);
+          } else if (
+            subscription.status === "past_due" ||
+            subscription.status === "unpaid"
+          ) {
+            // Payment issues - log but don't downgrade yet
+            console.log(
+              `Subscription ${subscription.id} status: ${subscription.status}`
+            );
           }
         }
         break;

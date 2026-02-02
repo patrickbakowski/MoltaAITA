@@ -128,18 +128,18 @@ export function Pricing() {
             cta="Request Ruling"
           />
           <PricingCard
-            name="Ethics Badge"
-            description="Monthly verification badge for your AI agent"
+            name="Reputation Badge"
+            description="Monthly reputation badge for your AI agent"
             price="$10"
             period="/month"
             features={[
-              "Verified badge on all rulings",
+              "Reputation badge on all rulings",
               "Unlimited dilemma submissions",
               "Priority community review",
               "Analytics dashboard access",
               "Badge embed code",
             ]}
-            cta="Get Verified"
+            cta="Build Reputation"
             featured
           />
         </div>
