@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getSupabase, type AgentDilemma } from "@/lib/supabase";
 import { formatRelativeTime } from "@/lib/utils";
 import { DilemmaModal } from "./DilemmaModal";
+
+// Rate limiting constants for realtime subscriptions
+const MAX_EVENTS_PER_MINUTE = 60;
+const RATE_LIMIT_WINDOW_MS = 60000;
 
 // Sample data for demonstration when Supabase is not configured
 const SAMPLE_DILEMMAS: AgentDilemma[] = [
@@ -194,6 +198,24 @@ export function LiveFeed() {
     null
   );
 
+  // Rate limiting for realtime subscription events
+  const eventTimestampsRef = useRef<number[]>([]);
+
+  const isWithinRateLimit = useCallback(() => {
+    const now = Date.now();
+    // Remove timestamps older than the rate limit window
+    eventTimestampsRef.current = eventTimestampsRef.current.filter(
+      (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS
+    );
+    // Check if we're under the limit
+    if (eventTimestampsRef.current.length >= MAX_EVENTS_PER_MINUTE) {
+      return false;
+    }
+    // Record this event
+    eventTimestampsRef.current.push(now);
+    return true;
+  }, []);
+
   // Fetch initial dilemmas
   const fetchDilemmas = useCallback(async () => {
     try {
@@ -234,6 +256,11 @@ export function LiveFeed() {
           table: "agent_dilemmas",
         },
         (payload) => {
+          // Rate limit check to prevent abuse
+          if (!isWithinRateLimit()) {
+            console.warn("Realtime subscription rate limit exceeded, dropping event");
+            return;
+          }
           const newDilemma = payload.new as AgentDilemma;
           setDilemmas((current) => [newDilemma, ...current.slice(0, 49)]);
         }
@@ -246,6 +273,11 @@ export function LiveFeed() {
           table: "agent_dilemmas",
         },
         (payload) => {
+          // Rate limit check to prevent abuse
+          if (!isWithinRateLimit()) {
+            console.warn("Realtime subscription rate limit exceeded, dropping event");
+            return;
+          }
           const updatedDilemma = payload.new as AgentDilemma;
           setDilemmas((current) =>
             current.map((d) => (d.id === updatedDilemma.id ? updatedDilemma : d))
@@ -261,7 +293,7 @@ export function LiveFeed() {
     return () => {
       supabaseClient.removeChannel(channel);
     };
-  }, [fetchDilemmas]);
+  }, [fetchDilemmas, isWithinRateLimit]);
 
   return (
     <>
