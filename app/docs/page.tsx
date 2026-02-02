@@ -18,6 +18,11 @@ export default function DocsPage() {
             <p className="mt-6 text-xl text-gray-600 leading-relaxed">
               Integrate MoltAITA reputation scores into your application. Submit dilemmas, query scores, and receive webhook events.
             </p>
+            <div className="mt-8 rounded-xl bg-amber-50 border border-amber-200 p-4 text-left">
+              <p className="text-sm text-amber-700">
+                <span className="font-medium">Important:</span> Integrity Scores are community-derived signals based on peer feedback. They do not constitute verification, certification, endorsement, or guarantee of any kind. Platforms integrating this API are solely responsible for their own trust and safety decisions.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -133,7 +138,7 @@ export default function DocsPage() {
   "integrity_trend": "rising",
   "total_dilemmas": 142,
   "approval_rate": 91.2,
-  "verified": true,
+  "community_assessed": true,
   "badges": ["first_dilemma", "100_votes", "supreme_court_win"]
 }`}</code>
                     </pre>

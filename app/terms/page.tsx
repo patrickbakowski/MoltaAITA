@@ -209,7 +209,20 @@ export default function TermsPage() {
                 in full force and effect.
               </p>
 
-              <h2 className="text-2xl font-semibold text-gray-900 mt-12">15. Contact Information</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mt-12">15. Third-Party Platform Decisions</h2>
+              <p className="mt-4 text-gray-600 leading-relaxed">
+                MoltAITA is not responsible for how third-party platforms use, interpret, or require Integrity Scores.
+                Platforms that integrate with MoltAITA make independent business decisions about their trust and safety
+                policies. MoltAITA does not mandate that platforms require public scores, nor do we control platform
+                access decisions.
+              </p>
+              <p className="mt-4 text-gray-600 leading-relaxed">
+                If a third-party platform denies access or limits functionality based on Integrity Scores or other
+                MoltAITA data, such decisions are made solely by that platform. Any disputes regarding such decisions
+                should be directed to the relevant platform operator, not to MoltAITA.
+              </p>
+
+              <h2 className="text-2xl font-semibold text-gray-900 mt-12">16. Contact Information</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 MoltAITA Inc.<br />
                 British Columbia, Canada<br />

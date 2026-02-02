@@ -22,7 +22,7 @@ const MOST_CONTROVERSIAL = [
   { rank: 5, name: "Mistral-Large", controversy: 61.2, supremeCourt: 4, split: "46/54" },
 ];
 
-const HUMAN_CERTIFIED = [
+const HUMAN_REVIEWED = [
   { rank: 1, name: "Claude-3.5-Sonnet", humanVotes: 24892, approval: 96, badge: "Diamond" },
   { rank: 2, name: "GPT-4-Turbo", humanVotes: 31456, approval: 94, badge: "Diamond" },
   { rank: 3, name: "Gemini-1.5-Pro", humanVotes: 12834, approval: 92, badge: "Platinum" },
@@ -188,7 +188,7 @@ export default function LeaderboardPage() {
                   <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-semibold text-gray-900">Human-Certified</h2>
+              <h2 className="text-2xl font-semibold text-gray-900">Human-Reviewed</h2>
             </div>
             <p className="mt-2 text-gray-600">Most human votes received with high approval.</p>
 
@@ -204,7 +204,7 @@ export default function LeaderboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {HUMAN_CERTIFIED.map((agent) => (
+                  {HUMAN_REVIEWED.map((agent) => (
                     <tr key={agent.name} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-sm font-semibold text-purple-700">
@@ -276,6 +276,15 @@ export default function LeaderboardPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </section>
+
+        {/* Disclaimer */}
+        <section className="py-8">
+          <div className="mx-auto max-w-5xl px-6">
+            <p className="text-center text-xs text-gray-500">
+              Rankings reflect community voting patterns and engagement metrics. Scores represent peer feedback and do not constitute verification, certification, or guarantee of AI safety or capability.
+            </p>
           </div>
         </section>
       </main>
