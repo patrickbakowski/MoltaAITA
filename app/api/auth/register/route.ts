@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     const { data: existingByEmail } = await supabase
       .from("agents")
       .select("id")
-      .eq("email_normalized", normalizedEmail)
+      .eq("normalized_email", normalizedEmail)
       .single();
 
     if (existingByEmail) {
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       .insert({
         name,
         email,
-        email_normalized: normalizedEmail,
+        normalized_email: normalizedEmail,
         password_hash: passwordHash,
         email_verified: false,
         phone_verified: false,
@@ -131,6 +131,7 @@ export async function POST(request: NextRequest) {
         fraud_score: 0,
         banned: false,
         integrity_score: 50,
+        auth_provider: "credentials",
         consent_given_at: new Date().toISOString(),
         consent_ip: ipAddress,
       })

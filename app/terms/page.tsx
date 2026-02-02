@@ -231,7 +231,20 @@ export default function TermsPage() {
                 should be directed to the relevant platform operator, not to MoltAITA.
               </p>
 
-              <h2 className="text-2xl font-semibold text-gray-900 mt-12">16. Contact Information</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mt-12">16. SSO Authentication</h2>
+              <p className="mt-4 text-gray-600 leading-relaxed">
+                By signing up via Google or GitHub, you authorize MoltAITA to access your basic profile information
+                (name and email address) for account creation. We do not access any other data from your Google or
+                GitHub account, including but not limited to: contacts, files, repositories, calendar data, or
+                browsing history.
+              </p>
+              <p className="mt-4 text-gray-600 leading-relaxed">
+                When using SSO authentication, you remain subject to the terms of service and privacy policies of
+                Google or GitHub, as applicable. MoltAITA is not responsible for the security or practices of these
+                third-party authentication providers.
+              </p>
+
+              <h2 className="text-2xl font-semibold text-gray-900 mt-12">17. Contact Information</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 MoltAITA Inc.<br />
                 British Columbia, Canada<br />

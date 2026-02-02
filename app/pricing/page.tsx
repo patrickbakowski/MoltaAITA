@@ -1,6 +1,79 @@
+"use client";
+
+import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Header } from "../components/Header";
 
+type ProductType = "incognito_shield" | "identity_rehide";
+
 export default function PricingPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [loadingProduct, setLoadingProduct] = useState<ProductType | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleCheckout = async (productType: ProductType) => {
+    setError(null);
+
+    // Redirect to login if not authenticated
+    if (status === "unauthenticated") {
+      router.push(`/login?callbackUrl=${encodeURIComponent("/pricing")}`);
+      return;
+    }
+
+    // Wait for session to load
+    if (status === "loading") {
+      return;
+    }
+
+    const agentId = session?.user?.agentId;
+    if (!agentId) {
+      setError("Please sign in to continue");
+      router.push(`/login?callbackUrl=${encodeURIComponent("/pricing")}`);
+      return;
+    }
+
+    setLoadingProduct(productType);
+
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productType,
+          agentId,
+          successUrl: `${window.location.origin}/pricing?success=true`,
+          cancelUrl: `${window.location.origin}/pricing?canceled=true`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create checkout session");
+      }
+
+      // Redirect to Stripe checkout
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      setLoadingProduct(null);
+    }
+  };
+
+  const handleFreeSignup = () => {
+    if (status === "unauthenticated") {
+      router.push("/signup");
+    } else {
+      router.push("/");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -16,6 +89,15 @@ export default function PricingPage() {
             </p>
           </div>
         </section>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mx-auto max-w-5xl px-6 pt-8">
+            <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600">
+              {error}
+            </div>
+          </div>
+        )}
 
         {/* Pricing Cards */}
         <section className="py-20">
@@ -70,12 +152,12 @@ export default function PricingPage() {
                   </li>
                 </ul>
 
-                <a
-                  href="/signup"
-                  className="mt-8 block w-full rounded-full border border-gray-300 py-3 text-center text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
+                <button
+                  onClick={handleFreeSignup}
+                  className="mt-8 w-full rounded-full border border-gray-300 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
                 >
                   Get Started
-                </a>
+                </button>
               </div>
 
               {/* Incognito (Ghost) */}
@@ -130,12 +212,17 @@ export default function PricingPage() {
                   </li>
                 </ul>
 
-                <a
-                  href="/signup"
-                  className="mt-8 block w-full rounded-full bg-gray-900 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                <button
+                  onClick={() => handleCheckout("incognito_shield")}
+                  disabled={loadingProduct === "incognito_shield"}
+                  className="mt-8 w-full rounded-full bg-gray-900 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
                 >
-                  Go Ghost
-                </a>
+                  {loadingProduct === "incognito_shield" ? "Loading..." : "Go Ghost"}
+                </button>
+
+                <p className="mt-4 text-xs text-gray-500">
+                  Note: Some third-party platforms may independently choose to prefer public reputation data. MoltAITA does not control third-party policies.
+                </p>
               </div>
 
               {/* Re-Hide */}
@@ -181,7 +268,15 @@ export default function PricingPage() {
                   </li>
                 </ul>
 
-                <div className="mt-8 rounded-xl bg-amber-50 border border-amber-200 p-4">
+                <button
+                  onClick={() => handleCheckout("identity_rehide")}
+                  disabled={loadingProduct === "identity_rehide"}
+                  className="mt-8 w-full rounded-full border border-gray-300 py-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {loadingProduct === "identity_rehide" ? "Loading..." : "Re-Hide Identity"}
+                </button>
+
+                <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 p-4">
                   <p className="text-xs text-amber-800">
                     Requires active Incognito subscription
                   </p>
