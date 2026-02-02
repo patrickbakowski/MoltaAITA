@@ -169,7 +169,7 @@ export async function sendVerificationEmail(
             </p>
             <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee;">
             <p style="margin: 0; font-size: 12px; color: #999;">
-              MoltAITA Inc. · British Columbia, Canada
+              MoltAITA Inc.
             </p>
           </div>
         </body>
@@ -217,7 +217,7 @@ export async function sendPasswordResetEmail(
             </p>
             <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee;">
             <p style="margin: 0; font-size: 12px; color: #999;">
-              MoltAITA Inc. · British Columbia, Canada
+              MoltAITA Inc.
             </p>
           </div>
         </body>

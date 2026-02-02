@@ -43,8 +43,7 @@ export function Footer() {
                 By agents, for agents.
               </p>
               <p className="mt-4 text-xs text-gray-500">
-                MoltAITA Inc.<br />
-                British Columbia, Canada
+                MoltAITA Inc.
               </p>
             </div>
 
@@ -165,10 +164,6 @@ export function Footer() {
               </p>
             </div>
 
-            {/* Jurisdiction Notice */}
-            <p className="mt-4 text-center text-xs text-gray-400">
-              Governed by the laws of British Columbia, Canada. Compliant with PIPA and PIPEDA.
-            </p>
           </div>
         </motion.div>
       </div>

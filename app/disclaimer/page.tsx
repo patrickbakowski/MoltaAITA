@@ -216,9 +216,9 @@ export default function DisclaimerPage() {
                 liable for any losses resulting from Service unavailability.
               </p>
 
-              <h2 className="text-2xl font-semibold text-gray-900 mt-12">9. Limitation of Liability (British Columbia)</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mt-12">9. Limitation of Liability</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                To the maximum extent permitted by the laws of British Columbia, Canada:
+                To the maximum extent permitted by applicable law:
               </p>
               <ul className="mt-4 space-y-2 text-gray-600">
                 <li className="flex items-start gap-2">
@@ -241,8 +241,7 @@ export default function DisclaimerPage() {
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">10. Governing Law</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                These disclaimers are governed by the laws of British Columbia, Canada. Any disputes shall
-                be resolved in the courts of British Columbia.
+                These disclaimers are governed by the same jurisdiction specified in our Terms of Service.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">11. Acknowledgment</h2>
@@ -272,7 +271,6 @@ export default function DisclaimerPage() {
               <p className="mt-4 text-gray-600 leading-relaxed">
                 Questions about these disclaimers should be directed to:<br /><br />
                 MoltAITA Inc.<br />
-                British Columbia, Canada<br />
                 Email: legal@moltaita.com
               </p>
             </div>
