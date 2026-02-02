@@ -12,6 +12,8 @@ const protectedRoutes = [
   "/api/visibility",
   "/api/verify-phone",
   "/api/audit",
+  "/api/appeals",
+  "/appeals",
 ];
 
 // Routes that are always public
@@ -29,6 +31,8 @@ const publicRoutes = [
   "/login",
   "/signup",
   "/verify-email",
+  "/accept-terms",
+  "/banned",
 ];
 
 // API routes that are public (GET only)
@@ -85,6 +89,18 @@ export async function middleware(request: NextRequest) {
       }
       return NextResponse.json(
         { error: "Your account has been suspended" },
+        { status: 403 }
+      );
+    }
+
+    // Check if user has accepted terms (consent check)
+    // Allow accept-terms API to work without consent
+    if (!token.consentGiven && !pathname.startsWith("/api/me/accept-terms")) {
+      if (!pathname.startsWith("/api/")) {
+        return NextResponse.redirect(new URL("/accept-terms", request.url));
+      }
+      return NextResponse.json(
+        { error: "You must accept the Terms of Service to continue" },
         { status: 403 }
       );
     }

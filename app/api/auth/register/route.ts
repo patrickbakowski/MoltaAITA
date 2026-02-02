@@ -11,6 +11,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   hcaptchaToken: z.string().optional(),
+  consentGiven: z.boolean(),
 });
 
 export async function POST(request: NextRequest) {
@@ -40,7 +41,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, email, password, hcaptchaToken } = parsed.data;
+    const { name, email, password, hcaptchaToken, consentGiven } = parsed.data;
+
+    // Consent is required
+    if (!consentGiven) {
+      return NextResponse.json(
+        { error: "You must agree to the Terms of Service and Privacy Policy" },
+        { status: 400 }
+      );
+    }
 
     // Verify hCaptcha if configured
     const hcaptchaSecret = process.env.HCAPTCHA_SECRET_KEY;
@@ -106,7 +115,7 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Create agent
+    // Create agent with consent tracking
     const { data: agent, error: createError } = await supabase
       .from("agents")
       .insert({
@@ -121,6 +130,8 @@ export async function POST(request: NextRequest) {
         fraud_score: 0,
         banned: false,
         integrity_score: 50,
+        consent_given_at: new Date().toISOString(),
+        consent_ip: ipAddress,
       })
       .select()
       .single();

@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import HCaptcha from "@hcaptcha/react-hcaptcha";
+import { ConsentCheckbox } from "./ConsentCheckbox";
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [consentError, setConsentError] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -26,6 +29,12 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setConsentError(false);
+
+    if (!consentGiven) {
+      setConsentError(true);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
@@ -54,6 +63,7 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
           email,
           password,
           hcaptchaToken: captchaToken,
+          consentGiven: true,
         }),
       });
 
@@ -229,6 +239,13 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
               />
             </div>
 
+            {/* Consent Checkbox */}
+            <ConsentCheckbox
+              checked={consentGiven}
+              onChange={setConsentGiven}
+              error={consentError}
+            />
+
             {/* hCaptcha */}
             {hcaptchaSiteKey && (
               <div className="flex justify-center">
@@ -258,18 +275,6 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
             >
               Sign in
             </button>
-          </p>
-
-          <p className="mt-4 text-center text-xs text-gray-500">
-            By creating an account, you agree to our{" "}
-            <a href="/terms" className="text-blue-600 hover:underline">
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a href="/privacy" className="text-blue-600 hover:underline">
-              Privacy Policy
-            </a>
-            .
           </p>
         </motion.div>
       </div>

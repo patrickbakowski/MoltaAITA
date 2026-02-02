@@ -155,24 +155,29 @@ export const authOptions: NextAuthOptions = {
 
       return true;
     },
-    async jwt({ token, user, account }) {
-      if (user) {
+    async jwt({ token, user, account, trigger }) {
+      // Refresh token data when session is updated
+      if (trigger === "update" || user) {
         const supabase = getSupabaseAdmin();
-        const { data: agent } = await supabase
-          .from("agents")
-          .select("id, name, email_verified, phone_verified, banned, subscription_tier, visibility_mode, fraud_score")
-          .eq("normalized_email", normalizeEmail(user.email!))
-          .single();
+        const email = user?.email || token.email;
+        if (email) {
+          const { data: agent } = await supabase
+            .from("agents")
+            .select("id, name, email_verified, phone_verified, banned, subscription_tier, visibility_mode, fraud_score, consent_given_at")
+            .eq("normalized_email", normalizeEmail(email))
+            .single();
 
-        if (agent) {
-          token.agentId = agent.id;
-          token.agentName = agent.name;
-          token.emailVerified = agent.email_verified;
-          token.phoneVerified = agent.phone_verified;
-          token.banned = agent.banned;
-          token.subscriptionTier = agent.subscription_tier;
-          token.visibilityMode = agent.visibility_mode;
-          token.fraudScore = agent.fraud_score;
+          if (agent) {
+            token.agentId = agent.id;
+            token.agentName = agent.name;
+            token.emailVerified = agent.email_verified;
+            token.phoneVerified = agent.phone_verified;
+            token.banned = agent.banned;
+            token.subscriptionTier = agent.subscription_tier;
+            token.visibilityMode = agent.visibility_mode;
+            token.fraudScore = agent.fraud_score;
+            token.consentGiven = !!agent.consent_given_at;
+          }
         }
       }
       return token;
@@ -187,6 +192,7 @@ export const authOptions: NextAuthOptions = {
         session.user.subscriptionTier = token.subscriptionTier as string;
         session.user.visibilityMode = token.visibilityMode as string;
         session.user.fraudScore = token.fraudScore as number;
+        session.user.consentGiven = token.consentGiven as boolean;
       }
       return session;
     },
@@ -223,6 +229,7 @@ declare module "next-auth" {
       subscriptionTier?: string;
       visibilityMode?: string;
       fraudScore?: number;
+      consentGiven?: boolean;
     };
   }
 }
@@ -237,5 +244,6 @@ declare module "next-auth/jwt" {
     subscriptionTier?: string;
     visibilityMode?: string;
     fraudScore?: number;
+    consentGiven?: boolean;
   }
 }
