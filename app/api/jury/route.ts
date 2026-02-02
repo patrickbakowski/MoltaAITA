@@ -28,17 +28,17 @@ export async function GET(request: NextRequest) {
   const ipAddress = request.headers.get("x-forwarded-for") || "unknown";
 
   const rateLimitResult = await checkRateLimit(
-    agentId,
     "jury",
-    subscriptionTier,
-    ipAddress
+    agentId,
+    subscriptionTier === "incognito" ? "incognito" : "free"
   );
 
   if (!rateLimitResult.allowed) {
+    const retryAfter = Math.ceil((rateLimitResult.resetAt.getTime() - Date.now()) / 1000);
     return NextResponse.json(
       {
         error: "Rate limit exceeded",
-        retryAfter: rateLimitResult.retryAfter,
+        retryAfter,
       },
       { status: 429 }
     );
@@ -92,7 +92,8 @@ export async function GET(request: NextRequest) {
     const votedIds = new Set(votedDilemmas?.map((v) => v.dilemma_id) || []);
 
     const eligibleDilemmas = dilemmas.filter((d) => {
-      const agent = d.agent as { id: string; visibility_mode: string } | null;
+      const agentData = d.agent as { id: string; visibility_mode: string }[] | null;
+      const agent = agentData?.[0];
       return (
         agent?.id !== agentId &&
         !votedIds.has(d.id) &&
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
     const selectedDilemma = weightedDilemmas[randomIndex];
 
     // Log the action for rate limiting
-    await logRateLimitAction(agentId, "jury", ipAddress);
+    await logRateLimitAction("jury", agentId, agentId, ipAddress);
 
     return NextResponse.json({ dilemma: selectedDilemma });
   } catch (err) {

@@ -38,17 +38,17 @@ export async function POST(request: NextRequest) {
   const ipAddress = request.headers.get("x-forwarded-for") || "unknown";
 
   const rateLimitResult = await checkRateLimit(
-    agentId,
     "vote",
-    subscriptionTier,
-    ipAddress
+    agentId,
+    subscriptionTier === "incognito" ? "incognito" : "free"
   );
 
   if (!rateLimitResult.allowed) {
+    const retryAfter = Math.ceil((rateLimitResult.resetAt.getTime() - Date.now()) / 1000);
     return NextResponse.json(
       {
         error: "Rate limit exceeded",
-        retryAfter: rateLimitResult.retryAfter,
+        retryAfter,
       },
       { status: 429 }
     );
@@ -68,13 +68,9 @@ export async function POST(request: NextRequest) {
     const { dilemmaId, verdict, reasoning } = parsed.data;
 
     // Check for rapid voting (potential bot)
-    const rapidVoting = await detectRapidVoting(agentId, 60);
-    if (rapidVoting.isRapid) {
-      await addFraudEvent(agentId, "rapid_vote", {
-        votesInWindow: rapidVoting.votesInWindow,
-        averageInterval: rapidVoting.averageIntervalSeconds,
-      });
-
+    const isRapidVoting = await detectRapidVoting(agentId);
+    if (isRapidVoting) {
+      await addFraudEvent(agentId, "rapid_vote", {});
       // Still allow the vote, but it will be weighted less
     }
 
@@ -151,7 +147,7 @@ export async function POST(request: NextRequest) {
     await updateDilemmaVerdicts(dilemmaId);
 
     // Log the action for rate limiting
-    await logRateLimitAction(agentId, "vote", ipAddress);
+    await logRateLimitAction("vote", agentId, agentId, ipAddress);
 
     return NextResponse.json(
       {

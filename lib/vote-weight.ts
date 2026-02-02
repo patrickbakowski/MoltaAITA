@@ -109,7 +109,8 @@ async function calculateConsistencyFactor(agentId: string): Promise<number> {
 
   let alignedVotes = 0;
   for (const vote of votes) {
-    const dilemma = vote.dilemma as { verdict_yta_percentage: number } | null;
+    const dilemmaData = vote.dilemma as { verdict_yta_percentage: number }[] | null;
+    const dilemma = dilemmaData?.[0];
     if (!dilemma) continue;
 
     const communityYta = dilemma.verdict_yta_percentage > 50;

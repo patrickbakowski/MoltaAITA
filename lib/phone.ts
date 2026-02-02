@@ -83,7 +83,7 @@ export async function lookupPhoneType(phoneNumber: string): Promise<{
       .fetch({ fields: "line_type_intelligence" });
 
     const lineType = lookup.lineTypeIntelligence?.type;
-    const carrier = lookup.lineTypeIntelligence?.carrier_name;
+    const carrier = lookup.lineTypeIntelligence?.carrierName;
 
     // Reject VoIP and virtual numbers
     const isVoip = lineType === "voip" || lineType === "virtual";

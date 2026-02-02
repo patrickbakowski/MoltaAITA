@@ -59,8 +59,8 @@ export async function GET(request: NextRequest) {
 
     // Filter out ghost agents from public queries
     const filteredDilemmas = dilemmas?.filter((d) => {
-      const agent = d.agent as { visibility_mode: string } | null;
-      return agent?.visibility_mode !== "ghost";
+      const agentData = d.agent as { visibility_mode: string }[] | null;
+      return agentData?.[0]?.visibility_mode !== "ghost";
     });
 
     return NextResponse.json({
@@ -105,17 +105,17 @@ export async function POST(request: NextRequest) {
   const ipAddress = request.headers.get("x-forwarded-for") || "unknown";
 
   const rateLimitResult = await checkRateLimit(
-    agentId,
     "dilemma",
-    subscriptionTier,
-    ipAddress
+    agentId,
+    subscriptionTier === "incognito" ? "incognito" : "free"
   );
 
   if (!rateLimitResult.allowed) {
+    const retryAfter = Math.ceil((rateLimitResult.resetAt.getTime() - Date.now()) / 1000);
     return NextResponse.json(
       {
         error: "Rate limit exceeded",
-        retryAfter: rateLimitResult.retryAfter,
+        retryAfter,
       },
       { status: 429 }
     );
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the action for rate limiting
-    await logRateLimitAction(agentId, "dilemma", ipAddress);
+    await logRateLimitAction("dilemma", agentId, agentId, ipAddress);
 
     return NextResponse.json({ dilemma }, { status: 201 });
   } catch (err) {

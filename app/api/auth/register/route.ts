@@ -18,13 +18,14 @@ export async function POST(request: NextRequest) {
   const ipAddress = request.headers.get("x-forwarded-for") || "unknown";
 
   // Rate limit signup attempts per IP
-  const rateLimitResult = await checkRateLimit("ip", "signup", "free", ipAddress);
+  const rateLimitResult = await checkRateLimit("signup", ipAddress, "free");
 
   if (!rateLimitResult.allowed) {
+    const retryAfter = Math.ceil((rateLimitResult.resetAt.getTime() - Date.now()) / 1000);
     return NextResponse.json(
       {
         error: "Too many signup attempts. Please try again later.",
-        retryAfter: rateLimitResult.retryAfter,
+        retryAfter,
       },
       { status: 429 }
     );
@@ -145,13 +146,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the signup action
-    await logRateLimitAction("ip", "signup", ipAddress);
+    await logRateLimitAction("signup", ipAddress);
 
     // Create and send verification email
     try {
-      const token = await createVerificationToken(agent.id, email);
+      const token = await createVerificationToken(agent.id);
       if (token) {
-        await sendVerificationEmail(email, token, name);
+        await sendVerificationEmail(email, token);
       }
     } catch (emailError) {
       console.error("Error sending verification email:", emailError);

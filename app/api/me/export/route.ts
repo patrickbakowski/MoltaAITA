@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         verdict: v.verdict,
         reasoning: v.reasoning,
         weight: v.weight,
-        dilemmaId: (v.dilemma as { id: string })?.id,
+        dilemmaId: (v.dilemma as { id: string }[])?.[0]?.id,
         createdAt: v.created_at,
       })),
       appeals: appeals?.map((a) => ({

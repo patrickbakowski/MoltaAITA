@@ -182,6 +182,9 @@ export async function sendVerificationEmail(
 /**
  * Send password reset email
  */
+// Alias for backward compatibility
+export { verifyEmailToken as validateVerificationToken };
+
 export async function sendPasswordResetEmail(
   email: string,
   token: string

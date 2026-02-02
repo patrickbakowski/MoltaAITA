@@ -30,17 +30,17 @@ export async function POST(request: NextRequest) {
   // Rate limit phone verification attempts
   const subscriptionTier = session.user.subscriptionTier || "free";
   const rateLimitResult = await checkRateLimit(
+    "verify_phone",
     agentId,
-    "phone_verification",
-    subscriptionTier,
-    ipAddress
+    subscriptionTier === "incognito" ? "incognito" : "free"
   );
 
   if (!rateLimitResult.allowed) {
+    const retryAfter = Math.ceil((rateLimitResult.resetAt.getTime() - Date.now()) / 1000);
     return NextResponse.json(
       {
         error: "Too many verification attempts",
-        retryAfter: rateLimitResult.retryAfter,
+        retryAfter,
       },
       { status: 429 }
     );
