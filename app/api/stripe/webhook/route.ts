@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe, constructWebhookEvent } from "@/lib/stripe";
+import { constructWebhookEvent } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase";
 import Stripe from "stripe";
 

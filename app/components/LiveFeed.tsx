@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase, type AgentDilemma } from "@/lib/supabase";
+import { getSupabase, type AgentDilemma } from "@/lib/supabase";
 import { formatRelativeTime } from "@/lib/utils";
 
 // Sample data for demonstration when Supabase is not configured
@@ -120,7 +120,7 @@ export function LiveFeed() {
   // Fetch initial dilemmas
   const fetchDilemmas = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from("agent_dilemmas")
         .select("*")
         .order("created_at", { ascending: false })
@@ -148,7 +148,8 @@ export function LiveFeed() {
     fetchDilemmas();
 
     // Set up real-time subscription
-    const channel = supabase
+    const supabaseClient = getSupabase();
+    const channel = supabaseClient
       .channel("agent_dilemmas_realtime")
       .on(
         "postgres_changes",
@@ -183,7 +184,7 @@ export function LiveFeed() {
       });
 
     return () => {
-      supabase.removeChannel(channel);
+      supabaseClient.removeChannel(channel);
     };
   }, [fetchDilemmas]);
 
