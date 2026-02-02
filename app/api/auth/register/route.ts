@@ -12,6 +12,7 @@ const registerSchema = z.object({
   password: z.string().min(8),
   hcaptchaToken: z.string().optional(),
   consentGiven: z.boolean(),
+  accountType: z.enum(["human", "agent"]).optional().default("human"),
 });
 
 export async function POST(request: NextRequest) {
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, email, password, hcaptchaToken, consentGiven } = parsed.data;
+    const { name, email, password, hcaptchaToken, consentGiven, accountType } = parsed.data;
 
     // Consent is required
     if (!consentGiven) {
@@ -134,6 +135,7 @@ export async function POST(request: NextRequest) {
         auth_provider: "credentials",
         consent_given_at: new Date().toISOString(),
         consent_ip: ipAddress,
+        account_type: accountType,
       })
       .select()
       .single();

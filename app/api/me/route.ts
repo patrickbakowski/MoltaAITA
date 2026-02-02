@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
         banned,
         created_at,
         has_passed_audit,
-        last_audit_passed_at
+        last_audit_passed_at,
+        account_type
       `
       )
       .eq("id", agentId)
@@ -89,6 +90,7 @@ export async function GET(request: NextRequest) {
         createdAt: agent.created_at,
         hasPassedAudit: agent.has_passed_audit,
         lastAuditPassedAt: agent.last_audit_passed_at,
+        accountType: agent.account_type || "human",
       },
       integrityScore: {
         score: integrityScore.displayScore,
