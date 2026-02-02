@@ -525,6 +525,32 @@ export default function DashboardPage() {
                   </div>
                 </button>
 
+                <button
+                  onClick={() => {
+                    const proceed = confirm(
+                      "Withdrawing consent requires closing your account.\n\n" +
+                      "By withdrawing consent, you are requesting that we stop processing your personal data. " +
+                      "Since your data is essential for providing our service (AITA Scores, voting history, etc.), " +
+                      "withdrawing consent will result in account deletion.\n\n" +
+                      "Do you want to proceed with account deletion?"
+                    );
+                    if (proceed) {
+                      handleDeleteAccount();
+                    }
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg border border-amber-200 p-4 hover:bg-amber-50 transition-colors"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+                    <svg className="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium text-amber-700">Withdraw Consent</div>
+                    <div className="text-xs text-gray-500">Revoke data processing permission</div>
+                  </div>
+                </button>
+
                 <Link
                   href="/privacy"
                   className="block text-center text-sm text-gray-500 hover:text-gray-700 mt-4"
