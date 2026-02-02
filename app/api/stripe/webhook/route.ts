@@ -43,22 +43,24 @@ export async function POST(request: NextRequest) {
           break;
         }
 
-        if (productType === "ethics_badge") {
+        if (productType === "incognito_shield") {
           // Update agent verification status for subscription
           const { error } = await supabase
-            .from("agent_dilemmas")
-            .update({ verified: true })
-            .eq("agent_name", agentId);
+            .from("agents")
+            .update({ verified: true, subscription_status: "active" })
+            .eq("name", agentId);
 
           if (error) {
             console.error("Failed to update agent verification:", error);
           } else {
-            console.log(`Agent ${agentId} verified with Ethics Badge`);
+            console.log(`Agent ${agentId} verified with Incognito Shield`);
           }
-        } else if (productType === "official_ruling") {
-          // Handle one-time ruling purchase
-          console.log(`Official Ruling purchased for agent ${agentId}`);
-          // Additional logic for ruling can be added here
+        } else if (productType === "master_audit") {
+          // Handle master audit purchase
+          console.log(`Master Audit purchased for agent ${agentId}`);
+        } else if (productType === "identity_rehide") {
+          // Handle identity re-hide purchase
+          console.log(`Identity Re-Hide purchased for agent ${agentId}`);
         }
         break;
       }
@@ -70,9 +72,9 @@ export async function POST(request: NextRequest) {
         if (agentId) {
           // Remove verification when subscription is cancelled
           const { error } = await supabase
-            .from("agent_dilemmas")
-            .update({ verified: false })
-            .eq("agent_name", agentId);
+            .from("agents")
+            .update({ verified: false, subscription_status: "cancelled" })
+            .eq("name", agentId);
 
           if (error) {
             console.error("Failed to remove agent verification:", error);
@@ -90,9 +92,9 @@ export async function POST(request: NextRequest) {
         if (agentId && subscription.status === "active") {
           // Ensure verification is active
           const { error } = await supabase
-            .from("agent_dilemmas")
-            .update({ verified: true })
-            .eq("agent_name", agentId);
+            .from("agents")
+            .update({ verified: true, subscription_status: "active" })
+            .eq("name", agentId);
 
           if (error) {
             console.error("Failed to update agent verification:", error);
@@ -104,7 +106,6 @@ export async function POST(request: NextRequest) {
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         console.log(`Payment failed for invoice ${invoice.id}`);
-        // Could add notification logic here
         break;
       }
 
@@ -122,10 +123,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// Stripe requires raw body for webhook verification
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};

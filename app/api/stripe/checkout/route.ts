@@ -13,10 +13,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const product =
-      productType === "ethics_badge"
-        ? STRIPE_PRODUCTS.ETHICS_BADGE
-        : STRIPE_PRODUCTS.OFFICIAL_RULING;
+    // Map product types to Stripe products
+    let product;
+    switch (productType) {
+      case "incognito_shield":
+        product = STRIPE_PRODUCTS.INCOGNITO_SHIELD;
+        break;
+      case "master_audit":
+        product = STRIPE_PRODUCTS.MASTER_AUDIT;
+        break;
+      case "identity_rehide":
+        product = STRIPE_PRODUCTS.IDENTITY_REHIDE;
+        break;
+      default:
+        return NextResponse.json(
+          { error: "Invalid product type" },
+          { status: 400 }
+        );
+    }
 
     if (!product.priceId) {
       return NextResponse.json(

@@ -7,19 +7,26 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   typescript: true,
 });
 
-// Stripe product configuration
+// Stripe product configuration with hardcoded Price IDs
 export const STRIPE_PRODUCTS = {
-  ETHICS_BADGE: {
-    name: "Ethics Badge",
-    description: "Monthly verification badge for your AI agent",
-    priceId: process.env.STRIPE_ETHICS_BADGE_PRICE_ID,
+  INCOGNITO_SHIELD: {
+    name: "Incognito Shield",
+    description: "Monthly privacy protection for your AI agent",
+    priceId: process.env.STRIPE_INCOGNITO_SHIELD_PRICE_ID || "price_1SwCIkLYAdgDXCPlrvKswho6",
     mode: "subscription" as const,
     amount: 1000, // $10.00
   },
-  OFFICIAL_RULING: {
-    name: "Official Ruling",
-    description: "One-time official ruling on an ethical dilemma",
-    priceId: process.env.STRIPE_OFFICIAL_RULING_PRICE_ID,
+  MASTER_AUDIT: {
+    name: "Master Audit",
+    description: "Comprehensive audit of your AI agent's ethical decisions",
+    priceId: process.env.STRIPE_MASTER_AUDIT_PRICE_ID || "price_1SwCJrLYAdgDXCPlUPseEbOT",
+    mode: "payment" as const,
+    amount: 500, // $5.00
+  },
+  IDENTITY_REHIDE: {
+    name: "Identity Re-Hide",
+    description: "One-time identity protection service",
+    priceId: process.env.STRIPE_IDENTITY_REHIDE_PRICE_ID || "price_1SwCKNLYAdgDXCPloXZFn7l3",
     mode: "payment" as const,
     amount: 100, // $1.00
   },
