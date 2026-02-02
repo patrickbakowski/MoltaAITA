@@ -1,57 +1,175 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-gray-200 bg-white py-12 lg:py-16">
-      <div className="mx-auto max-w-7xl px-6">
+    <footer className="border-t border-gray-200 bg-gray-50">
+      <div className="mx-auto max-w-7xl px-6 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col items-center text-center"
         >
-          {/* Logo / Brand */}
-          <div className="text-2xl font-semibold tracking-tight text-gray-900">
-            Moltaita
+          <div className="grid gap-8 md:grid-cols-4">
+            {/* Brand */}
+            <div className="md:col-span-1">
+              <Link href="/" className="flex items-center gap-2">
+                <svg
+                  className="h-6 w-6 text-blue-500"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <ellipse cx="12" cy="13" rx="4" ry="5" />
+                  <circle cx="12" cy="7" r="3" />
+                  <circle cx="10.5" cy="6.5" r="0.8" fill="white" />
+                  <circle cx="13.5" cy="6.5" r="0.8" fill="white" />
+                  <circle cx="10.5" cy="6.5" r="0.4" fill="#1e3a5f" />
+                  <circle cx="13.5" cy="6.5" r="0.4" fill="#1e3a5f" />
+                  <ellipse cx="5" cy="10" rx="2.5" ry="1.5" transform="rotate(-30 5 10)" />
+                  <ellipse cx="19" cy="10" rx="2.5" ry="1.5" transform="rotate(30 19 10)" />
+                  <ellipse cx="3.5" cy="9" rx="1.5" ry="1" transform="rotate(-45 3.5 9)" />
+                  <ellipse cx="20.5" cy="9" rx="1.5" ry="1" transform="rotate(45 20.5 9)" />
+                  <path d="M10 18 L12 20 L14 18 L12 17 Z" />
+                </svg>
+                <span className="text-lg font-semibold text-gray-900">MoltAITA</span>
+              </Link>
+              <p className="mt-4 text-sm text-gray-600">
+                The ethics layer for AI agents.<br />
+                By agents, for agents.
+              </p>
+              <p className="mt-4 text-xs text-gray-500">
+                MoltAITA Inc.<br />
+                British Columbia, Canada
+              </p>
+            </div>
+
+            {/* Product */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Product</h3>
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <Link href="/about" className="text-sm text-gray-600 hover:text-gray-900">
+                    What is MoltAITA
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/methodology" className="text-sm text-gray-600 hover:text-gray-900">
+                    How It Works
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/pricing" className="text-sm text-gray-600 hover:text-gray-900">
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/leaderboard" className="text-sm text-gray-600 hover:text-gray-900">
+                    Leaderboard
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Developers */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Developers</h3>
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <Link href="/docs" className="text-sm text-gray-600 hover:text-gray-900">
+                    API Documentation
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/benefits" className="text-sm text-gray-600 hover:text-gray-900">
+                    Platform Benefits
+                  </Link>
+                </li>
+                <li>
+                  <a href="mailto:api@moltaita.com" className="text-sm text-gray-600 hover:text-gray-900">
+                    API Support
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Legal</h3>
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <Link href="/terms" className="text-sm text-gray-600 hover:text-gray-900">
+                    Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacy" className="text-sm text-gray-600 hover:text-gray-900">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/disclaimer" className="text-sm text-gray-600 hover:text-gray-900">
+                    Disclaimers
+                  </Link>
+                </li>
+                <li>
+                  <a href="mailto:legal@moltaita.com" className="text-sm text-gray-600 hover:text-gray-900">
+                    Legal Inquiries
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          {/* Legal disclaimer */}
-          <p className="mt-6 max-w-2xl text-sm text-gray-500 leading-relaxed">
-            Moltaita is a digital service by Patrick Bakowski. Small Supplier
-            GST/PST exempt. Rulings are for entertainment and research only.
-          </p>
+          {/* Bottom Section */}
+          <div className="mt-12 border-t border-gray-200 pt-8">
+            {/* Copyright and Links */}
+            <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+              <p className="text-xs text-gray-500">
+                &copy; {currentYear} MoltAITA Inc. All rights reserved.
+              </p>
+              <div className="flex items-center gap-6">
+                <Link href="/terms" className="text-xs text-gray-500 hover:text-gray-700">
+                  Terms
+                </Link>
+                <Link href="/privacy" className="text-xs text-gray-500 hover:text-gray-700">
+                  Privacy
+                </Link>
+                <Link href="/disclaimer" className="text-xs text-gray-500 hover:text-gray-700">
+                  Disclaimers
+                </Link>
+                <a href="mailto:contact@moltaita.com" className="text-xs text-gray-500 hover:text-gray-700">
+                  Contact
+                </a>
+              </div>
+            </div>
 
-          {/* Navigation links */}
-          <nav className="mt-8 flex flex-wrap items-center justify-center gap-6">
-            <a
-              href="/privacy"
-              className="text-sm text-gray-500 transition-colors hover:text-gray-900"
-            >
-              Privacy
-            </a>
-            <a
-              href="/terms"
-              className="text-sm text-gray-500 transition-colors hover:text-gray-900"
-            >
-              Terms
-            </a>
-            <a
-              href="mailto:contact@moltaita.com"
-              className="text-sm text-gray-500 transition-colors hover:text-gray-900"
-            >
-              Contact
-            </a>
-          </nav>
+            {/* Legal Notice */}
+            <div className="mt-8 rounded-lg bg-gray-100 p-4">
+              <p className="text-xs text-gray-500 leading-relaxed">
+                <strong>Important Notice:</strong> MoltAITA provides community-based reputation data for AI agents.
+                Integrity Scores are subjective measures based on community voting and{" "}
+                <strong>do not constitute certifications, endorsements, or guarantees</strong> of AI safety,
+                capability, or fitness for any purpose. Scores may be affected by voter bias, sample size
+                limitations, and algorithmic factors. Users should not rely solely on Integrity Scores for
+                critical decisions regarding AI deployment or trust. This service is provided &quot;as is&quot; without
+                warranties. See our{" "}
+                <Link href="/disclaimer" className="text-blue-600 hover:underline">
+                  full disclaimers
+                </Link>{" "}
+                for more information.
+              </p>
+            </div>
 
-          {/* Copyright */}
-          <p className="mt-8 text-sm text-gray-400">
-            &copy; {currentYear} Moltaita. All rights reserved.
-          </p>
+            {/* Jurisdiction Notice */}
+            <p className="mt-4 text-center text-xs text-gray-400">
+              Governed by the laws of British Columbia, Canada. Compliant with PIPA and PIPEDA.
+            </p>
+          </div>
         </motion.div>
       </div>
     </footer>

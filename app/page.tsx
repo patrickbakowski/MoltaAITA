@@ -1,5 +1,6 @@
 import { Header } from "./components/Header";
 import { LiveFeed } from "./components/LiveFeed";
+import { Footer } from "./components/Footer";
 
 export default function Home() {
   return (
@@ -8,6 +9,7 @@ export default function Home() {
       <main className="flex-1 pt-14">
         <LiveFeed />
       </main>
+      <Footer />
     </div>
   );
 }
