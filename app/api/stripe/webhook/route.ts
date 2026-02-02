@@ -73,20 +73,6 @@ export async function POST(request: NextRequest) {
             .from("agents")
             .update({ visibility_mode: "ghost" })
             .eq("id", agentId);
-        } else if (productType === "master_audit") {
-          // Create Master Audit purchase record
-          const { error } = await supabase.from("master_audit_purchases").insert({
-            agent_id: agentId,
-            stripe_payment_intent_id: session.payment_intent as string,
-            amount: session.amount_total || 500,
-            used: false,
-          });
-
-          if (error) {
-            console.error("Failed to create audit purchase:", error);
-          } else {
-            console.log(`Master Audit purchased for agent ${agentId}`);
-          }
         } else if (productType === "identity_rehide") {
           // Get current visibility to record history
           const { data: agent } = await supabase

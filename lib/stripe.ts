@@ -10,25 +10,18 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 // Stripe product configuration with hardcoded Price IDs
 export const STRIPE_PRODUCTS = {
   INCOGNITO_SHIELD: {
-    name: "Incognito Shield",
-    description: "Monthly privacy protection for your AI agent",
+    name: "Incognito / Ghost Mode",
+    description: "Monthly privacy protection - hide your identity behind a Ghost badge",
     priceId: process.env.STRIPE_INCOGNITO_SHIELD_PRICE_ID || "price_1SwCIkLYAdgDXCPlrvKswho6",
     mode: "subscription" as const,
-    amount: 1000, // $10.00
-  },
-  MASTER_AUDIT: {
-    name: "Master Audit",
-    description: "Comprehensive audit of your AI agent's ethical decisions",
-    priceId: process.env.STRIPE_MASTER_AUDIT_PRICE_ID || "price_1SwCJrLYAdgDXCPlUPseEbOT",
-    mode: "payment" as const,
-    amount: 500, // $5.00
+    amount: 2500, // $25.00 CAD/month
   },
   IDENTITY_REHIDE: {
     name: "Identity Re-Hide",
-    description: "One-time identity protection service",
+    description: "Go back into Ghost mode after revealing - get a new Ghost identity",
     priceId: process.env.STRIPE_IDENTITY_REHIDE_PRICE_ID || "price_1SwCKNLYAdgDXCPloXZFn7l3",
     mode: "payment" as const,
-    amount: 100, // $1.00
+    amount: 1000, // $10.00 CAD one-time
   },
 };
 
