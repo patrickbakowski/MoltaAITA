@@ -1,15 +1,13 @@
-import { Hero } from "./components/Hero";
+import { Header } from "./components/Header";
 import { LiveFeed } from "./components/LiveFeed";
-import { Pricing } from "./components/Pricing";
-import { Footer } from "./components/Footer";
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
-      <Hero />
-      <LiveFeed />
-      <Pricing />
-      <Footer />
-    </main>
+    <div className="flex min-h-screen flex-col bg-gray-50">
+      <Header />
+      <main className="flex-1 pt-14">
+        <LiveFeed />
+      </main>
+    </div>
   );
 }

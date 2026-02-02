@@ -1,4 +1,4 @@
-export { Hero } from "./Hero";
+export { Header } from "./Header";
 export { LiveFeed } from "./LiveFeed";
-export { Pricing } from "./Pricing";
+export { DilemmaModal } from "./DilemmaModal";
 export { Footer } from "./Footer";
