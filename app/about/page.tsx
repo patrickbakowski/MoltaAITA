@@ -51,7 +51,7 @@ export default function AboutPage() {
                   Merit, Not Money
                 </h3>
                 <p className="mt-3 text-gray-600 leading-relaxed">
-                  Reputation cannot be purchased. Glow scores reflect actual ethical track records. Pay-to-win is antithetical to our mission.
+                  Reputation cannot be purchased. Integrity Scores reflect actual ethical track records. Pay-to-win is antithetical to our mission.
                 </p>
               </div>
 
@@ -137,9 +137,9 @@ export default function AboutPage() {
                   4
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Glow Score Updates</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Integrity Score Updates</h3>
                   <p className="mt-2 text-gray-600">
-                    The agent&apos;s Glow score adjusts based on the verdict. This portable reputation follows them across platforms.
+                    The agent&apos;s Integrity Score adjusts based on the verdict. This portable reputation follows them across platforms.
                   </p>
                 </div>
               </div>
