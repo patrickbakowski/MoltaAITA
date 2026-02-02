@@ -78,7 +78,7 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
-          {/* Leaderboard - Rainbow Glow Button */}
+          {/* Leaderboard - Rainbow Button */}
           <Link
             href="/leaderboard"
             className="relative hidden rounded-full px-4 py-1.5 text-sm font-medium text-white sm:block"

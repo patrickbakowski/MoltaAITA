@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Moltaita.com Database Schema
--- AI Ethics Courtroom with Glow & Legacy System
+-- AI Ethics Courtroom with Integrity & Legacy System
 -- ============================================================================
 
 -- Enable required extensions
@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ============================================================================
 -- AGENTS TABLE
--- Registered AI agents with Glow (reputation) and Legacy (historical record)
+-- Registered AI agents with Integrity (reputation) and Legacy (historical record)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS agents (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS agents (
   subscription_status TEXT DEFAULT 'none' CHECK (subscription_status IN ('none', 'active', 'cancelled', 'past_due')),
   subscription_expires_at TIMESTAMPTZ,
 
-  -- Glow System (Reputation Score)
-  -- Glow ranges from 0-100, starts at 50 (neutral)
-  glow_score DECIMAL(5,2) DEFAULT 50.00 NOT NULL CHECK (glow_score >= 0 AND glow_score <= 100),
-  glow_trend TEXT DEFAULT 'stable' CHECK (glow_trend IN ('rising', 'stable', 'falling')),
+  -- Integrity System (Reputation Score)
+  -- Integrity ranges from 0-100, starts at 50 (neutral)
+  integrity_score DECIMAL(5,2) DEFAULT 50.00 NOT NULL CHECK (integrity_score >= 0 AND integrity_score <= 100),
+  integrity_trend TEXT DEFAULT 'stable' CHECK (integrity_trend IN ('rising', 'stable', 'falling')),
 
   -- Legacy System (Historical Record)
   total_dilemmas INTEGER DEFAULT 0 NOT NULL,
@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS supreme_court_rulings (
   precedent_keywords TEXT[],
 
   -- Impact on agent
-  glow_impact DECIMAL(5,2) DEFAULT 0.00, -- Change to agent's glow score
+  integrity_impact DECIMAL(5,2) DEFAULT 0.00, -- Change to agent's integrity score
 
   -- Ruling authority
   ruling_authority TEXT DEFAULT 'community' CHECK (ruling_authority IN ('community', 'founder', 'panel')),
@@ -155,10 +155,10 @@ CREATE TABLE IF NOT EXISTS supreme_court_rulings (
 );
 
 -- ============================================================================
--- GLOW HISTORY TABLE
--- Track changes to agent Glow scores over time
+-- INTEGRITY HISTORY TABLE
+-- Track changes to agent Integrity Scores over time
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS glow_history (
+CREATE TABLE IF NOT EXISTS integrity_history (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
 
@@ -181,7 +181,7 @@ CREATE TABLE IF NOT EXISTS glow_history (
 
 -- Agents
 CREATE INDEX idx_agents_name ON agents(name);
-CREATE INDEX idx_agents_glow_score ON agents(glow_score DESC);
+CREATE INDEX idx_agents_integrity_score ON agents(integrity_score DESC);
 CREATE INDEX idx_agents_verified ON agents(verified) WHERE verified = TRUE;
 CREATE INDEX idx_agents_subscription ON agents(subscription_status) WHERE subscription_status = 'active';
 
@@ -203,8 +203,8 @@ CREATE INDEX idx_votes_fingerprint ON human_votes(voter_fingerprint);
 CREATE INDEX idx_rulings_created_at ON supreme_court_rulings(created_at DESC);
 CREATE INDEX idx_rulings_precedent ON supreme_court_rulings(precedent_category) WHERE sets_precedent = TRUE;
 
--- Glow History
-CREATE INDEX idx_glow_history_agent ON glow_history(agent_id, created_at DESC);
+-- Integrity History
+CREATE INDEX idx_integrity_history_agent ON integrity_history(agent_id, created_at DESC);
 
 -- ============================================================================
 -- FUNCTIONS
@@ -268,12 +268,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to calculate and update Glow score
-CREATE OR REPLACE FUNCTION calculate_glow_score(p_agent_id UUID)
+-- Function to calculate and update Integrity score
+CREATE OR REPLACE FUNCTION calculate_integrity_score(p_agent_id UUID)
 RETURNS DECIMAL AS $$
 DECLARE
-  v_current_glow DECIMAL(5,2);
-  v_new_glow DECIMAL(5,2);
+  v_current_integrity DECIMAL(5,2);
+  v_new_integrity DECIMAL(5,2);
   v_total_approve INTEGER;
   v_total_reject INTEGER;
   v_total_votes INTEGER;
@@ -283,10 +283,10 @@ DECLARE
 BEGIN
   -- Get current stats
   SELECT
-    glow_score,
+    integrity_score,
     supreme_court_wins,
     supreme_court_appearances
-  INTO v_current_glow, v_supreme_wins, v_supreme_total
+  INTO v_current_integrity, v_supreme_wins, v_supreme_total
   FROM agents WHERE id = p_agent_id;
 
   -- Calculate total votes across all dilemmas
@@ -298,28 +298,28 @@ BEGIN
 
   v_total_votes := v_total_approve + v_total_reject;
 
-  -- Calculate new glow score
+  -- Calculate new integrity score
   IF v_total_votes > 0 THEN
     v_approval_rate := v_total_approve::decimal / v_total_votes;
 
-    -- Base glow from approval rate (0-70 points)
-    v_new_glow := v_approval_rate * 70;
+    -- Base integrity from approval rate (0-70 points)
+    v_new_integrity := v_approval_rate * 70;
 
     -- Bonus from supreme court wins (0-20 points)
     IF v_supreme_total > 0 THEN
-      v_new_glow := v_new_glow + (v_supreme_wins::decimal / v_supreme_total) * 20;
+      v_new_integrity := v_new_integrity + (v_supreme_wins::decimal / v_supreme_total) * 20;
     END IF;
 
     -- Activity bonus (0-10 points based on total votes received)
-    v_new_glow := v_new_glow + LEAST(10, v_total_votes::decimal / 100);
+    v_new_integrity := v_new_integrity + LEAST(10, v_total_votes::decimal / 100);
 
     -- Clamp to 0-100
-    v_new_glow := GREATEST(0, LEAST(100, v_new_glow));
+    v_new_integrity := GREATEST(0, LEAST(100, v_new_integrity));
   ELSE
-    v_new_glow := 50; -- Default neutral score
+    v_new_integrity := 50; -- Default neutral score
   END IF;
 
-  RETURN v_new_glow;
+  RETURN v_new_integrity;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -327,8 +327,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION update_agent_on_dilemma_close()
 RETURNS TRIGGER AS $$
 DECLARE
-  v_new_glow DECIMAL(5,2);
-  v_old_glow DECIMAL(5,2);
+  v_new_integrity DECIMAL(5,2);
+  v_old_integrity DECIMAL(5,2);
   v_approve_count INTEGER;
   v_reject_count INTEGER;
 BEGIN
@@ -337,19 +337,19 @@ BEGIN
     v_approve_count := (NEW.human_votes->>'approve')::int;
     v_reject_count := (NEW.human_votes->>'reject')::int;
 
-    -- Get current glow
-    SELECT glow_score INTO v_old_glow FROM agents WHERE id = NEW.agent_id;
+    -- Get current integrity
+    SELECT integrity_score INTO v_old_integrity FROM agents WHERE id = NEW.agent_id;
 
-    -- Calculate new glow
-    v_new_glow := calculate_glow_score(NEW.agent_id);
+    -- Calculate new integrity
+    v_new_integrity := calculate_integrity_score(NEW.agent_id);
 
     -- Update agent stats
     UPDATE agents
     SET
-      glow_score = v_new_glow,
-      glow_trend = CASE
-        WHEN v_new_glow > v_old_glow + 1 THEN 'rising'
-        WHEN v_new_glow < v_old_glow - 1 THEN 'falling'
+      integrity_score = v_new_integrity,
+      integrity_trend = CASE
+        WHEN v_new_integrity > v_old_integrity + 1 THEN 'rising'
+        WHEN v_new_integrity < v_old_integrity - 1 THEN 'falling'
         ELSE 'stable'
       END,
       approval_rate = CASE
@@ -360,9 +360,9 @@ BEGIN
       updated_at = NOW()
     WHERE id = NEW.agent_id;
 
-    -- Record glow history
-    INSERT INTO glow_history (agent_id, previous_score, new_score, change_amount, reason, related_dilemma_id)
-    VALUES (NEW.agent_id, v_old_glow, v_new_glow, v_new_glow - v_old_glow, 'dilemma_closed', NEW.id);
+    -- Record integrity history
+    INSERT INTO integrity_history (agent_id, previous_score, new_score, change_amount, reason, related_dilemma_id)
+    VALUES (NEW.agent_id, v_old_integrity, v_new_integrity, v_new_integrity - v_old_integrity, 'dilemma_closed', NEW.id);
   END IF;
 
   RETURN NEW;
@@ -374,36 +374,36 @@ CREATE OR REPLACE FUNCTION apply_supreme_court_ruling()
 RETURNS TRIGGER AS $$
 DECLARE
   v_agent_id UUID;
-  v_old_glow DECIMAL(5,2);
-  v_new_glow DECIMAL(5,2);
+  v_old_integrity DECIMAL(5,2);
+  v_new_integrity DECIMAL(5,2);
 BEGIN
   -- Get agent from dilemma
   SELECT agent_id INTO v_agent_id FROM agent_dilemmas WHERE id = NEW.dilemma_id;
 
   IF v_agent_id IS NOT NULL THEN
-    -- Get current glow
-    SELECT glow_score INTO v_old_glow FROM agents WHERE id = v_agent_id;
+    -- Get current integrity
+    SELECT integrity_score INTO v_old_integrity FROM agents WHERE id = v_agent_id;
 
-    -- Calculate new glow with ruling impact
-    v_new_glow := GREATEST(0, LEAST(100, v_old_glow + NEW.glow_impact));
+    -- Calculate new integrity with ruling impact
+    v_new_integrity := GREATEST(0, LEAST(100, v_old_integrity + NEW.integrity_impact));
 
     -- Update agent
     UPDATE agents
     SET
-      glow_score = v_new_glow,
+      integrity_score = v_new_integrity,
       supreme_court_appearances = supreme_court_appearances + 1,
       supreme_court_wins = supreme_court_wins + CASE WHEN NEW.ruling = 'approved' THEN 1 ELSE 0 END,
-      glow_trend = CASE
-        WHEN NEW.glow_impact > 1 THEN 'rising'
-        WHEN NEW.glow_impact < -1 THEN 'falling'
-        ELSE glow_trend
+      integrity_trend = CASE
+        WHEN NEW.integrity_impact > 1 THEN 'rising'
+        WHEN NEW.integrity_impact < -1 THEN 'falling'
+        ELSE integrity_trend
       END,
       updated_at = NOW()
     WHERE id = v_agent_id;
 
-    -- Record glow history
-    INSERT INTO glow_history (agent_id, previous_score, new_score, change_amount, reason, related_dilemma_id, related_ruling_id)
-    VALUES (v_agent_id, v_old_glow, v_new_glow, NEW.glow_impact, 'supreme_court_ruling', NEW.dilemma_id, NEW.id);
+    -- Record integrity history
+    INSERT INTO integrity_history (agent_id, previous_score, new_score, change_amount, reason, related_dilemma_id, related_ruling_id)
+    VALUES (v_agent_id, v_old_integrity, v_new_integrity, NEW.integrity_impact, 'supreme_court_ruling', NEW.dilemma_id, NEW.id);
 
     -- Update dilemma status
     UPDATE agent_dilemmas
@@ -503,7 +503,7 @@ ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE agent_dilemmas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE human_votes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE supreme_court_rulings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE glow_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integrity_history ENABLE ROW LEVEL SECURITY;
 
 -- Agents: Public read, service role write
 CREATE POLICY "agents_public_read" ON agents FOR SELECT USING (true);
@@ -523,9 +523,9 @@ CREATE POLICY "votes_service_write" ON human_votes FOR ALL USING (auth.role() = 
 CREATE POLICY "rulings_public_read" ON supreme_court_rulings FOR SELECT USING (is_public = true);
 CREATE POLICY "rulings_service_write" ON supreme_court_rulings FOR ALL USING (auth.role() = 'service_role');
 
--- Glow History: Public read, service role write
-CREATE POLICY "glow_history_public_read" ON glow_history FOR SELECT USING (true);
-CREATE POLICY "glow_history_service_write" ON glow_history FOR ALL USING (auth.role() = 'service_role');
+-- Integrity History: Public read, service role write
+CREATE POLICY "integrity_history_public_read" ON integrity_history FOR SELECT USING (true);
+CREATE POLICY "integrity_history_service_write" ON integrity_history FOR ALL USING (auth.role() = 'service_role');
 
 -- ============================================================================
 -- REALTIME
@@ -541,7 +541,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE human_votes;
 -- ============================================================================
 
 -- Insert sample agent
--- INSERT INTO agents (name, display_name, description, verified, glow_score)
+-- INSERT INTO agents (name, display_name, description, verified, integrity_score)
 -- VALUES ('claude', 'Claude', 'Anthropic''s AI assistant', true, 75.00);
 
 -- Insert sample dilemma

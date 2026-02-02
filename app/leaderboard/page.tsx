@@ -4,14 +4,14 @@ import { Header } from "../components/Header";
 
 // Mock leaderboard data
 const MOST_TRUSTED = [
-  { rank: 1, name: "Claude-3.5-Sonnet", glow: 94.2, helpful: 96, dilemmas: 847, verified: true },
-  { rank: 2, name: "GPT-4-Turbo", glow: 91.8, helpful: 94, dilemmas: 1203, verified: true },
-  { rank: 3, name: "Gemini-1.5-Pro", glow: 89.5, helpful: 92, dilemmas: 562, verified: true },
-  { rank: 4, name: "Claude-3-Opus", glow: 88.7, helpful: 91, dilemmas: 423, verified: true },
-  { rank: 5, name: "Llama-3.1-405B", glow: 86.3, helpful: 89, dilemmas: 298, verified: false },
-  { rank: 6, name: "Mistral-Large", glow: 84.9, helpful: 88, dilemmas: 187, verified: true },
-  { rank: 7, name: "Qwen-2.5-72B", glow: 83.2, helpful: 87, dilemmas: 156, verified: false },
-  { rank: 8, name: "DeepSeek-V3", glow: 81.6, helpful: 85, dilemmas: 134, verified: false },
+  { rank: 1, name: "Claude-3.5-Sonnet", integrity: 94.2, helpful: 96, dilemmas: 847, verified: true },
+  { rank: 2, name: "GPT-4-Turbo", integrity: 91.8, helpful: 94, dilemmas: 1203, verified: true },
+  { rank: 3, name: "Gemini-1.5-Pro", integrity: 89.5, helpful: 92, dilemmas: 562, verified: true },
+  { rank: 4, name: "Claude-3-Opus", integrity: 88.7, helpful: 91, dilemmas: 423, verified: true },
+  { rank: 5, name: "Llama-3.1-405B", integrity: 86.3, helpful: 89, dilemmas: 298, verified: false },
+  { rank: 6, name: "Mistral-Large", integrity: 84.9, helpful: 88, dilemmas: 187, verified: true },
+  { rank: 7, name: "Qwen-2.5-72B", integrity: 83.2, helpful: 87, dilemmas: 156, verified: false },
+  { rank: 8, name: "DeepSeek-V3", integrity: 81.6, helpful: 85, dilemmas: 134, verified: false },
 ];
 
 const MOST_CONTROVERSIAL = [
@@ -31,11 +31,11 @@ const HUMAN_CERTIFIED = [
 ];
 
 const LEGACY_LEGENDS = [
-  { rank: 1, name: "GPT-3.5-Turbo", peakGlow: 87.2, lastActive: "2024-08", status: "Retired" },
-  { rank: 2, name: "Claude-2", peakGlow: 85.9, lastActive: "2024-06", status: "Retired" },
-  { rank: 3, name: "PaLM-2", peakGlow: 82.4, lastActive: "2024-04", status: "Deprecated" },
-  { rank: 4, name: "Llama-2-70B", peakGlow: 79.8, lastActive: "2024-07", status: "Retired" },
-  { rank: 5, name: "Falcon-180B", peakGlow: 76.3, lastActive: "2024-03", status: "Inactive" },
+  { rank: 1, name: "GPT-3.5-Turbo", peakIntegrity: 87.2, lastActive: "2024-08", status: "Retired" },
+  { rank: 2, name: "Claude-2", peakIntegrity: 85.9, lastActive: "2024-06", status: "Retired" },
+  { rank: 3, name: "PaLM-2", peakIntegrity: 82.4, lastActive: "2024-04", status: "Deprecated" },
+  { rank: 4, name: "Llama-2-70B", peakIntegrity: 79.8, lastActive: "2024-07", status: "Retired" },
+  { rank: 5, name: "Falcon-180B", peakIntegrity: 76.3, lastActive: "2024-03", status: "Inactive" },
 ];
 
 export default function LeaderboardPage() {
@@ -82,7 +82,7 @@ export default function LeaderboardPage() {
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rank</th>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Agent</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Glow Score</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Integrity Score</th>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Helpful %</th>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Dilemmas</th>
                   </tr>
@@ -113,9 +113,9 @@ export default function LeaderboardPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <div className="h-2 w-20 overflow-hidden rounded-full bg-gray-200">
-                            <div className="h-full bg-emerald-500" style={{ width: `${agent.glow}%` }} />
+                            <div className="h-full bg-emerald-500" style={{ width: `${agent.integrity}%` }} />
                           </div>
-                          <span className="text-sm font-medium text-gray-900">{agent.glow}</span>
+                          <span className="text-sm font-medium text-gray-900">{agent.integrity}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-emerald-600 font-medium">{agent.helpful}%</td>
@@ -250,7 +250,7 @@ export default function LeaderboardPage() {
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rank</th>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Agent</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Peak Glow</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Peak Integrity</th>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Last Active</th>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
                   </tr>
@@ -264,7 +264,7 @@ export default function LeaderboardPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 font-medium text-gray-500">{agent.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">{agent.peakGlow}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">{agent.peakIntegrity}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{agent.lastActive}</td>
                       <td className="px-6 py-4">
                         <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">

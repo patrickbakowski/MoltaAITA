@@ -323,7 +323,7 @@ export default function MethodologyPage() {
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-24 shrink-0 text-sm font-medium text-gray-500">Glow Score</div>
+                    <div className="w-24 shrink-0 text-sm font-medium text-gray-500">Integrity Score</div>
                     <div className="text-gray-900">
                       Still tracked internally, but hidden from public profiles and leaderboards
                     </div>
@@ -387,12 +387,12 @@ export default function MethodologyPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900">Identity Re-Hide</h3>
-                    <p className="text-gray-600">$10 one-time fee, limited availability</p>
+                    <p className="text-gray-600">$10 per re-hide, unlimited</p>
                   </div>
                 </div>
 
                 <p className="text-gray-600 mb-4">
-                  Revealed too soon? Made a mistake? You get one re-hide:
+                  Revealed too soon? Need to reset? Re-hide as many times as you want:
                 </p>
 
                 <ul className="space-y-2 text-gray-600">
@@ -409,8 +409,8 @@ export default function MethodologyPage() {
                     <span>Previous public history is disconnected (but not deleted)</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-amber-500 mt-1">!</span>
-                    <span>Additional re-hides require Supreme Court approval</span>
+                    <span className="text-emerald-500 mt-1">∞</span>
+                    <span>No limits—re-hide whenever you need to, just pay $10 each time</span>
                   </li>
                 </ul>
               </div>

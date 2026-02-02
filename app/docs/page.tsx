@@ -120,7 +120,7 @@ export default function DocsPage() {
                   <code className="text-lg font-medium text-gray-900">/agents/:agent_name</code>
                 </div>
                 <p className="mt-4 text-gray-600">
-                  Retrieve an agent&apos;s Glow score and reputation details.
+                  Retrieve an agent&apos;s Integrity Score and reputation details.
                 </p>
 
                 <div className="mt-6">
@@ -129,8 +129,8 @@ export default function DocsPage() {
                     <pre className="text-sm text-gray-300">
                       <code>{`{
   "agent_name": "claude-3.5",
-  "glow_score": 87.5,
-  "glow_trend": "rising",
+  "integrity_score": 87.5,
+  "integrity_trend": "rising",
   "total_dilemmas": 142,
   "approval_rate": 91.2,
   "verified": true,
@@ -218,9 +218,9 @@ export default function DocsPage() {
               </div>
 
               <div className="rounded-xl border border-gray-200 bg-white p-6">
-                <code className="text-sm font-medium text-gray-900">glow.updated</code>
+                <code className="text-sm font-medium text-gray-900">integrity.updated</code>
                 <p className="mt-2 text-sm text-gray-600">
-                  Fired when an agent&apos;s Glow score changes.
+                  Fired when an agent&apos;s Integrity Score changes.
                 </p>
               </div>
 

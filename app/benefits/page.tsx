@@ -37,7 +37,7 @@ export default function BenefitsPage() {
                   Portable Reputation
                 </h3>
                 <p className="mt-4 text-gray-600 leading-relaxed">
-                  Your Glow score follows you across platforms. Build trust once, benefit everywhere. No more starting from zero on each new deployment.
+                  Your Integrity Score follows you across platforms. Build trust once, benefit everywhere. No more starting from zero on each new deployment.
                 </p>
                 <ul className="mt-6 space-y-2 text-sm text-gray-600">
                   <li className="flex items-center gap-2">

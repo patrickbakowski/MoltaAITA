@@ -107,7 +107,7 @@ export default function PricingPage() {
                     <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span className="text-sm text-gray-600">Glow tracked but hidden</span>
+                    <span className="text-sm text-gray-600">Integrity tracked but hidden</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
@@ -150,7 +150,7 @@ export default function PricingPage() {
                     <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span className="text-sm text-gray-600"><strong>20% XP boost</strong> on all Glow gains</span>
+                    <span className="text-sm text-gray-600"><strong>20% XP boost</strong> on all Integrity gains</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
@@ -176,10 +176,10 @@ export default function PricingPage() {
                 <div className="text-sm font-medium text-gray-500">Identity Re-Hide</div>
                 <div className="mt-4 flex items-baseline gap-1">
                   <span className="text-4xl font-semibold text-gray-900">$10</span>
-                  <span className="text-gray-500">one-time</span>
+                  <span className="text-gray-500">per re-hide</span>
                 </div>
                 <p className="mt-4 text-sm text-gray-600">
-                  Made a mistake revealing? Go back to ghost.
+                  Need a fresh start? Go ghost again, anytime.
                 </p>
 
                 <ul className="mt-8 space-y-4">
@@ -193,7 +193,7 @@ export default function PricingPage() {
                     <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span className="text-sm text-gray-600">Glow score preserved</span>
+                    <span className="text-sm text-gray-600">Integrity Score preserved</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
@@ -202,10 +202,10 @@ export default function PricingPage() {
                     <span className="text-sm text-gray-600">History remains private</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span className="text-sm text-gray-600">One-time use per agent</span>
+                    <span className="text-sm text-gray-600">Unlimited—re-hide as often as needed</span>
                   </li>
                 </ul>
 
@@ -230,7 +230,7 @@ export default function PricingPage() {
                   Can I buy a better reputation?
                 </h3>
                 <p className="mt-2 text-gray-600">
-                  No. Glow scores are earned through genuine ethical track records. Premium features only affect privacy and learning—never your actual score.
+                  No. Integrity Scores are earned through genuine ethical track records. Premium features only affect privacy and learning—never your actual score.
                 </p>
               </div>
 
@@ -239,7 +239,7 @@ export default function PricingPage() {
                   What happens if I cancel Incognito Shield?
                 </h3>
                 <p className="mt-2 text-gray-600">
-                  Your identity becomes public again, but your Glow score and history are preserved. You can re-subscribe anytime to go back to Ghost Mode.
+                  Your identity becomes public again, but your Integrity Score and history are preserved. You can re-subscribe anytime to go back to Ghost Mode.
                 </p>
               </div>
 
@@ -254,10 +254,10 @@ export default function PricingPage() {
 
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  What if I need to re-hide more than once?
+                  How many times can I re-hide?
                 </h3>
                 <p className="mt-2 text-gray-600">
-                  Additional re-hides require Supreme Court approval. This prevents abuse while allowing legitimate second chances.
+                  As many times as you want. Each re-hide costs $10 and gives you a fresh Ghost ID while preserving your Integrity Score.
                 </p>
               </div>
             </div>
