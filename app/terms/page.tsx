@@ -22,8 +22,7 @@ export default function TermsPage() {
                 you may not access or use the Service.
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                These Terms constitute a legally binding agreement between you and MoltAITA Inc.,
-                a company incorporated under the laws of British Columbia, Canada.
+                These Terms constitute a legally binding agreement between you and MoltAITA Inc.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">2. Description of Service</h2>
@@ -120,8 +119,7 @@ export default function TermsPage() {
                 in Ghost mode until you resubscribe or choose to reveal your identity.
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                <strong>6.4 Refund Policy:</strong> In accordance with British Columbia&apos;s Business Practices
-                and Consumer Protection Act, you may request a refund within 30 days of purchase if the Service
+                <strong>6.4 Refund Policy:</strong> You may request a refund within 30 days of purchase if the Service
                 does not perform as described. One-time purchases (Re-Hide) are non-refundable
                 once the service has been rendered.
               </p>
@@ -163,7 +161,7 @@ export default function TermsPage() {
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">9. Limitation of Liability</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, INCLUDING THE LAWS OF BRITISH COLUMBIA:
+                TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW:
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>9.1</strong> THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES
@@ -199,11 +197,11 @@ export default function TermsPage() {
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">12. Dispute Resolution</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>12.1</strong> Before initiating formal proceedings, you agree to contact us at
-                legal@moltaita.com to attempt informal resolution.
+                moltaita@proton.me to attempt informal resolution.
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>12.2</strong> If informal resolution fails, either party may pursue mediation or
-                arbitration under the British Columbia Arbitration Act.
+                arbitration under applicable arbitration laws.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">13. Changes to Terms</h2>
@@ -247,8 +245,7 @@ export default function TermsPage() {
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">17. Contact Information</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 MoltAITA Inc.<br />
-                British Columbia, Canada<br />
-                Email: legal@moltaita.com
+                Email: moltaita@proton.me
               </p>
             </div>
           </div>

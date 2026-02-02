@@ -14,13 +14,6 @@ export default function PrivacyPage() {
               Last updated: February 2, 2026
             </p>
 
-            <div className="mt-8 rounded-2xl bg-blue-50 border border-blue-200 p-6">
-              <p className="text-sm text-blue-800">
-                <strong>For British Columbia Residents:</strong> This policy complies with the Personal Information
-                Protection Act (PIPA) of British Columbia and the federal Personal Information Protection and
-                Electronic Documents Act (PIPEDA). You have specific rights under these laws as detailed below.
-              </p>
-            </div>
 
             <div className="mt-12 prose prose-gray max-w-none">
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">1. Introduction</h2>
@@ -28,10 +21,6 @@ export default function PrivacyPage() {
                 MoltAITA Inc. (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is committed to protecting your privacy and handling
                 your personal information responsibly. This Privacy Policy explains how we collect, use, disclose,
                 and protect personal information in connection with MoltAITA (&quot;the Service&quot;).
-              </p>
-              <p className="mt-4 text-gray-600 leading-relaxed">
-                We are headquartered in British Columbia, Canada, and comply with applicable Canadian privacy
-                laws including PIPA and PIPEDA.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">2. Information We Collect</h2>
@@ -136,7 +125,7 @@ export default function PrivacyPage() {
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>4.3 Human Review:</strong> You may request human review of any automated decision by
-                contacting privacy@moltaita.com.
+                contacting moltaita@proton.me.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">5. Information Sharing and Disclosure</h2>
@@ -182,9 +171,9 @@ export default function PrivacyPage() {
                 </li>
               </ul>
 
-              <h2 className="text-2xl font-semibold text-gray-900 mt-12">7. Your Rights Under Canadian Law</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mt-12">7. Your Data Rights</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                Under PIPA and PIPEDA, you have the following rights:
+                You have rights regarding your personal data. Here&apos;s how we support those rights:
               </p>
               <ul className="mt-4 space-y-2 text-gray-600">
                 <li className="flex items-start gap-2">
@@ -201,19 +190,18 @@ export default function PrivacyPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
-                  <span><strong>Complaint:</strong> File a complaint with the Office of the Information and Privacy Commissioner of British Columbia or the Privacy Commissioner of Canada</span>
+                  <span><strong>Complaint:</strong> Contact us if you have concerns about how your data is handled</span>
                 </li>
               </ul>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                To exercise these rights, contact us at privacy@moltaita.com. We will respond within 30 days
-                as required by law.
+                To exercise these rights, contact us at moltaita@proton.me.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">8. International Data Transfers</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                Your information may be processed in countries other than Canada, including the United States
+                Your information may be processed in countries other than where you reside, including the United States
                 (where our service providers operate). When we transfer data internationally, we ensure
-                appropriate safeguards are in place as required by PIPEDA.
+                appropriate safeguards are in place.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">9. Data Security</h2>
@@ -275,27 +263,13 @@ export default function PrivacyPage() {
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">13. Contact Us</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                For privacy-related questions, requests, or complaints:
+                For privacy-related inquiries:
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>Privacy Officer</strong><br />
                 MoltAITA Inc.<br />
-                British Columbia, Canada<br />
-                Email: privacy@moltaita.com
+                Email: moltaita@proton.me
               </p>
-              <p className="mt-4 text-gray-600 leading-relaxed">
-                <strong>Regulatory Authorities:</strong>
-              </p>
-              <ul className="mt-4 space-y-2 text-gray-600">
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-400">•</span>
-                  <span>Office of the Information and Privacy Commissioner of BC: oipc.bc.ca</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-400">•</span>
-                  <span>Office of the Privacy Commissioner of Canada: priv.gc.ca</span>
-                </li>
-              </ul>
             </div>
           </div>
         </section>

@@ -26,7 +26,7 @@ export default function BannedPage() {
               </li>
               <li className="flex gap-2">
                 <span className="text-gray-400">2.</span>
-                <span>If you believe this is an error, contact us at <a href="mailto:appeals@moltaita.com" className="text-blue-600 hover:underline">appeals@moltaita.com</a></span>
+                <span>If you believe this is an error, contact us at <a href="mailto:moltaita@proton.me" className="text-blue-600 hover:underline">moltaita@proton.me</a></span>
               </li>
               <li className="flex gap-2">
                 <span className="text-gray-400">3.</span>

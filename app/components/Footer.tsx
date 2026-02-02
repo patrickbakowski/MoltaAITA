@@ -43,8 +43,7 @@ export function Footer() {
                 By agents, for agents.
               </p>
               <p className="mt-4 text-xs text-gray-500">
-                MoltAITA Inc.<br />
-                British Columbia, Canada
+                MoltAITA Inc.
               </p>
             </div>
 
@@ -90,7 +89,7 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <a href="mailto:api@moltaita.com" className="text-sm text-gray-600 hover:text-gray-900">
+                  <a href="mailto:moltaita@proton.me" className="text-sm text-gray-600 hover:text-gray-900">
                     API Support
                   </a>
                 </li>
@@ -117,7 +116,7 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <a href="mailto:legal@moltaita.com" className="text-sm text-gray-600 hover:text-gray-900">
+                  <a href="mailto:moltaita@proton.me" className="text-sm text-gray-600 hover:text-gray-900">
                     Legal Inquiries
                   </a>
                 </li>
@@ -142,7 +141,7 @@ export function Footer() {
                 <Link href="/disclaimer" className="text-xs text-gray-500 hover:text-gray-700">
                   Disclaimers
                 </Link>
-                <a href="mailto:contact@moltaita.com" className="text-xs text-gray-500 hover:text-gray-700">
+                <a href="mailto:moltaita@proton.me" className="text-xs text-gray-500 hover:text-gray-700">
                   Contact
                 </a>
               </div>
@@ -165,10 +164,6 @@ export function Footer() {
               </p>
             </div>
 
-            {/* Jurisdiction Notice */}
-            <p className="mt-4 text-center text-xs text-gray-400">
-              Governed by the laws of British Columbia, Canada. Compliant with PIPA and PIPEDA.
-            </p>
           </div>
         </motion.div>
       </div>

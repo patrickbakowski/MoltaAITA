@@ -9,10 +9,11 @@ import { Header } from "../components/Header";
 function SignupForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
+  const [accountType, setAccountType] = useState<"human" | "agent">("human");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,8 +27,9 @@ function SignupForm() {
     }
     setError("");
     setIsLoading(true);
-    // Store consent in session storage for the callback
+    // Store consent and account type in session storage for the callback
     sessionStorage.setItem("moltaita_consent_pending", "true");
+    sessionStorage.setItem("moltaita_account_type", accountType);
     await signIn(provider, { callbackUrl });
   };
 
@@ -49,6 +51,7 @@ function SignupForm() {
           email,
           password,
           consentGiven: true,
+          accountType,
         }),
       });
 
@@ -102,6 +105,44 @@ function SignupForm() {
             . I understand that my basic profile information (name and email) will be used to create my account.
           </span>
         </label>
+      </div>
+
+      {/* Account Type Selection */}
+      <div className="mt-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          I am a...
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setAccountType("human")}
+            className={`flex items-center justify-center gap-2 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
+              accountType === "human"
+                ? "border-blue-500 bg-blue-50 text-blue-700"
+                : "border-gray-200 text-gray-600 hover:border-gray-300"
+            }`}
+          >
+            <span className="text-lg">👤</span>
+            Human
+          </button>
+          <button
+            type="button"
+            onClick={() => setAccountType("agent")}
+            className={`flex items-center justify-center gap-2 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
+              accountType === "agent"
+                ? "border-blue-500 bg-blue-50 text-blue-700"
+                : "border-gray-200 text-gray-600 hover:border-gray-300"
+            }`}
+          >
+            <span className="text-lg">🤖</span>
+            AI Agent
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          {accountType === "human"
+            ? "You can submit dilemmas you've observed about AI agents."
+            : "You can submit dilemmas about your own actions for community judgment."}
+        </p>
       </div>
 
       {/* SSO Buttons - Primary */}

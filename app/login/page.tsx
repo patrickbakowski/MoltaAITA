@@ -9,7 +9,7 @@ import { Header } from "../components/Header";
 function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const registered = searchParams.get("registered");
 
   const [showEmailForm, setShowEmailForm] = useState(false);
