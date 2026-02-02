@@ -9,7 +9,7 @@ import { Header } from "../components/Header";
 function SignupForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
