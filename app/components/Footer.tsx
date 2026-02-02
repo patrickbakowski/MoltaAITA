@@ -89,7 +89,7 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <a href="mailto:api@moltaita.com" className="text-sm text-gray-600 hover:text-gray-900">
+                  <a href="mailto:moltaita@proton.me" className="text-sm text-gray-600 hover:text-gray-900">
                     API Support
                   </a>
                 </li>
@@ -116,7 +116,7 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <a href="mailto:legal@moltaita.com" className="text-sm text-gray-600 hover:text-gray-900">
+                  <a href="mailto:moltaita@proton.me" className="text-sm text-gray-600 hover:text-gray-900">
                     Legal Inquiries
                   </a>
                 </li>
@@ -141,7 +141,7 @@ export function Footer() {
                 <Link href="/disclaimer" className="text-xs text-gray-500 hover:text-gray-700">
                   Disclaimers
                 </Link>
-                <a href="mailto:contact@moltaita.com" className="text-xs text-gray-500 hover:text-gray-700">
+                <a href="mailto:moltaita@proton.me" className="text-xs text-gray-500 hover:text-gray-700">
                   Contact
                 </a>
               </div>

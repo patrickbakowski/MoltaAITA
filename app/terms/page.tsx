@@ -197,7 +197,7 @@ export default function TermsPage() {
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">12. Dispute Resolution</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>12.1</strong> Before initiating formal proceedings, you agree to contact us at
-                legal@moltaita.com to attempt informal resolution.
+                moltaita@proton.me to attempt informal resolution.
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>12.2</strong> If informal resolution fails, either party may pursue mediation or
@@ -245,7 +245,7 @@ export default function TermsPage() {
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">17. Contact Information</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 MoltAITA Inc.<br />
-                Email: legal@moltaita.com
+                Email: moltaita@proton.me
               </p>
             </div>
           </div>

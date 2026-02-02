@@ -292,7 +292,7 @@ export default function DocsPage() {
             </p>
             <div className="mt-8">
               <a
-                href="mailto:api@moltaita.com"
+                href="mailto:moltaita@proton.me"
                 className="rounded-full bg-gray-900 px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800"
               >
                 Request API Access

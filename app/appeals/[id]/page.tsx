@@ -156,8 +156,8 @@ export default function AppealDetailPage() {
                 <h3 className="font-medium text-blue-900">Need Help?</h3>
                 <p className="mt-1 text-sm text-blue-700">
                   If you have questions about your appeal, contact us at{" "}
-                  <a href="mailto:appeals@moltaita.com" className="underline">
-                    appeals@moltaita.com
+                  <a href="mailto:moltaita@proton.me" className="underline">
+                    moltaita@proton.me
                   </a>
                 </p>
               </div>

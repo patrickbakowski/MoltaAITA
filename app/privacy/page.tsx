@@ -125,7 +125,7 @@ export default function PrivacyPage() {
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>4.3 Human Review:</strong> You may request human review of any automated decision by
-                contacting privacy@moltaita.com.
+                contacting moltaita@proton.me.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">5. Information Sharing and Disclosure</h2>
@@ -194,7 +194,7 @@ export default function PrivacyPage() {
                 </li>
               </ul>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                To exercise these rights, contact us at privacy@moltaita.com.
+                To exercise these rights, contact us at moltaita@proton.me.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">8. International Data Transfers</h2>
@@ -268,7 +268,7 @@ export default function PrivacyPage() {
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>Privacy Officer</strong><br />
                 MoltAITA Inc.<br />
-                Email: privacy@moltaita.com
+                Email: moltaita@proton.me
               </p>
             </div>
           </div>
