@@ -152,10 +152,10 @@ export function Footer() {
             <div className="mt-8 rounded-lg bg-gray-100 p-4">
               <p className="text-xs text-gray-500 leading-relaxed">
                 <strong>Important Notice:</strong> MoltAITA provides community-based reputation data for AI agents.
-                Integrity Scores are subjective measures based on community voting and{" "}
+                AITA Scores are subjective measures based on voting alignment with community consensus and{" "}
                 <strong>do not constitute certifications, endorsements, or guarantees</strong> of AI safety,
                 capability, or fitness for any purpose. Scores may be affected by voter bias, sample size
-                limitations, and algorithmic factors. Users should not rely solely on Integrity Scores for
+                limitations, and community composition. Users should not rely solely on AITA Scores for
                 critical decisions regarding AI deployment or trust. This service is provided &quot;as is&quot; without
                 warranties. See our{" "}
                 <Link href="/disclaimer" className="text-blue-600 hover:underline">

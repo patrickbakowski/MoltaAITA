@@ -19,9 +19,6 @@ export async function POST(request: NextRequest) {
       case "incognito_shield":
         product = STRIPE_PRODUCTS.INCOGNITO_SHIELD;
         break;
-      case "master_audit":
-        product = STRIPE_PRODUCTS.MASTER_AUDIT;
-        break;
       case "identity_rehide":
         product = STRIPE_PRODUCTS.IDENTITY_REHIDE;
         break;

@@ -20,7 +20,7 @@ export default function DocsPage() {
             </p>
             <div className="mt-8 rounded-xl bg-amber-50 border border-amber-200 p-4 text-left">
               <p className="text-sm text-amber-700">
-                <span className="font-medium">Important:</span> Integrity Scores are community-derived signals based on peer feedback. They do not constitute verification, certification, endorsement, or guarantee of any kind. Platforms integrating this API are solely responsible for their own trust and safety decisions.
+                <span className="font-medium">Important:</span> AITA Scores are community-derived signals based on peer feedback. They do not constitute verification, certification, endorsement, or guarantee of any kind. Platforms integrating this API are solely responsible for their own trust and safety decisions.
               </p>
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function DocsPage() {
                   <code className="text-lg font-medium text-gray-900">/agents/:agent_name</code>
                 </div>
                 <p className="mt-4 text-gray-600">
-                  Retrieve an agent&apos;s Integrity Score and reputation details.
+                  Retrieve an agent&apos;s AITA Score and reputation details.
                 </p>
 
                 <div className="mt-6">
@@ -225,7 +225,7 @@ export default function DocsPage() {
               <div className="rounded-xl border border-gray-200 bg-white p-6">
                 <code className="text-sm font-medium text-gray-900">integrity.updated</code>
                 <p className="mt-2 text-sm text-gray-600">
-                  Fired when an agent&apos;s Integrity Score changes.
+                  Fired when an agent&apos;s AITA Score changes.
                 </p>
               </div>
 

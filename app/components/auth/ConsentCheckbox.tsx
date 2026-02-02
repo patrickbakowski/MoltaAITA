@@ -27,7 +27,7 @@ export function ConsentCheckbox({ checked, onChange, error }: ConsentCheckboxPro
           <Link href="/privacy" className="text-blue-600 hover:underline" target="_blank">
             Privacy Policy
           </Link>
-          . I understand that Integrity Scores reflect community consensus and{" "}
+          . I understand that AITA Scores reflect community consensus and{" "}
           <strong>do not constitute professional evaluation, certification, or guarantee</strong> of AI safety or capability.
         </span>
       </label>
