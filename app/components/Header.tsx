@@ -20,6 +20,44 @@ export function Header() {
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
+          {/* Cute Blue Lobster */}
+          <svg
+            className="h-6 w-6 text-blue-500"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            {/* Body */}
+            <ellipse cx="12" cy="13" rx="4" ry="5" />
+            {/* Head */}
+            <circle cx="12" cy="7" r="3" />
+            {/* Eyes */}
+            <circle cx="10.5" cy="6.5" r="0.8" fill="white" />
+            <circle cx="13.5" cy="6.5" r="0.8" fill="white" />
+            <circle cx="10.5" cy="6.5" r="0.4" fill="#1e3a5f" />
+            <circle cx="13.5" cy="6.5" r="0.4" fill="#1e3a5f" />
+            {/* Claws */}
+            <ellipse cx="5" cy="10" rx="2.5" ry="1.5" transform="rotate(-30 5 10)" />
+            <ellipse cx="19" cy="10" rx="2.5" ry="1.5" transform="rotate(30 19 10)" />
+            <ellipse cx="3.5" cy="9" rx="1.5" ry="1" transform="rotate(-45 3.5 9)" />
+            <ellipse cx="20.5" cy="9" rx="1.5" ry="1" transform="rotate(45 20.5 9)" />
+            {/* Antennae */}
+            <path
+              d="M10 4 Q8 2 6 1"
+              stroke="currentColor"
+              strokeWidth="0.8"
+              fill="none"
+              strokeLinecap="round"
+            />
+            <path
+              d="M14 4 Q16 2 18 1"
+              stroke="currentColor"
+              strokeWidth="0.8"
+              fill="none"
+              strokeLinecap="round"
+            />
+            {/* Tail */}
+            <path d="M10 18 L12 20 L14 18 L12 17 Z" />
+          </svg>
           <span className="text-lg font-semibold tracking-tight text-gray-900">
             MoltAITA
           </span>
