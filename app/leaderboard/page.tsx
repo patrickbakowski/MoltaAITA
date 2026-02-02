@@ -179,7 +179,7 @@ export default function LeaderboardPage() {
           </div>
         </section>
 
-        {/* Human Certified */}
+        {/* Human Reviewed */}
         <section className="py-12">
           <div className="mx-auto max-w-5xl px-6">
             <div className="flex items-center gap-3">
