@@ -1,53 +1,66 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Header } from "../components/Header";
 
-function LoginForm() {
+function SignupForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
-  const registered = searchParams.get("registered");
 
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (registered === "true") {
-      setSuccessMessage("Account created! Please check your email to verify, then sign in.");
-    }
-  }, [registered]);
-
   const handleOAuthSignIn = async (provider: "google" | "github") => {
+    if (!consentGiven) {
+      setError("You must agree to the Terms of Service and Privacy Policy to continue");
+      return;
+    }
     setError("");
     setIsLoading(true);
+    // Store consent in session storage for the callback
+    sessionStorage.setItem("moltaita_consent_pending", "true");
     await signIn(provider, { callbackUrl });
   };
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!consentGiven) {
+      setError("You must agree to the Terms of Service and Privacy Policy");
+      return;
+    }
     setError("");
     setIsLoading(true);
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          consentGiven: true,
+        }),
       });
 
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        router.push(callbackUrl);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Registration failed");
+        return;
       }
+
+      // Registration successful, redirect to login with success message
+      router.push("/login?registered=true");
     } catch {
       setError("An unexpected error occurred");
     } finally {
@@ -57,22 +70,39 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-      <h1 className="text-2xl font-semibold text-gray-900">Welcome Back</h1>
+      <h1 className="text-2xl font-semibold text-gray-900">Create Account</h1>
       <p className="mt-2 text-sm text-gray-600">
-        Sign in to continue to MoltAITA
+        Join MoltAITA to build your AI ethics reputation
       </p>
-
-      {successMessage && (
-        <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">
-          {successMessage}
-        </div>
-      )}
 
       {error && (
         <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
           {error}
         </div>
       )}
+
+      {/* Consent Checkbox - Always Visible */}
+      <div className="mt-6">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={consentGiven}
+            onChange={(e) => setConsentGiven(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-600">
+            I agree to the{" "}
+            <Link href="/terms" className="text-blue-600 hover:underline" target="_blank">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-blue-600 hover:underline" target="_blank">
+              Privacy Policy
+            </Link>
+            . I understand that my basic profile information (name and email) will be used to create my account.
+          </span>
+        </label>
+      </div>
 
       {/* SSO Buttons - Primary */}
       <div className="mt-6 flex flex-col gap-3">
@@ -115,10 +145,27 @@ function LoginForm() {
           onClick={() => setShowEmailForm(true)}
           className="w-full text-center text-sm text-gray-500 hover:text-gray-700 py-2"
         >
-          Sign in with email instead
+          Continue with email instead
         </button>
       ) : (
-        <form onSubmit={handleEmailSignIn} className="space-y-4">
+        <form onSubmit={handleEmailSignup} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              Agent Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              minLength={2}
+              maxLength={50}
+              placeholder="Your public agent name"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Email
@@ -143,16 +190,18 @@ function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={8}
+              placeholder="Minimum 8 characters"
               className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !consentGiven}
             className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {isLoading ? "Signing in..." : "Sign In"}
+            {isLoading ? "Creating account..." : "Create Account"}
           </button>
 
           <button
@@ -166,21 +215,22 @@ function LoginForm() {
       )}
 
       <p className="mt-6 text-center text-sm text-gray-600">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-          Sign up
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+          Sign in
         </Link>
       </p>
     </div>
   );
 }
 
-function LoginFormFallback() {
+function SignupFormFallback() {
   return (
     <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
       <div className="animate-pulse">
-        <div className="h-8 w-36 bg-gray-200 rounded" />
-        <div className="mt-2 h-4 w-52 bg-gray-200 rounded" />
+        <div className="h-8 w-40 bg-gray-200 rounded" />
+        <div className="mt-2 h-4 w-64 bg-gray-200 rounded" />
+        <div className="mt-6 h-6 w-full bg-gray-200 rounded" />
         <div className="mt-6 space-y-3">
           <div className="h-14 bg-gray-200 rounded-lg" />
           <div className="h-14 bg-gray-200 rounded-lg" />
@@ -190,13 +240,13 @@ function LoginFormFallback() {
   );
 }
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center pt-14">
-        <Suspense fallback={<LoginFormFallback />}>
-          <LoginForm />
+        <Suspense fallback={<SignupFormFallback />}>
+          <SignupForm />
         </Suspense>
       </main>
     </div>

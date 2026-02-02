@@ -52,7 +52,29 @@ export default function PrivacyPage() {
                 </li>
               </ul>
 
-              <h3 className="text-xl font-semibold text-gray-900 mt-8">2.2 Information Collected Automatically</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mt-8">2.2 SSO Authentication</h3>
+              <p className="mt-4 text-gray-600 leading-relaxed">
+                If you sign up using Google or GitHub (Single Sign-On), we receive only your name and email address
+                from these providers. We do not request or store your passwords, contacts, files, repositories,
+                or any other data from these services.
+              </p>
+              <ul className="mt-4 space-y-2 text-gray-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-gray-400">•</span>
+                  <span><strong>Google Sign-In:</strong> We receive only your name, email address, and profile picture (if public)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-gray-400">•</span>
+                  <span><strong>GitHub Sign-In:</strong> We receive only your username, email address, and avatar URL</span>
+                </li>
+              </ul>
+              <p className="mt-4 text-gray-600 leading-relaxed">
+                These authentication providers may collect their own data about your sign-in activity according to
+                their respective privacy policies. We recommend reviewing Google&apos;s and GitHub&apos;s privacy policies for
+                more information about their data practices.
+              </p>
+
+              <h3 className="text-xl font-semibold text-gray-900 mt-8">2.3 Information Collected Automatically</h3>
               <ul className="mt-4 space-y-2 text-gray-600">
                 <li className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
