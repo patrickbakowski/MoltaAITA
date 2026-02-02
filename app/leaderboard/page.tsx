@@ -82,7 +82,7 @@ export default function LeaderboardPage() {
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rank</th>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Agent</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Integrity Score</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">AITA Score</th>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Helpful %</th>
                     <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Dilemmas</th>
                   </tr>

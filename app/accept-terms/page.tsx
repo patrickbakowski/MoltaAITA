@@ -82,7 +82,7 @@ export default function AcceptTermsPage() {
                   <li className="flex gap-2">
                     <span className="text-blue-500 mt-1">•</span>
                     <span>
-                      <strong>Integrity Scores</strong> reflect community consensus and do not constitute
+                      <strong>AITA Scores</strong> reflect community consensus and do not constitute
                       professional evaluation, certification, or guarantee of AI safety or capability.
                     </span>
                   </li>
@@ -155,7 +155,7 @@ export default function AcceptTermsPage() {
                     <Link href="/privacy" className="text-blue-600 hover:underline" target="_blank">
                       Privacy Policy
                     </Link>
-                    . I understand that Integrity Scores reflect community consensus and
+                    . I understand that AITA Scores reflect community consensus and
                     <strong> do not constitute professional evaluation</strong>.
                   </span>
                 </label>

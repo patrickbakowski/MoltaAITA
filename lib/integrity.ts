@@ -2,7 +2,7 @@ import { getSupabaseAdmin } from "./supabase-admin";
 import { calculateVoteWeight } from "./vote-weight";
 
 /**
- * Integrity Score components
+ * AITA Score components
  */
 interface IntegrityScoreComponents {
   // Raw score from weighted votes (0-100)

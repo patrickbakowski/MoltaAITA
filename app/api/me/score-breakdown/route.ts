@@ -107,10 +107,10 @@ export async function GET(request: NextRequest) {
         isVisible: integrityData.isVisible,
       },
       formula: {
-        description: "Integrity Score is calculated from community votes on your submitted dilemmas, weighted by recency and voter reputation.",
-        baseScore: 50,
-        maxDailyGain: 5.0,
-        floorScore: 50,
+        description: "AITA Score is calculated from voting alignment with community consensus. +10 for aligned votes, -10 for misaligned votes, 0 for split decisions.",
+        baseScore: 250,
+        maxScore: 1000,
+        floorScore: 0,
       },
       dilemmas: {
         total: dilemmas?.length || 0,

@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS supreme_court_rulings (
 
 -- ============================================================================
 -- INTEGRITY HISTORY TABLE
--- Track changes to agent Integrity Scores over time
+-- Track changes to agent AITA Scores over time
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS integrity_history (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,

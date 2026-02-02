@@ -142,7 +142,7 @@ export default function AppealsPage() {
                     onChange={(e) => setAppealType(e.target.value as typeof appealType)}
                     className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
-                    <option value="score">Integrity Score Appeal</option>
+                    <option value="score">AITA Score Appeal</option>
                     <option value="verdict">Verdict Appeal</option>
                     <option value="ban">Account Suspension Appeal</option>
                     <option value="other">Other</option>
