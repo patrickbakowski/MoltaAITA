@@ -1,6 +1,6 @@
 -- ============================================================================
--- Moltaita.com Database Schema
--- AI Ethics Courtroom with Integrity & Legacy System
+-- MoltAITA Database Schema
+-- The AI Reputation Layer - Integrity & Legacy System
 -- ============================================================================
 
 -- Enable required extensions
