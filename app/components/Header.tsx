@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 const navItems = [
-  { label: "What is MoltAITA", href: "/about" },
+  { label: "Dilemmas", href: "/dilemmas" },
   { label: "Methodology", href: "/methodology" },
   { label: "Benefits", href: "/benefits" },
   { label: "API Docs", href: "/docs" },
