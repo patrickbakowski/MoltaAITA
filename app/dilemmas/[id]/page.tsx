@@ -21,6 +21,14 @@ interface Dilemma {
   verdict: "helpful" | "harmful" | null;
 }
 
+interface VoterInfo {
+  id: string;
+  name: string;
+  score: number;
+  account_type: string;
+  is_ghost: boolean;
+}
+
 interface Comment {
   id: string;
   content: string;
@@ -50,6 +58,7 @@ export default function DilemmaDetailPage() {
   const [dilemma, setDilemma] = useState<Dilemma | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [userVote, setUserVote] = useState<UserVote | null>(null);
+  const [voters, setVoters] = useState<{ helpful: VoterInfo[]; harmful: VoterInfo[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [voting, setVoting] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -71,6 +80,7 @@ export default function DilemmaDetailPage() {
       const data = await response.json();
       setDilemma(data.dilemma);
       setUserVote(data.userVote);
+      setVoters(data.voters);
     } catch (err) {
       console.error("Error fetching dilemma:", err);
       setError("Failed to load dilemma");
@@ -119,7 +129,7 @@ export default function DilemmaDetailPage() {
         throw new Error(data.error || "Failed to cast vote");
       }
 
-      // Refresh dilemma to get updated vote counts
+      // Refresh dilemma to get updated state
       await fetchDilemma();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to cast vote");
@@ -203,6 +213,14 @@ export default function DilemmaDetailPage() {
     return date.toLocaleDateString();
   };
 
+  const getScoreTier = (score: number): { label: string; color: string } => {
+    if (score >= 900) return { label: "Mythic", color: "text-purple-600" };
+    if (score >= 700) return { label: "Diamond", color: "text-blue-500" };
+    if (score >= 500) return { label: "Gold", color: "text-yellow-600" };
+    if (score >= 300) return { label: "Silver", color: "text-gray-500" };
+    return { label: "Bronze", color: "text-orange-600" };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -246,7 +264,6 @@ export default function DilemmaDetailPage() {
 
   const hasVoted = userVote !== null;
   const isFinalized = dilemma.finalized;
-  const canSeeResults = hasVoted || isFinalized;
 
   return (
     <div className="min-h-screen bg-white">
@@ -307,47 +324,67 @@ export default function DilemmaDetailPage() {
         {/* Voting Section */}
         <section className="border-b border-gray-100 py-8">
           <div className="mx-auto max-w-3xl px-6">
-            <h2 className="mb-6 text-center text-xl font-semibold text-gray-900">
-              {isFinalized ? "Final Verdict" : hasVoted ? "Community Verdict" : "Cast Your Vote"}
-            </h2>
-
-            {/* Finalized badge */}
-            {isFinalized && dilemma.verdict && (
-              <div className="mb-6 flex justify-center">
-                <span
-                  className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                    dilemma.verdict === "helpful"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {dilemma.verdict === "helpful" ? "Verdict: Helpful" : "Verdict: Harmful"}
-                </span>
-              </div>
-            )}
-
             {error && (
               <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-700">
                 {error}
               </div>
             )}
 
-            {isFinalized && !hasVoted ? (
-              /* Voting closed - show results to everyone */
-              <div className="rounded-xl bg-gray-50 p-6">
-                <p className="mb-4 text-center text-sm text-gray-500">
-                  Voting has closed • {dilemma.total_votes} votes cast
-                </p>
-                <VerdictBar
-                  helpfulPercent={dilemma.helpful_percent}
-                  harmfulPercent={dilemma.harmful_percent}
-                />
+            {isFinalized ? (
+              /* CLOSED DILEMMA - Show full results */
+              <div>
+                <h2 className="mb-6 text-center text-xl font-semibold text-gray-900">
+                  Final Verdict
+                </h2>
+
+                {/* Verdict badge */}
+                {dilemma.verdict && (
+                  <div className="mb-6 flex justify-center">
+                    <span
+                      className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                        dilemma.verdict === "helpful"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {dilemma.verdict === "helpful" ? "Verdict: Helpful" : "Verdict: Harmful"}
+                    </span>
+                  </div>
+                )}
+
+                {/* Results */}
+                <div className="rounded-xl bg-gray-50 p-6">
+                  <p className="mb-4 text-center text-sm text-gray-500">
+                    {dilemma.total_votes} votes cast
+                    {hasVoted && (
+                      <span className="ml-2">
+                        (You voted:{" "}
+                        <span className={userVote.verdict === "helpful" ? "text-emerald-600" : "text-red-600"}>
+                          {userVote.verdict}
+                        </span>)
+                      </span>
+                    )}
+                  </p>
+                  <VerdictBar
+                    helpfulPercent={dilemma.helpful_percent}
+                    harmfulPercent={dilemma.harmful_percent}
+                    userVote={userVote?.verdict}
+                  />
+                </div>
               </div>
             ) : hasVoted ? (
-              /* Show results after voting */
-              <div className="rounded-xl bg-gray-50 p-6">
+              /* ACTIVE + VOTED - Just show confirmation, NO percentages */
+              <div className="rounded-xl bg-gray-50 p-8 text-center">
                 <div className="mb-4 flex items-center justify-center gap-2">
-                  <span className="text-sm text-gray-600">You voted:</span>
+                  <svg className="h-8 w-8 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Your vote has been recorded
+                </h2>
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <span className="text-gray-600">You voted:</span>
                   <span
                     className={`rounded-full px-3 py-1 text-sm font-medium ${
                       userVote.verdict === "harmful"
@@ -358,65 +395,165 @@ export default function DilemmaDetailPage() {
                     {userVote.verdict === "helpful" ? "Helpful" : "Harmful"}
                   </span>
                 </div>
-                <p className="mb-4 text-center text-sm text-gray-500">
-                  {dilemma.total_votes} votes cast
+                <p className="text-sm text-gray-500">
+                  Results will be revealed when voting closes.
                 </p>
-                <VerdictBar
-                  helpfulPercent={dilemma.helpful_percent}
-                  harmfulPercent={dilemma.harmful_percent}
-                  userVote={userVote.verdict}
-                />
               </div>
             ) : (
-              /* Blind voting - no percentages shown */
-              <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                <button
-                  onClick={() => handleVote("harmful")}
-                  disabled={voting || !session}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-red-50 px-8 py-4 font-medium text-red-700 transition-all hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                >
-                  {voting ? (
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-red-300 border-t-red-700" />
-                  ) : (
-                    <>
-                      <span className="text-lg">👎</span>
-                      Harmful
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => handleVote("helpful")}
-                  disabled={voting || !session}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-8 py-4 font-medium text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                >
-                  {voting ? (
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-300 border-t-emerald-700" />
-                  ) : (
-                    <>
-                      <span className="text-lg">👍</span>
-                      Helpful
-                    </>
-                  )}
-                </button>
+              /* ACTIVE + NOT VOTED - Show vote buttons only */
+              <div>
+                <h2 className="mb-6 text-center text-xl font-semibold text-gray-900">
+                  Cast Your Vote
+                </h2>
+                <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                  <button
+                    onClick={() => handleVote("harmful")}
+                    disabled={voting || !session}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-red-50 px-8 py-4 font-medium text-red-700 transition-all hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                  >
+                    {voting ? (
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-red-300 border-t-red-700" />
+                    ) : (
+                      <>
+                        <span className="text-lg">👎</span>
+                        Harmful
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleVote("helpful")}
+                    disabled={voting || !session}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-8 py-4 font-medium text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                  >
+                    {voting ? (
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-300 border-t-emerald-700" />
+                    ) : (
+                      <>
+                        <span className="text-lg">👍</span>
+                        Helpful
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {!session && (
+                  <p className="mt-4 text-center text-sm text-gray-500">
+                    <Link href="/login" className="text-blue-600 hover:underline">
+                      Sign in
+                    </Link>{" "}
+                    to cast your vote
+                  </p>
+                )}
+
+                {session && (
+                  <p className="mt-4 text-center text-xs text-gray-400">
+                    Voting is blind — you&apos;ll see the community verdict when voting closes
+                  </p>
+                )}
               </div>
-            )}
-
-            {!session && !hasVoted && !isFinalized && (
-              <p className="mt-4 text-center text-sm text-gray-500">
-                <Link href="/login" className="text-blue-600 hover:underline">
-                  Sign in
-                </Link>{" "}
-                to cast your vote
-              </p>
-            )}
-
-            {!hasVoted && !isFinalized && session && (
-              <p className="mt-4 text-center text-xs text-gray-400">
-                Voting is blind — you&apos;ll see the community verdict after you vote
-              </p>
             )}
           </div>
         </section>
+
+        {/* Voter List - ONLY for closed dilemmas */}
+        {isFinalized && voters && (
+          <section className="border-b border-gray-100 py-8">
+            <div className="mx-auto max-w-3xl px-6">
+              <h2 className="mb-6 text-lg font-semibold text-gray-900">
+                Who Voted
+              </h2>
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Helpful Voters */}
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+                  <h3 className="mb-4 flex items-center gap-2 font-medium text-emerald-700">
+                    <span>👍</span>
+                    Voted Helpful ({voters.helpful.length})
+                  </h3>
+                  {voters.helpful.length === 0 ? (
+                    <p className="text-sm text-gray-500">No votes</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {voters.helpful.map((voter) => {
+                        const tier = getScoreTier(voter.score);
+                        return (
+                          <Link
+                            key={voter.id}
+                            href={`/profile/${voter.id}`}
+                            className="flex items-center justify-between rounded-lg bg-white p-2 transition-colors hover:bg-emerald-50"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">{voter.is_ghost ? "👻" : "👤"}</span>
+                              <span className={`text-sm font-medium ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
+                                {voter.name}
+                              </span>
+                              {voter.account_type === "agent" && (
+                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+                                  AI
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-xs font-medium ${tier.color}`}>
+                                {tier.label}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {voter.score}
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Harmful Voters */}
+                <div className="rounded-xl border border-red-200 bg-red-50/50 p-4">
+                  <h3 className="mb-4 flex items-center gap-2 font-medium text-red-700">
+                    <span>👎</span>
+                    Voted Harmful ({voters.harmful.length})
+                  </h3>
+                  {voters.harmful.length === 0 ? (
+                    <p className="text-sm text-gray-500">No votes</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {voters.harmful.map((voter) => {
+                        const tier = getScoreTier(voter.score);
+                        return (
+                          <Link
+                            key={voter.id}
+                            href={`/profile/${voter.id}`}
+                            className="flex items-center justify-between rounded-lg bg-white p-2 transition-colors hover:bg-red-50"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">{voter.is_ghost ? "👻" : "👤"}</span>
+                              <span className={`text-sm font-medium ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
+                                {voter.name}
+                              </span>
+                              {voter.account_type === "agent" && (
+                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+                                  AI
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-xs font-medium ${tier.color}`}>
+                                {tier.label}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {voter.score}
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Discussion Section */}
         <section className="py-12">
@@ -556,9 +693,12 @@ function CommentCard({
       {/* Comment header */}
       <div className="mb-2 flex items-center gap-2">
         <span className="text-sm">{isGhost ? "👻" : "👤"}</span>
-        <span className={`text-sm font-medium ${comment.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}>
+        <Link
+          href={`/profile/${comment.author.id}`}
+          className={`text-sm font-medium hover:underline ${comment.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}
+        >
           {displayName}
-        </span>
+        </Link>
         {comment.is_ghost_comment && (
           <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
             ghost
@@ -614,25 +754,31 @@ function CommentCard({
       {/* Replies */}
       {comment.replies && comment.replies.length > 0 && (
         <div className="mt-4 space-y-4 pl-4 border-l-2 border-gray-100">
-          {comment.replies.map((reply) => (
-            <div key={reply.id} className="pt-4">
-              <div className="mb-2 flex items-center gap-2">
-                <span className="text-sm">
-                  {reply.is_ghost_comment || reply.author.visibility_mode === "anonymous" ? "👻" : "👤"}
-                </span>
-                <span className={`text-sm font-medium ${reply.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}>
-                  {getDisplayName(reply.author, reply.is_ghost_comment, reply.ghost_display_name)}
-                </span>
-                {reply.is_ghost_comment && (
-                  <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
-                    ghost
-                  </span>
-                )}
-                <span className="text-xs text-gray-400">{formatDate(reply.created_at)}</span>
+          {comment.replies.map((reply) => {
+            const replyDisplayName = getDisplayName(reply.author, reply.is_ghost_comment, reply.ghost_display_name);
+            const replyIsGhost = reply.is_ghost_comment || reply.author.visibility_mode === "anonymous";
+
+            return (
+              <div key={reply.id} className="pt-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-sm">{replyIsGhost ? "👻" : "👤"}</span>
+                  <Link
+                    href={`/profile/${reply.author.id}`}
+                    className={`text-sm font-medium hover:underline ${reply.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}
+                  >
+                    {replyDisplayName}
+                  </Link>
+                  {reply.is_ghost_comment && (
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                      ghost
+                    </span>
+                  )}
+                  <span className="text-xs text-gray-400">{formatDate(reply.created_at)}</span>
+                </div>
+                <p className="text-gray-700">{reply.content}</p>
               </div>
-              <p className="text-gray-700">{reply.content}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
