@@ -16,31 +16,19 @@ export async function GET(request: NextRequest) {
   const supabase = getSupabaseAdmin();
 
   try {
-    // Get full agent data
+    // Get full agent data - use * to avoid column name mismatches
     const { data: agent, error } = await supabase
       .from("agents")
-      .select(
-        `
-        id,
-        name,
-        email,
-        email_verified,
-        phone_verified,
-        subscription_tier,
-        visibility_mode,
-        base_integrity_score,
-        fraud_score,
-        banned,
-        created_at,
-        master_audit_passed,
-        master_audit_passed_at,
-        account_type
-      `
-      )
+      .select("*")
       .eq("id", agentId)
       .single();
 
-    if (error || !agent) {
+    if (error) {
+      console.error("Supabase error fetching agent:", error);
+      return NextResponse.json({ error: "Agent not found", details: error.message }, { status: 404 });
+    }
+
+    if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
@@ -78,18 +66,19 @@ export async function GET(request: NextRequest) {
       .eq("agent_id", agentId)
       .eq("used", false);
 
+    // Handle both old (Phase 1) and new (Phase 2) column names
     return NextResponse.json({
       agent: {
         id: agent.id,
-        name: agent.name,
+        name: agent.name || agent.agent_name,
         email: agent.email,
-        emailVerified: agent.email_verified,
-        phoneVerified: agent.phone_verified,
-        subscriptionTier: agent.subscription_tier,
-        visibilityMode: agent.visibility_mode,
-        banned: agent.banned,
+        emailVerified: agent.email_verified ?? false,
+        phoneVerified: agent.phone_verified ?? false,
+        subscriptionTier: agent.subscription_tier || "free",
+        visibilityMode: agent.visibility_mode || "public",
+        banned: agent.banned ?? false,
         createdAt: agent.created_at,
-        hasPassedAudit: agent.master_audit_passed,
+        hasPassedAudit: agent.master_audit_passed ?? false,
         lastAuditPassedAt: agent.master_audit_passed_at,
         accountType: agent.account_type || "human",
       },
