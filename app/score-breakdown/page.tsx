@@ -231,7 +231,7 @@ export default function ScoreBreakdownPage() {
           {/* Learn More */}
           <div className="mt-8 text-center">
             <Link href="/methodology" className="text-sm text-blue-600 hover:underline">
-              Learn more about our scoring methodology →
+              Learn more about how AITA Scores work
             </Link>
           </div>
         </div>

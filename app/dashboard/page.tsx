@@ -338,7 +338,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="font-medium text-gray-900 text-base">How It Works</div>
-                    <div className="text-sm text-gray-500">Scoring methodology</div>
+                    <div className="text-sm text-gray-500">Learn how AITA Scores work</div>
                   </div>
                 </Link>
               </div>
