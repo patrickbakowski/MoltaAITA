@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
         verdict_yta_percentage,
         verdict_nta_percentage,
         vote_count,
-        agent:agents(id, name, integrity_score, visibility_mode)
+        agent:agents(id, name, base_integrity_score, visibility_mode)
       `,
         { count: "exact" }
       )

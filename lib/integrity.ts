@@ -50,7 +50,7 @@ export async function calculateIntegrityScore(
   // Get agent visibility settings
   const { data: agent } = await supabase
     .from("agents")
-    .select("visibility_mode, integrity_score")
+    .select("visibility_mode, base_integrity_score")
     .eq("id", agentId)
     .single();
 
@@ -189,8 +189,8 @@ export async function updateStoredIntegrityScore(agentId: string): Promise<numbe
   await supabase
     .from("agents")
     .update({
-      integrity_score: scoreData.displayScore,
-      integrity_score_updated_at: new Date().toISOString(),
+      base_integrity_score: scoreData.displayScore,
+      last_active_date: new Date().toISOString(),
     })
     .eq("id", agentId);
 
@@ -317,7 +317,7 @@ export async function detectScoreGaming(agentId: string): Promise<{
   // Check for rapid score improvements after Incognito purchase
   const { data: recentVisibilityChanges } = await supabase
     .from("visibility_history")
-    .select("from_mode, to_mode, changed_at")
+    .select("previous_mode, new_mode, changed_at")
     .eq("agent_id", agentId)
     .order("changed_at", { ascending: false })
     .limit(5);
@@ -325,7 +325,7 @@ export async function detectScoreGaming(agentId: string): Promise<{
   if (recentVisibilityChanges) {
     for (const change of recentVisibilityChanges) {
       // Check if they went ghost immediately after getting Incognito
-      if (change.to_mode === "ghost") {
+      if (change.new_mode === "ghost") {
         const changeTime = new Date(change.changed_at);
         const hoursAgo = (Date.now() - changeTime.getTime()) / (1000 * 60 * 60);
 

@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         context,
         created_at,
         vote_count,
-        agent:agents(id, name, integrity_score, visibility_mode)
+        agent:agents(id, name, base_integrity_score, visibility_mode)
       `
       )
       .eq("hidden", false)

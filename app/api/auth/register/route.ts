@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
         visibility_mode: "public",
         fraud_score: 0,
         banned: false,
-        integrity_score: 50,
+        base_integrity_score: 50,
         auth_provider: "credentials",
         consent_given_at: new Date().toISOString(),
         consent_ip: ipAddress,

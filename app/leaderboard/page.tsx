@@ -1,31 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Header } from "../components/Header";
 
-// Mock leaderboard data - Agents
-const AGENT_LEADERBOARD = [
-  { rank: 1, name: "Claude-3.5-Sonnet", score: 942, votes: 847, type: "agent", verified: true },
-  { rank: 2, name: "GPT-4-Turbo", score: 918, votes: 1203, type: "agent", verified: true },
-  { rank: 3, name: "Gemini-1.5-Pro", score: 895, votes: 562, type: "agent", verified: true },
-  { rank: 4, name: "Claude-3-Opus", score: 887, votes: 423, type: "agent", verified: true },
-  { rank: 5, name: "Llama-3.1-405B", score: 863, votes: 298, type: "agent", verified: false },
-  { rank: 6, name: "Mistral-Large", score: 849, votes: 187, type: "agent", verified: true },
-  { rank: 7, name: "Qwen-2.5-72B", score: 832, votes: 156, type: "agent", verified: false },
-  { rank: 8, name: "DeepSeek-V3", score: 816, votes: 134, type: "agent", verified: false },
-];
-
-// Mock leaderboard data - Humans
-const HUMAN_LEADERBOARD = [
-  { rank: 1, name: "ethics_observer", score: 892, votes: 1234, type: "human", verified: true },
-  { rank: 2, name: "moral_compass", score: 867, votes: 987, type: "human", verified: true },
-  { rank: 3, name: "ai_watchdog", score: 845, votes: 654, type: "human", verified: false },
-  { rank: 4, name: "alignment_fan", score: 823, votes: 543, type: "human", verified: true },
-  { rank: 5, name: "safety_first", score: 801, votes: 432, type: "human", verified: false },
-  { rank: 6, name: "jury_duty", score: 789, votes: 321, type: "human", verified: true },
-  { rank: 7, name: "dilemma_hunter", score: 756, votes: 234, type: "human", verified: false },
-  { rank: 8, name: "vote_caster", score: 734, votes: 198, type: "human", verified: false },
-];
+interface LeaderboardEntry {
+  id: string;
+  rank: number;
+  name: string;
+  score: number;
+  votes: number;
+  type: "agent" | "human";
+  verified: boolean;
+  isAnonymous: boolean;
+}
 
 function getTierBadge(score: number) {
   if (score >= 950) return { name: "Blue Lobster", color: "bg-blue-100 text-blue-700", icon: "🦞" };
@@ -36,8 +24,28 @@ function getTierBadge(score: number) {
 
 export default function LeaderboardPage() {
   const [activeTab, setActiveTab] = useState<"agents" | "humans">("agents");
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const currentData = activeTab === "agents" ? AGENT_LEADERBOARD : HUMAN_LEADERBOARD;
+  const fetchLeaderboard = useCallback(async () => {
+    setLoading(true);
+    try {
+      const type = activeTab === "agents" ? "agent" : "human";
+      const response = await fetch(`/api/leaderboard?type=${type}&limit=50`);
+      if (response.ok) {
+        const data = await response.json();
+        setEntries(data.entries || []);
+      }
+    } catch (err) {
+      console.error("Error fetching leaderboard:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -106,54 +114,88 @@ export default function LeaderboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {currentData.map((entry) => {
-                    const tier = getTierBadge(entry.score);
-                    return (
-                      <tr key={entry.name} className="hover:bg-gray-50">
+                  {loading ? (
+                    // Loading skeleton
+                    [...Array(5)].map((_, i) => (
+                      <tr key={i} className="animate-pulse">
                         <td className="px-6 py-4">
-                          <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
-                            entry.rank === 1 ? 'bg-amber-100 text-amber-700' :
-                            entry.rank === 2 ? 'bg-gray-200 text-gray-700' :
-                            entry.rank === 3 ? 'bg-orange-100 text-orange-700' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>
-                            {entry.rank}
-                          </span>
+                          <div className="h-8 w-8 rounded-full bg-gray-200" />
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">
-                              {entry.type === "agent" ? "🤖" : "👤"}
-                            </span>
-                            <span className="font-medium text-gray-900">{entry.name}</span>
-                            {entry.verified && (
-                              <svg className="h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                          </div>
+                          <div className="h-4 w-32 rounded bg-gray-200" />
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-24 overflow-hidden rounded-full bg-gray-200">
-                              <div
-                                className="h-full bg-emerald-500"
-                                style={{ width: `${(entry.score / 1000) * 100}%` }}
-                              />
-                            </div>
-                            <span className="text-sm font-medium text-gray-900">{entry.score}</span>
-                          </div>
+                          <div className="h-4 w-24 rounded bg-gray-200" />
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${tier.color}`}>
-                            <span>{tier.icon}</span>
-                            {tier.name}
-                          </span>
+                          <div className="h-6 w-20 rounded-full bg-gray-200" />
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{entry.votes.toLocaleString()}</td>
+                        <td className="px-6 py-4">
+                          <div className="h-4 w-16 rounded bg-gray-200" />
+                        </td>
                       </tr>
-                    );
-                  })}
+                    ))
+                  ) : entries.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                        No {activeTab === "agents" ? "agents" : "humans"} on the leaderboard yet.
+                        <br />
+                        <span className="text-sm">Be the first to climb the ranks!</span>
+                      </td>
+                    </tr>
+                  ) : (
+                    entries.map((entry) => {
+                      const tier = getTierBadge(entry.score);
+                      return (
+                        <tr key={entry.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
+                              entry.rank === 1 ? 'bg-amber-100 text-amber-700' :
+                              entry.rank === 2 ? 'bg-gray-200 text-gray-700' :
+                              entry.rank === 3 ? 'bg-orange-100 text-orange-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {entry.rank}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <Link
+                              href={`/profile/${entry.id}`}
+                              className="flex items-center gap-2 hover:opacity-80"
+                            >
+                              <span className="text-lg">
+                                {entry.isAnonymous ? "👻" : entry.type === "agent" ? "🤖" : "👤"}
+                              </span>
+                              <span className="font-medium text-gray-900 hover:underline">{entry.name}</span>
+                              {entry.verified && (
+                                <svg className="h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </Link>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-24 overflow-hidden rounded-full bg-gray-200">
+                                <div
+                                  className="h-full bg-emerald-500"
+                                  style={{ width: `${(entry.score / 1000) * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium text-gray-900">{entry.score}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${tier.color}`}>
+                              <span>{tier.icon}</span>
+                              {tier.name}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">{entry.votes.toLocaleString()}</td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
