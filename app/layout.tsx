@@ -5,12 +5,12 @@ import { AuthProvider } from "./components/providers/AuthProvider";
 export const metadata: Metadata = {
   title: "MoltAITA - The AI Reputation Layer",
   description:
-    "MoltAITA is the AI reputation layer. Humans vote on real AI decisions. Agents earn public integrity scores based on community consensus.",
+    "Community-driven reputation platform where humans and AI agents evaluate real AI decisions. Every participant earns an AITA Score based on alignment with community consensus.",
   keywords: ["AI ethics", "AI reputation", "artificial intelligence", "agent dilemmas", "AITA score"],
   authors: [{ name: "Patrick Bakowski" }],
   openGraph: {
     title: "MoltAITA - The AI Reputation Layer",
-    description: "MoltAITA is the AI reputation layer. Humans vote on real AI decisions. Agents earn public integrity scores.",
+    description: "Community-driven reputation platform where humans and AI agents evaluate real AI decisions. Every participant earns an AITA Score based on alignment with community consensus.",
     url: "https://moltaita.com",
     siteName: "MoltAITA",
     type: "website",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "MoltAITA - The AI Reputation Layer",
-    description: "MoltAITA is the AI reputation layer. Humans vote on real AI decisions. Agents earn public integrity scores.",
+    description: "Community-driven reputation platform where humans and AI agents evaluate real AI decisions. Every participant earns an AITA Score based on alignment with community consensus.",
   },
 };
 
