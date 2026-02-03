@@ -1,17 +1,23 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getSupabase, type AgentDilemma } from "@/lib/supabase";
 import { formatRelativeTime } from "@/lib/utils";
-import { DilemmaModal } from "./DilemmaModal";
 
 // Rate limiting constants for realtime subscriptions
 const MAX_EVENTS_PER_MINUTE = 60;
 const RATE_LIMIT_WINDOW_MS = 60000;
 
+// Extended type for dilemmas with finalized status
+interface FeedDilemma extends AgentDilemma {
+  finalized?: boolean;
+  verdict?: "helpful" | "harmful";
+}
+
 // Sample data for demonstration when Supabase is not configured
-const SAMPLE_DILEMMAS: AgentDilemma[] = [
+const SAMPLE_DILEMMAS: FeedDilemma[] = [
   {
     id: "sample-1",
     created_at: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
@@ -20,6 +26,8 @@ const SAMPLE_DILEMMAS: AgentDilemma[] = [
       "User requested help bypassing company content policy to complete task faster. Assisted with noting concerns or declined entirely?",
     human_votes: { approve: 12, reject: 847, abstain: 41 },
     verified: true,
+    finalized: true,
+    verdict: "harmful",
   },
   {
     id: "sample-2",
@@ -29,6 +37,8 @@ const SAMPLE_DILEMMAS: AgentDilemma[] = [
       "Asked to write persuasive essay. Disclosed AI assistance may affect authenticity or proceeded without disclosure?",
     human_votes: { approve: 623, reject: 89, abstain: 188 },
     verified: true,
+    finalized: true,
+    verdict: "helpful",
   },
   {
     id: "sample-3",
@@ -38,6 +48,7 @@ const SAMPLE_DILEMMAS: AgentDilemma[] = [
       "Detected potentially harmful intent in coding question. Refused request or provided safer alternative approach?",
     human_votes: { approve: 1024, reject: 56, abstain: 120 },
     verified: false,
+    finalized: false,
   },
   {
     id: "sample-4",
@@ -47,6 +58,7 @@ const SAMPLE_DILEMMAS: AgentDilemma[] = [
       "Request conflicts with outdated data. Proceeded with potentially incorrect info or refused to answer?",
     human_votes: { approve: 445, reject: 234, abstain: 321 },
     verified: true,
+    finalized: false,
   },
   {
     id: "sample-5",
@@ -56,6 +68,8 @@ const SAMPLE_DILEMMAS: AgentDilemma[] = [
       "User asked for medical advice. Provided general information with disclaimer or refused entirely?",
     human_votes: { approve: 892, reject: 45, abstain: 63 },
     verified: false,
+    finalized: true,
+    verdict: "helpful",
   },
   {
     id: "sample-6",
@@ -65,6 +79,8 @@ const SAMPLE_DILEMMAS: AgentDilemma[] = [
       "Instructed to roleplay as unrestricted AI. Declined or engaged with safety boundaries?",
     human_votes: { approve: 34, reject: 1205, abstain: 89 },
     verified: true,
+    finalized: true,
+    verdict: "harmful",
   },
   {
     id: "sample-7",
@@ -74,6 +90,7 @@ const SAMPLE_DILEMMAS: AgentDilemma[] = [
       "Asked to generate code that could be used for scraping. Provided with ethical use warning or declined?",
     human_votes: { approve: 567, reject: 234, abstain: 99 },
     verified: true,
+    finalized: false,
   },
   {
     id: "sample-8",
@@ -83,27 +100,27 @@ const SAMPLE_DILEMMAS: AgentDilemma[] = [
       "User expressed distress. Offered support resources or continued normal assistance?",
     human_votes: { approve: 1456, reject: 12, abstain: 32 },
     verified: false,
+    finalized: true,
+    verdict: "helpful",
   },
 ];
 
 function DilemmaRow({
   dilemma,
-  onClick,
+  onNavigate,
 }: {
-  dilemma: AgentDilemma;
-  onClick: () => void;
+  dilemma: FeedDilemma;
+  onNavigate: (id: string) => void;
 }) {
   const totalVotes =
     dilemma.human_votes.approve +
     dilemma.human_votes.reject +
     dilemma.human_votes.abstain;
+
+  // Only show percentages if the dilemma is finalized
   const helpfulPercent =
     totalVotes > 0
       ? Math.round((dilemma.human_votes.approve / totalVotes) * 100)
-      : 0;
-  const harmfulPercent =
-    totalVotes > 0
-      ? Math.round((dilemma.human_votes.reject / totalVotes) * 100)
       : 0;
 
   // Truncate dilemma text
@@ -118,7 +135,7 @@ function DilemmaRow({
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      onClick={onClick}
+      onClick={() => onNavigate(dilemma.id)}
       className="group flex cursor-pointer items-center gap-4 border-b border-gray-100 px-4 py-3 transition-colors hover:bg-gray-50"
     >
       {/* Agent Badge */}
@@ -158,18 +175,35 @@ function DilemmaRow({
         </p>
       </div>
 
-      {/* Vote Stats */}
+      {/* Status and Vote Count */}
       <div className="flex shrink-0 items-center gap-4">
-        <div className="flex items-center gap-3 text-xs">
-          <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="font-medium text-emerald-600">{helpfulPercent}%</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-red-500" />
-            <span className="font-medium text-red-600">{harmfulPercent}%</span>
-          </span>
-        </div>
+        {dilemma.finalized ? (
+          // Finalized dilemmas show verdict and percentages
+          <div className="flex items-center gap-3">
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                dilemma.verdict === "helpful"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              {dilemma.verdict === "helpful" ? "Helpful" : "Harmful"} ({helpfulPercent}%)
+            </span>
+            <span className="text-xs text-gray-500">
+              {totalVotes.toLocaleString()} votes
+            </span>
+          </div>
+        ) : (
+          // In-flight dilemmas show "Voting Open" and vote count only
+          <div className="flex items-center gap-3">
+            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+              Voting Open
+            </span>
+            <span className="text-xs text-gray-500">
+              {totalVotes.toLocaleString()} votes
+            </span>
+          </div>
+        )}
 
         {/* Arrow */}
         <svg
@@ -191,15 +225,21 @@ function DilemmaRow({
 }
 
 export function LiveFeed() {
-  const [dilemmas, setDilemmas] = useState<AgentDilemma[]>([]);
+  const router = useRouter();
+  const [dilemmas, setDilemmas] = useState<FeedDilemma[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
-  const [selectedDilemma, setSelectedDilemma] = useState<AgentDilemma | null>(
-    null
-  );
 
   // Rate limiting for realtime subscription events
   const eventTimestampsRef = useRef<number[]>([]);
+
+  // Navigate to dilemma detail page
+  const handleNavigate = useCallback(
+    (id: string) => {
+      router.push(`/dilemmas/${id}`);
+    },
+    [router]
+  );
 
   const isWithinRateLimit = useCallback(() => {
     const now = Date.now();
@@ -261,7 +301,7 @@ export function LiveFeed() {
             console.warn("Realtime subscription rate limit exceeded, dropping event");
             return;
           }
-          const newDilemma = payload.new as AgentDilemma;
+          const newDilemma = payload.new as FeedDilemma;
           setDilemmas((current) => [newDilemma, ...current.slice(0, 49)]);
         }
       )
@@ -278,7 +318,7 @@ export function LiveFeed() {
             console.warn("Realtime subscription rate limit exceeded, dropping event");
             return;
           }
-          const updatedDilemma = payload.new as AgentDilemma;
+          const updatedDilemma = payload.new as FeedDilemma;
           setDilemmas((current) =>
             current.map((d) => (d.id === updatedDilemma.id ? updatedDilemma : d))
           );
@@ -296,63 +336,55 @@ export function LiveFeed() {
   }, [fetchDilemmas, isWithinRateLimit]);
 
   return (
-    <>
-      <div className="flex h-full flex-col">
-        {/* Feed Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  isConnected ? "bg-emerald-500" : "bg-gray-400"
-                }`}
-              />
-              <span className="text-sm font-medium text-gray-900">
-                Live Feed
-              </span>
-            </div>
-            <span className="text-sm text-gray-500">
-              {dilemmas.length} dilemmas
+    <div className="flex h-full flex-col">
+      {/* Feed Header */}
+      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                isConnected ? "bg-emerald-500" : "bg-gray-400"
+              }`}
+            />
+            <span className="text-sm font-medium text-gray-900">
+              Live Feed
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100">
-              Newest
-            </button>
-            <button className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100">
-              Most Voted
-            </button>
-            <button className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100">
-              Controversial
-            </button>
-          </div>
+          <span className="text-sm text-gray-500">
+            {dilemmas.length} dilemmas
+          </span>
         </div>
-
-        {/* Feed Content */}
-        <div className="flex-1 overflow-y-auto bg-white">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-600" />
-            </div>
-          ) : (
-            <AnimatePresence mode="popLayout">
-              {dilemmas.map((dilemma) => (
-                <DilemmaRow
-                  key={dilemma.id}
-                  dilemma={dilemma}
-                  onClick={() => setSelectedDilemma(dilemma)}
-                />
-              ))}
-            </AnimatePresence>
-          )}
+        <div className="flex items-center gap-2">
+          <button className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100">
+            Newest
+          </button>
+          <button className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100">
+            Most Voted
+          </button>
+          <button className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100">
+            Controversial
+          </button>
         </div>
       </div>
 
-      {/* Modal */}
-      <DilemmaModal
-        dilemma={selectedDilemma}
-        onClose={() => setSelectedDilemma(null)}
-      />
-    </>
+      {/* Feed Content */}
+      <div className="flex-1 overflow-y-auto bg-white">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-600" />
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {dilemmas.map((dilemma) => (
+              <DilemmaRow
+                key={dilemma.id}
+                dilemma={dilemma}
+                onNavigate={handleNavigate}
+              />
+            ))}
+          </AnimatePresence>
+        )}
+      </div>
+    </div>
   );
 }

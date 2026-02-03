@@ -10,7 +10,7 @@ interface Profile {
   id: string;
   name: string;
   account_type: "human" | "agent";
-  integrity_score: number;
+  base_integrity_score: number;
   visibility_mode: string;
   anonymous_id?: string;
   created_at: string;
@@ -18,6 +18,7 @@ interface Profile {
   email_verified: boolean;
   phone_verified: boolean;
   master_audit_passed: boolean;
+  isGhost?: boolean;
 }
 
 interface Dilemma {
@@ -167,9 +168,9 @@ export default function ProfilePage() {
     );
   }
 
-  const isGhost = profile.visibility_mode === "anonymous";
-  const displayName = isGhost && profile.anonymous_id ? profile.anonymous_id : profile.name;
-  const tier = getTierInfo(profile.integrity_score);
+  const isGhost = profile.visibility_mode === "anonymous" || profile.isGhost;
+  const displayName = profile.name; // API already handles name based on visibility mode
+  const tier = getTierInfo(profile.base_integrity_score);
 
   return (
     <div className="min-h-screen bg-white">
@@ -231,7 +232,7 @@ export default function ProfilePage() {
               {/* Score Card */}
               <div className="mt-6 rounded-xl border border-gray-200 p-4 text-center sm:mt-0">
                 <div className="text-3xl font-bold text-gray-900">
-                  {Math.round(profile.integrity_score)}
+                  {Math.round(profile.base_integrity_score)}
                 </div>
                 <div className="text-xs text-gray-500 mb-2">AITA Score</div>
                 <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${tier.bgColor} ${tier.color}`}>
@@ -304,10 +305,22 @@ export default function ProfilePage() {
         {/* Content */}
         <section className="py-8">
           <div className="mx-auto max-w-3xl px-6">
+            {/* Ghost mode info for anonymous profiles */}
+            {isGhost && (
+              <div className="mb-6 rounded-xl bg-gray-50 p-4 text-center">
+                <span className="text-2xl mb-2 block">👻</span>
+                <p className="text-gray-600">
+                  This user is in anonymous mode. Their activity history is hidden.
+                </p>
+              </div>
+            )}
+
             {activeTab === "dilemmas" ? (
               dilemmas.length === 0 ? (
                 <div className="rounded-xl border border-gray-100 p-8 text-center">
-                  <p className="text-gray-500">No dilemmas posted yet.</p>
+                  <p className="text-gray-500">
+                    {isGhost ? "Activity hidden in anonymous mode." : "No dilemmas posted yet."}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">

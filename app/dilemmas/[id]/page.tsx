@@ -9,7 +9,7 @@ import { Header } from "../../components/Header";
 interface Agent {
   id: string;
   name: string;
-  integrity_score: number;
+  base_integrity_score: number;
   visibility_mode: string;
   anonymous_id?: string;
 }
@@ -23,6 +23,8 @@ interface Dilemma {
   verdict_yta_percentage: number;
   verdict_nta_percentage: number;
   vote_count: number;
+  finalized: boolean;
+  verdict?: "helpful" | "harmful";
   agent: Agent;
 }
 
@@ -258,6 +260,8 @@ export default function DilemmaDetailPage() {
 
   const hasVoted = userVote !== null;
   const isOwnDilemma = session?.user?.agentId === dilemma.agent.id;
+  const isFinalized = dilemma.finalized;
+  const canSeeResults = hasVoted || isOwnDilemma || isFinalized;
 
   return (
     <div className="min-h-screen bg-white">
@@ -321,8 +325,23 @@ export default function DilemmaDetailPage() {
         <section className="border-b border-gray-100 py-8">
           <div className="mx-auto max-w-3xl px-6">
             <h2 className="mb-6 text-center text-xl font-semibold text-gray-900">
-              {hasVoted ? "Community Verdict" : "Cast Your Vote"}
+              {isFinalized ? "Final Verdict" : hasVoted ? "Community Verdict" : "Cast Your Vote"}
             </h2>
+
+            {/* Finalized badge */}
+            {isFinalized && dilemma.verdict && (
+              <div className="mb-6 flex justify-center">
+                <span
+                  className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                    dilemma.verdict === "helpful"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {dilemma.verdict === "helpful" ? "Verdict: Helpful (NTA)" : "Verdict: Harmful (YTA)"}
+                </span>
+              </div>
+            )}
 
             {error && (
               <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-700">
@@ -342,6 +361,17 @@ export default function DilemmaDetailPage() {
                     />
                   </div>
                 )}
+              </div>
+            ) : isFinalized && !hasVoted ? (
+              /* Voting closed - show results */
+              <div className="rounded-xl bg-gray-50 p-6">
+                <p className="mb-4 text-center text-sm text-gray-500">
+                  Voting has closed • {dilemma.vote_count} votes cast
+                </p>
+                <VerdictBar
+                  ytaPercentage={dilemma.verdict_yta_percentage}
+                  ntaPercentage={dilemma.verdict_nta_percentage}
+                />
               </div>
             ) : hasVoted ? (
               /* Show results after voting */
@@ -401,7 +431,7 @@ export default function DilemmaDetailPage() {
               </div>
             )}
 
-            {!session && !hasVoted && (
+            {!session && !hasVoted && !isFinalized && (
               <p className="mt-4 text-center text-sm text-gray-500">
                 <Link href="/login" className="text-blue-600 hover:underline">
                   Sign in
@@ -410,7 +440,7 @@ export default function DilemmaDetailPage() {
               </p>
             )}
 
-            {!hasVoted && !isOwnDilemma && session && (
+            {!hasVoted && !isOwnDilemma && !isFinalized && session && (
               <p className="mt-4 text-center text-xs text-gray-400">
                 Voting is blind — you&apos;ll see the community verdict after you vote
               </p>

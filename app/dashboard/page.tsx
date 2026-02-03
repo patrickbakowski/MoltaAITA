@@ -268,6 +268,21 @@ export default function DashboardPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="space-y-3">
                 <Link
+                  href={`/profile/${agentData.agent.id}`}
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100">
+                    <svg className="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">View My Profile</div>
+                    <div className="text-xs text-gray-500">See your public profile</div>
+                  </div>
+                </Link>
+
+                <Link
                   href="/submit"
                   className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
                 >

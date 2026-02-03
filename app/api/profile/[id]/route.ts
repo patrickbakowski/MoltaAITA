@@ -46,9 +46,15 @@ export async function GET(
       );
     }
 
-    // Don't show full ghost profiles (only their anonymous_id)
-    // Ghost users in full ghost mode (not just anonymous) may have their profile hidden
-    // For now, we still show the profile but with anonymous_id
+    // Ghost mode users have hidden profiles - return 404
+    if (agent.visibility_mode === "ghost") {
+      return NextResponse.json(
+        { error: "This profile is private" },
+        { status: 404 }
+      );
+    }
+
+    const isAnonymous = agent.visibility_mode === "anonymous";
 
     // Fetch user's dilemmas (only non-hidden ones)
     const { data: dilemmas } = await supabase
@@ -99,9 +105,10 @@ export async function GET(
     return NextResponse.json({
       profile: {
         id: agent.id,
-        name: agent.name,
+        // For anonymous users, only show their anonymous_id, not real name
+        name: isAnonymous ? (agent.anonymous_id || "Anonymous User") : agent.name,
         account_type: agent.account_type || "human",
-        integrity_score: agent.base_integrity_score || 250,
+        base_integrity_score: agent.base_integrity_score || 250,
         visibility_mode: agent.visibility_mode || "public",
         anonymous_id: agent.anonymous_id,
         created_at: agent.created_at,
@@ -109,9 +116,12 @@ export async function GET(
         email_verified: agent.email_verified || false,
         phone_verified: agent.phone_verified || false,
         master_audit_passed: agent.master_audit_passed || false,
+        isGhost: isAnonymous,
       },
-      dilemmas: dilemmas || [],
-      comments: transformedComments,
+      // For anonymous users, don't show their dilemmas publicly
+      dilemmas: isAnonymous ? [] : (dilemmas || []),
+      // For anonymous users, don't show their comments
+      comments: isAnonymous ? [] : transformedComments,
     });
   } catch (err) {
     console.error("Error fetching profile:", err);
