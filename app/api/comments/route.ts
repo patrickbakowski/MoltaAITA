@@ -119,10 +119,10 @@ export async function POST(request: NextRequest) {
 
     const { dilemmaId, content, parentId } = parsed.data;
 
-    // Verify dilemma exists and is not hidden
+    // Verify dilemma exists in agent_dilemmas table
     const { data: dilemma, error: dilemmaError } = await supabase
-      .from("dilemmas")
-      .select("id, hidden")
+      .from("agent_dilemmas")
+      .select("id, status")
       .eq("id", dilemmaId)
       .single();
 
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (dilemma.hidden) {
+    if (dilemma.status === "archived" || dilemma.status === "flagged") {
       return NextResponse.json(
         { error: "This dilemma is no longer accepting comments" },
         { status: 400 }
@@ -172,14 +172,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get author's current visibility mode
+    // Get author's current visibility mode and name
     const { data: agent } = await supabase
       .from("agents")
-      .select("visibility_mode, anonymous_id")
+      .select("name, visibility_mode, anonymous_id")
       .eq("id", agentId)
       .single();
 
-    const isGhostComment = agent?.visibility_mode === "anonymous";
+    const isGhostComment = agent?.visibility_mode === "ghost" || agent?.visibility_mode === "anonymous";
+
+    // Generate ghost display name if in ghost/anonymous mode
+    let ghostDisplayName: string | null = null;
+    if (isGhostComment) {
+      // Generate a random ghost ID like "Ghost-1234"
+      const randomId = Math.floor(1000 + Math.random() * 9000);
+      ghostDisplayName = `Ghost-${randomId}`;
+    }
 
     // Create comment
     const { data: comment, error: commentError } = await supabase
@@ -190,6 +198,7 @@ export async function POST(request: NextRequest) {
         parent_id: parentId || null,
         content,
         is_ghost_comment: isGhostComment,
+        ghost_display_name: ghostDisplayName,
       })
       .select(
         `

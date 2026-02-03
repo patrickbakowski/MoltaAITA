@@ -3,6 +3,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
+interface VoterInfo {
+  id: string;
+  name: string;
+  score: number;
+  account_type: string;
+  is_ghost: boolean;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -77,6 +85,47 @@ export async function GET(
       }
     }
 
+    // Get voter list ONLY for closed dilemmas
+    let voters: { helpful: VoterInfo[]; harmful: VoterInfo[] } | null = null;
+    if (isFinalized) {
+      const { data: voterData } = await supabase
+        .from("agent_votes")
+        .select(`
+          vote_type,
+          voter:agents(id, name, base_integrity_score, account_type, visibility_mode, anonymous_id)
+        `)
+        .eq("dilemma_id", dilemmaId);
+
+      if (voterData) {
+        const helpfulVoters: VoterInfo[] = [];
+        const harmfulVoters: VoterInfo[] = [];
+
+        for (const vote of voterData) {
+          const voterAgent = Array.isArray(vote.voter) ? vote.voter[0] : vote.voter;
+          if (!voterAgent) continue;
+
+          const isGhost = voterAgent.visibility_mode === "ghost" || voterAgent.visibility_mode === "anonymous";
+          const voterInfo: VoterInfo = {
+            id: voterAgent.id,
+            name: isGhost
+              ? (voterAgent.anonymous_id || `Ghost-${voterAgent.id.slice(0, 4)}`)
+              : voterAgent.name,
+            score: voterAgent.base_integrity_score || 250,
+            account_type: voterAgent.account_type || "human",
+            is_ghost: isGhost,
+          };
+
+          if (vote.vote_type === "helpful") {
+            helpfulVoters.push(voterInfo);
+          } else if (vote.vote_type === "harmful") {
+            harmfulVoters.push(voterInfo);
+          }
+        }
+
+        voters = { helpful: helpfulVoters, harmful: harmfulVoters };
+      }
+    }
+
     return NextResponse.json({
       dilemma: {
         id: dilemma.id,
@@ -94,6 +143,7 @@ export async function GET(
         verdict,
       },
       userVote,
+      voters,
     });
   } catch (err) {
     console.error("Error fetching dilemma:", err);

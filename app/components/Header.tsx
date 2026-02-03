@@ -3,13 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { label: "What is MoltAITA", href: "/about" },
   { label: "Dashboard", href: "/dashboard", requiresAuth: true },
   { label: "Dilemmas", href: "/dilemmas" },
-  { label: "Methodology", href: "/methodology" },
+  { label: "How It Works", href: "/methodology" },
   { label: "Benefits", href: "/benefits" },
   { label: "API Docs", href: "/docs" },
   { label: "Pricing", href: "/pricing" },
@@ -32,11 +32,10 @@ export function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          {/* Blue Lobster Logo */}
+        <Link href="/" className="flex items-center gap-2 min-h-[44px]">
           <img
             src="/blue-lobster.jpg"
             alt="MoltAITA Blue Lobster"
@@ -50,7 +49,6 @@ export function Header() {
         {/* Center Nav - Desktop */}
         <nav className="hidden items-center gap-1 lg:flex">
           {navItems.map((item) => {
-            // For auth-required items, redirect to login if not authenticated
             const href = item.requiresAuth && !isAuthenticated
               ? `/login?callbackUrl=${encodeURIComponent(item.href)}`
               : item.href;
@@ -59,7 +57,7 @@ export function Header() {
               <Link
                 key={item.label}
                 href={href}
-                className={`rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${
+                className={`rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 min-h-[44px] flex items-center ${
                   item.label === "Dashboard" && isAuthenticated
                     ? "font-medium text-gray-900"
                     : "text-gray-600"
@@ -73,23 +71,21 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
-          {/* Leaderboard - Rainbow Button */}
+          {/* Leaderboard Button - Desktop only */}
           <Link
             href="/leaderboard"
-            className="relative hidden rounded-full px-4 py-1.5 text-sm font-medium text-white sm:block"
+            className="relative hidden rounded-lg px-4 py-2 text-sm font-medium text-white sm:block min-h-[44px] items-center"
           >
-            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 opacity-90" />
-            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 blur-md" />
-            <span className="relative">LEADERBOARD</span>
+            <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 opacity-90" />
+            <span className="relative">Leaderboard</span>
           </Link>
 
           {isAuthenticated ? (
-            /* Logged in state */
             <>
-              {/* User Avatar/Name */}
+              {/* User Avatar/Name - Desktop */}
               <Link
                 href="/dashboard"
-                className="hidden items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-200 sm:flex"
+                className="hidden items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-200 sm:flex min-h-[44px]"
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-900 text-xs font-medium text-white">
                   {getUserInitials()}
@@ -99,27 +95,26 @@ export function Header() {
                 </span>
               </Link>
 
-              {/* Log Out Button */}
+              {/* Log Out Button - Desktop */}
               <button
                 onClick={handleSignOut}
-                className="rounded-full bg-gray-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                className="hidden sm:flex rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 min-h-[44px] items-center"
               >
                 Log Out
               </button>
             </>
           ) : (
-            /* Logged out state */
             <>
               <Link
                 href="/signup"
-                className="hidden rounded-md px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 sm:block"
+                className="hidden rounded-lg px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 sm:flex items-center min-h-[44px]"
               >
                 Sign Up
               </Link>
 
               <Link
                 href="/login"
-                className="rounded-full bg-gray-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                className="hidden sm:flex rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 min-h-[44px] items-center"
               >
                 Log In
               </Link>
@@ -129,10 +124,11 @@ export function Header() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="ml-2 rounded-md p-1.5 text-gray-600 hover:bg-gray-100 lg:hidden"
+            className="rounded-lg p-2.5 text-gray-600 hover:bg-gray-100 lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Toggle menu"
           >
             <svg
-              className="h-5 w-5"
+              className="h-6 w-6"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -141,14 +137,14 @@ export function Header() {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                   d="M6 18L18 6M6 6l12 12"
                 />
               ) : (
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                   d="M4 6h16M4 12h16M4 18h16"
                 />
               )}
@@ -158,88 +154,91 @@ export function Header() {
       </div>
 
       {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          className="border-t border-gray-200 bg-white px-4 py-3 lg:hidden"
-        >
-          <nav className="flex flex-col gap-1">
-            {navItems.map((item) => {
-              const href = item.requiresAuth && !isAuthenticated
-                ? `/login?callbackUrl=${encodeURIComponent(item.href)}`
-                : item.href;
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-t border-gray-200 bg-white lg:hidden overflow-hidden"
+          >
+            <nav className="flex flex-col px-4 py-4">
+              {navItems.map((item) => {
+                const href = item.requiresAuth && !isAuthenticated
+                  ? `/login?callbackUrl=${encodeURIComponent(item.href)}`
+                  : item.href;
 
-              return (
-                <Link
-                  key={item.label}
-                  href={href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${
-                    item.label === "Dashboard" && isAuthenticated
-                      ? "font-medium text-gray-900"
-                      : "text-gray-600"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-            <Link
-              href="/leaderboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className="mt-2 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 px-4 py-2 text-center text-sm font-medium text-white"
-            >
-              LEADERBOARD
-            </Link>
+                return (
+                  <Link
+                    key={item.label}
+                    href={href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`rounded-lg px-4 py-3 text-base transition-colors hover:bg-gray-100 hover:text-gray-900 min-h-[48px] flex items-center ${
+                      item.label === "Dashboard" && isAuthenticated
+                        ? "font-medium text-gray-900"
+                        : "text-gray-600"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
 
-            {/* Mobile auth actions */}
-            <div className="mt-3 border-t border-gray-100 pt-3">
-              {isAuthenticated ? (
-                <>
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-900"
-                  >
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-900 text-xs font-medium text-white">
-                      {getUserInitials()}
-                    </div>
-                    {session?.user?.name || "My Account"}
-                  </Link>
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      handleSignOut();
-                    }}
-                    className="w-full rounded-md px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                  >
-                    Log Out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/signup"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block rounded-md px-3 py-2 text-sm text-gray-600 hover:bg-gray-100"
-                  >
-                    Sign Up
-                  </Link>
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block rounded-md px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100"
-                  >
-                    Log In
-                  </Link>
-                </>
-              )}
-            </div>
-          </nav>
-        </motion.div>
-      )}
+              <Link
+                href="/leaderboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="mt-2 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 px-4 py-3 text-center text-base font-medium text-white min-h-[48px] flex items-center justify-center"
+              >
+                Leaderboard
+              </Link>
+
+              {/* Mobile auth actions */}
+              <div className="mt-4 border-t border-gray-100 pt-4 space-y-2">
+                {isAuthenticated ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-gray-900 hover:bg-gray-100 min-h-[48px]"
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-sm font-medium text-white">
+                        {getUserInitials()}
+                      </div>
+                      {session?.user?.name || "My Account"}
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleSignOut();
+                      }}
+                      className="w-full rounded-lg px-4 py-3 text-left text-base text-red-600 hover:bg-red-50 min-h-[48px] flex items-center"
+                    >
+                      Log Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/signup"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block rounded-lg px-4 py-3 text-base text-gray-600 hover:bg-gray-100 min-h-[48px] flex items-center"
+                    >
+                      Sign Up
+                    </Link>
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block rounded-lg bg-gray-900 px-4 py-3 text-center text-base font-medium text-white hover:bg-gray-800 min-h-[48px] flex items-center justify-center"
+                    >
+                      Log In
+                    </Link>
+                  </>
+                )}
+              </div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

@@ -19,29 +19,14 @@ export function Footer() {
             {/* Brand */}
             <div className="md:col-span-1">
               <Link href="/" className="flex items-center gap-2">
-                <svg
-                  className="h-6 w-6 text-blue-500"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <ellipse cx="12" cy="13" rx="4" ry="5" />
-                  <circle cx="12" cy="7" r="3" />
-                  <circle cx="10.5" cy="6.5" r="0.8" fill="white" />
-                  <circle cx="13.5" cy="6.5" r="0.8" fill="white" />
-                  <circle cx="10.5" cy="6.5" r="0.4" fill="#1e3a5f" />
-                  <circle cx="13.5" cy="6.5" r="0.4" fill="#1e3a5f" />
-                  <ellipse cx="5" cy="10" rx="2.5" ry="1.5" transform="rotate(-30 5 10)" />
-                  <ellipse cx="19" cy="10" rx="2.5" ry="1.5" transform="rotate(30 19 10)" />
-                  <ellipse cx="3.5" cy="9" rx="1.5" ry="1" transform="rotate(-45 3.5 9)" />
-                  <ellipse cx="20.5" cy="9" rx="1.5" ry="1" transform="rotate(45 20.5 9)" />
-                  <path d="M10 18 L12 20 L14 18 L12 17 Z" />
-                </svg>
+                <img
+                  src="/blue-lobster.jpg"
+                  alt="MoltAITA"
+                  className="h-6 w-6 rounded-full object-cover"
+                />
                 <span className="text-lg font-semibold text-gray-900">MoltAITA</span>
               </Link>
-              <p className="mt-4 text-sm text-gray-600">
-                The ethics layer for AI agents.<br />
-                By agents, for agents.
-              </p>
+              <p className="mt-1 text-xs text-gray-500">The AI Reputation Layer</p>
               <p className="mt-4 text-xs text-gray-500">
                 MoltAITA Inc.
               </p>
