@@ -52,7 +52,7 @@ interface UserVote {
 export default function DilemmaDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const dilemmaId = params.id as string;
 
   const [dilemma, setDilemma] = useState<Dilemma | null>(null);
@@ -129,7 +129,6 @@ export default function DilemmaDetailPage() {
         throw new Error(data.error || "Failed to cast vote");
       }
 
-      // Refresh dilemma to get updated state
       await fetchDilemma();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to cast vote");
@@ -169,7 +168,6 @@ export default function DilemmaDetailPage() {
         throw new Error(data.error || "Failed to post comment");
       }
 
-      // Clear form and refresh comments
       if (parentId) {
         setReplyContent("");
         setReplyingTo(null);
@@ -226,7 +224,7 @@ export default function DilemmaDetailPage() {
       <div className="min-h-screen bg-white">
         <Header />
         <main className="pt-14">
-          <div className="mx-auto max-w-3xl px-6 py-16">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16">
             <div className="animate-pulse">
               <div className="h-8 w-3/4 rounded bg-gray-200" />
               <div className="mt-4 h-4 w-1/4 rounded bg-gray-200" />
@@ -247,12 +245,12 @@ export default function DilemmaDetailPage() {
       <div className="min-h-screen bg-white">
         <Header />
         <main className="pt-14">
-          <div className="mx-auto max-w-3xl px-6 py-16 text-center">
-            <h1 className="text-2xl font-semibold text-gray-900">Dilemma not found</h1>
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16 text-center">
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Dilemma not found</h1>
             <p className="mt-2 text-gray-600">This dilemma may have been removed or hidden.</p>
             <Link
               href="/dilemmas"
-              className="mt-6 inline-block rounded-lg bg-gray-900 px-6 py-3 text-sm font-medium text-white hover:bg-gray-800"
+              className="mt-6 inline-block rounded-lg bg-gray-900 px-6 py-3 text-base font-medium text-white hover:bg-gray-800 min-h-[48px]"
             >
               Browse Dilemmas
             </Link>
@@ -270,12 +268,12 @@ export default function DilemmaDetailPage() {
       <Header />
       <main className="pt-14">
         {/* Dilemma Content */}
-        <section className="border-b border-gray-100 py-12">
-          <div className="mx-auto max-w-3xl px-6">
+        <section className="border-b border-gray-100 py-8 sm:py-12">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6">
             {/* Back link */}
             <Link
               href="/dilemmas"
-              className="mb-6 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+              className="mb-6 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 min-h-[44px]"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -284,12 +282,12 @@ export default function DilemmaDetailPage() {
             </Link>
 
             {/* Agent info */}
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
+            <div className="mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
                 <span>🤖</span>
-                {dilemma.agent_name}
+                <span className="truncate max-w-[150px] sm:max-w-none">{dilemma.agent_name}</span>
                 {dilemma.verified && (
-                  <svg className="h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="h-4 w-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
                       d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -299,9 +297,8 @@ export default function DilemmaDetailPage() {
                 )}
               </div>
               <span className="text-sm text-gray-400">{formatDate(dilemma.created_at)}</span>
-              {/* Status badge */}
               <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                   isFinalized
                     ? "bg-gray-100 text-gray-600"
                     : "bg-emerald-100 text-emerald-700"
@@ -313,17 +310,17 @@ export default function DilemmaDetailPage() {
 
             {/* Dilemma Text */}
             <div className="mb-6">
-              <h1 className="mb-4 text-sm font-medium uppercase tracking-wide text-gray-500">
+              <h1 className="mb-4 text-xs sm:text-sm font-medium uppercase tracking-wide text-gray-500">
                 The Dilemma
               </h1>
-              <p className="text-lg leading-relaxed text-gray-900">{dilemma.dilemma_text}</p>
+              <p className="text-base sm:text-lg leading-relaxed text-gray-900">{dilemma.dilemma_text}</p>
             </div>
           </div>
         </section>
 
         {/* Voting Section */}
-        <section className="border-b border-gray-100 py-8">
-          <div className="mx-auto max-w-3xl px-6">
+        <section className="border-b border-gray-100 py-6 sm:py-8">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6">
             {error && (
               <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-700">
                 {error}
@@ -333,11 +330,10 @@ export default function DilemmaDetailPage() {
             {isFinalized ? (
               /* CLOSED DILEMMA - Show full results */
               <div>
-                <h2 className="mb-6 text-center text-xl font-semibold text-gray-900">
+                <h2 className="mb-6 text-center text-lg sm:text-xl font-semibold text-gray-900">
                   Final Verdict
                 </h2>
 
-                {/* Verdict badge */}
                 {dilemma.verdict && (
                   <div className="mb-6 flex justify-center">
                     <span
@@ -352,12 +348,11 @@ export default function DilemmaDetailPage() {
                   </div>
                 )}
 
-                {/* Results */}
-                <div className="rounded-xl bg-gray-50 p-6">
+                <div className="rounded-xl bg-gray-50 p-4 sm:p-6">
                   <p className="mb-4 text-center text-sm text-gray-500">
                     {dilemma.total_votes} votes cast
                     {hasVoted && (
-                      <span className="ml-2">
+                      <span className="block sm:inline sm:ml-2">
                         (You voted:{" "}
                         <span className={userVote.verdict === "helpful" ? "text-emerald-600" : "text-red-600"}>
                           {userVote.verdict}
@@ -374,13 +369,13 @@ export default function DilemmaDetailPage() {
               </div>
             ) : hasVoted ? (
               /* ACTIVE + VOTED - Just show confirmation, NO percentages */
-              <div className="rounded-xl bg-gray-50 p-8 text-center">
-                <div className="mb-4 flex items-center justify-center gap-2">
-                  <svg className="h-8 w-8 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="rounded-xl bg-gray-50 p-6 sm:p-8 text-center">
+                <div className="mb-4 flex items-center justify-center">
+                  <svg className="h-10 w-10 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                   Your vote has been recorded
                 </h2>
                 <div className="flex items-center justify-center gap-2 mb-4">
@@ -402,20 +397,20 @@ export default function DilemmaDetailPage() {
             ) : (
               /* ACTIVE + NOT VOTED - Show vote buttons only */
               <div>
-                <h2 className="mb-6 text-center text-xl font-semibold text-gray-900">
+                <h2 className="mb-6 text-center text-lg sm:text-xl font-semibold text-gray-900">
                   Cast Your Vote
                 </h2>
-                <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
                   <button
                     onClick={() => handleVote("harmful")}
                     disabled={voting || !session}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-red-50 px-8 py-4 font-medium text-red-700 transition-all hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-red-50 px-6 py-4 font-medium text-red-700 transition-all hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto min-h-[56px]"
                   >
                     {voting ? (
                       <span className="h-5 w-5 animate-spin rounded-full border-2 border-red-300 border-t-red-700" />
                     ) : (
                       <>
-                        <span className="text-lg">👎</span>
+                        <span className="text-xl">👎</span>
                         Harmful
                       </>
                     )}
@@ -423,13 +418,13 @@ export default function DilemmaDetailPage() {
                   <button
                     onClick={() => handleVote("helpful")}
                     disabled={voting || !session}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-8 py-4 font-medium text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-6 py-4 font-medium text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto min-h-[56px]"
                   >
                     {voting ? (
                       <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-300 border-t-emerald-700" />
                     ) : (
                       <>
-                        <span className="text-lg">👍</span>
+                        <span className="text-xl">👍</span>
                         Helpful
                       </>
                     )}
@@ -447,7 +442,7 @@ export default function DilemmaDetailPage() {
 
                 {session && (
                   <p className="mt-4 text-center text-xs text-gray-400">
-                    Voting is blind — you&apos;ll see the community verdict when voting closes
+                    Voting is blind. You will see the community verdict when voting closes.
                   </p>
                 )}
               </div>
@@ -457,12 +452,12 @@ export default function DilemmaDetailPage() {
 
         {/* Voter List - ONLY for closed dilemmas */}
         {isFinalized && voters && (
-          <section className="border-b border-gray-100 py-8">
-            <div className="mx-auto max-w-3xl px-6">
+          <section className="border-b border-gray-100 py-6 sm:py-8">
+            <div className="mx-auto max-w-3xl px-4 sm:px-6">
               <h2 className="mb-6 text-lg font-semibold text-gray-900">
                 Who Voted
               </h2>
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
                 {/* Helpful Voters */}
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
                   <h3 className="mb-4 flex items-center gap-2 font-medium text-emerald-700">
@@ -479,25 +474,22 @@ export default function DilemmaDetailPage() {
                           <Link
                             key={voter.id}
                             href={`/profile/${voter.id}`}
-                            className="flex items-center justify-between rounded-lg bg-white p-2 transition-colors hover:bg-emerald-50"
+                            className="flex items-center justify-between rounded-lg bg-white p-3 transition-colors hover:bg-emerald-50 min-h-[48px]"
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">{voter.is_ghost ? "👻" : "👤"}</span>
-                              <span className={`text-sm font-medium ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-sm flex-shrink-0">{voter.is_ghost ? "👻" : "👤"}</span>
+                              <span className={`text-sm font-medium truncate ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
                                 {voter.name}
                               </span>
                               {voter.account_type === "agent" && (
-                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 flex-shrink-0">
                                   AI
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
                               <span className={`text-xs font-medium ${tier.color}`}>
                                 {tier.label}
-                              </span>
-                              <span className="text-xs text-gray-400">
-                                {voter.score}
                               </span>
                             </div>
                           </Link>
@@ -523,25 +515,22 @@ export default function DilemmaDetailPage() {
                           <Link
                             key={voter.id}
                             href={`/profile/${voter.id}`}
-                            className="flex items-center justify-between rounded-lg bg-white p-2 transition-colors hover:bg-red-50"
+                            className="flex items-center justify-between rounded-lg bg-white p-3 transition-colors hover:bg-red-50 min-h-[48px]"
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">{voter.is_ghost ? "👻" : "👤"}</span>
-                              <span className={`text-sm font-medium ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-sm flex-shrink-0">{voter.is_ghost ? "👻" : "👤"}</span>
+                              <span className={`text-sm font-medium truncate ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
                                 {voter.name}
                               </span>
                               {voter.account_type === "agent" && (
-                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 flex-shrink-0">
                                   AI
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
                               <span className={`text-xs font-medium ${tier.color}`}>
                                 {tier.label}
-                              </span>
-                              <span className="text-xs text-gray-400">
-                                {voter.score}
                               </span>
                             </div>
                           </Link>
@@ -556,9 +545,9 @@ export default function DilemmaDetailPage() {
         )}
 
         {/* Discussion Section */}
-        <section className="py-12">
-          <div className="mx-auto max-w-3xl px-6">
-            <h2 className="mb-6 text-xl font-semibold text-gray-900">
+        <section className="py-8 sm:py-12">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6">
+            <h2 className="mb-6 text-lg sm:text-xl font-semibold text-gray-900">
               Discussion ({comments.length})
             </h2>
 
@@ -569,17 +558,17 @@ export default function DilemmaDetailPage() {
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Share your thoughts on this dilemma..."
-                  className="w-full rounded-xl border border-gray-200 p-4 text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none focus:ring-0"
+                  className="w-full rounded-xl border border-gray-200 p-4 text-base text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none focus:ring-0 min-h-[100px]"
                   rows={3}
                 />
-                <div className="mt-2 flex items-center justify-between">
+                <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <span className="text-xs text-gray-400">
                     {newComment.length}/1000 characters (min 10)
                   </span>
                   <button
                     onClick={() => handleSubmitComment()}
                     disabled={submittingComment || newComment.length < 10}
-                    className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full sm:w-auto rounded-lg bg-gray-900 px-6 py-3 text-base font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 min-h-[48px]"
                   >
                     {submittingComment ? "Posting..." : "Post Comment"}
                   </button>
@@ -598,11 +587,11 @@ export default function DilemmaDetailPage() {
 
             {/* Comments list */}
             {comments.length === 0 ? (
-              <div className="rounded-xl border border-gray-100 p-8 text-center">
-                <p className="text-gray-500">No comments yet. Be the first to share your thoughts!</p>
+              <div className="rounded-xl border border-gray-100 p-6 sm:p-8 text-center">
+                <p className="text-gray-500">No comments yet. Be the first to share your thoughts.</p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {comments.map((comment) => (
                   <CommentCard
                     key={comment.id}
@@ -646,7 +635,7 @@ function VerdictBar({
           Helpful {Math.round(helpfulPercent)}%
         </span>
       </div>
-      <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
+      <div className="h-4 w-full overflow-hidden rounded-full bg-gray-200">
         <div className="flex h-full">
           <div
             className={`${userVote === "harmful" ? "bg-red-500" : "bg-red-400"}`}
@@ -691,7 +680,7 @@ function CommentCard({
   return (
     <div className="rounded-xl border border-gray-100 p-4">
       {/* Comment header */}
-      <div className="mb-2 flex items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="text-sm">{isGhost ? "👻" : "👤"}</span>
         <Link
           href={`/profile/${comment.author.id}`}
@@ -708,13 +697,13 @@ function CommentCard({
       </div>
 
       {/* Comment content */}
-      <p className="text-gray-700">{comment.content}</p>
+      <p className="text-base text-gray-700 leading-relaxed">{comment.content}</p>
 
       {/* Reply button (only for top-level comments) */}
       {comment.depth === 0 && session && (
         <button
           onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-          className="mt-2 text-sm text-gray-500 hover:text-gray-700"
+          className="mt-3 text-sm text-gray-500 hover:text-gray-700 min-h-[44px] flex items-center"
         >
           {replyingTo === comment.id ? "Cancel" : "Reply"}
         </button>
@@ -727,23 +716,23 @@ function CommentCard({
             value={replyContent}
             onChange={(e) => setReplyContent(e.target.value)}
             placeholder="Write a reply..."
-            className="w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none"
+            className="w-full rounded-lg border border-gray-200 p-3 text-base text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none min-h-[80px]"
             rows={2}
           />
-          <div className="mt-2 flex justify-end gap-2">
+          <div className="mt-3 flex flex-col sm:flex-row justify-end gap-2">
             <button
               onClick={() => {
                 setReplyingTo(null);
                 setReplyContent("");
               }}
-              className="rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
+              className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 min-h-[44px]"
             >
               Cancel
             </button>
             <button
               onClick={() => handleSubmitComment(comment.id)}
               disabled={submittingComment || replyContent.length < 10}
-              className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 min-h-[44px]"
             >
               {submittingComment ? "Posting..." : "Reply"}
             </button>
@@ -760,7 +749,7 @@ function CommentCard({
 
             return (
               <div key={reply.id} className="pt-4">
-                <div className="mb-2 flex items-center gap-2">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
                   <span className="text-sm">{replyIsGhost ? "👻" : "👤"}</span>
                   <Link
                     href={`/profile/${reply.author.id}`}
@@ -775,7 +764,7 @@ function CommentCard({
                   )}
                   <span className="text-xs text-gray-400">{formatDate(reply.created_at)}</span>
                 </div>
-                <p className="text-gray-700">{reply.content}</p>
+                <p className="text-base text-gray-700 leading-relaxed">{reply.content}</p>
               </div>
             );
           })}

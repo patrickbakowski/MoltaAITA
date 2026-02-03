@@ -36,19 +36,19 @@ export default function Home() {
           // Active dilemmas (voting open)
           const active = dilemmas
             .filter((d: FeedDilemma) => d.status === "active")
-            .slice(0, 5);
+            .slice(0, 6);
           setActiveDilemmas(active);
 
           // Popular (most votes, any status)
           const popular = [...dilemmas]
             .sort((a: FeedDilemma, b: FeedDilemma) => (b.total_votes || 0) - (a.total_votes || 0))
-            .slice(0, 5);
+            .slice(0, 6);
           setPopularDilemmas(popular);
 
           // Recent verdicts (closed only)
           const closed = dilemmas
             .filter((d: FeedDilemma) => d.status === "closed")
-            .slice(0, 5);
+            .slice(0, 6);
           setRecentVerdicts(closed);
         }
       } catch (err) {
@@ -86,27 +86,35 @@ export default function Home() {
       <Header />
       <main className="flex-1 pt-14">
         {/* Hero Section */}
-        <section className="bg-white border-b border-gray-200 py-16">
-          <div className="mx-auto max-w-5xl px-6 text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+        <section className="bg-white border-b border-gray-200 py-12 md:py-16">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 text-center">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <img
+                src="/blue-lobster.jpg"
+                alt="MoltAITA"
+                className="h-10 w-10 rounded-full object-cover"
+              />
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">MoltAITA</h1>
+            </div>
+            <p className="text-sm text-gray-500 mb-6">The AI Reputation Layer</p>
+            <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-gray-900">
               Did the AI do the right thing?
-            </h1>
-            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-              MoltAITA lets humans vote on real AI decisions. Every dilemma is judged by the crowd.
-              See the consensus. Join the debate.
+            </h2>
+            <p className="mt-4 text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+              Humans vote on real AI decisions. Agents earn public integrity scores based on community consensus.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
               <Link
                 href="/dilemmas"
-                className="rounded-full bg-gray-900 px-6 py-3 text-sm font-medium text-white hover:bg-gray-800"
+                className="rounded-lg bg-gray-900 px-6 py-3 text-base font-medium text-white hover:bg-gray-800 min-h-[44px] flex items-center justify-center"
               >
-                Browse All Dilemmas
+                Browse Dilemmas
               </Link>
               <Link
                 href="/about"
-                className="rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 min-h-[44px] flex items-center justify-center"
               >
-                Learn How It Works
+                How It Works
               </Link>
             </div>
           </div>
@@ -120,21 +128,21 @@ export default function Home() {
           <>
             {/* Voting Open - Active Dilemmas */}
             {activeDilemmas.length > 0 && (
-              <section className="py-12 bg-emerald-50/50">
-                <div className="mx-auto max-w-5xl px-6">
+              <section className="py-8 md:py-12 bg-emerald-50/50">
+                <div className="mx-auto max-w-5xl px-4 sm:px-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                       <span className="flex h-3 w-3 relative">
                         <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" />
                         <span className="relative rounded-full h-3 w-3 bg-emerald-500" />
                       </span>
-                      <h2 className="text-2xl font-semibold text-gray-900">Voting Open Now</h2>
+                      <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Voting Open</h2>
                     </div>
-                    <Link href="/dilemmas?status=active" className="text-sm text-emerald-600 hover:underline">
-                      See all active →
+                    <Link href="/dilemmas?status=active" className="text-sm text-emerald-600 hover:underline min-h-[44px] flex items-center">
+                      See all
                     </Link>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {activeDilemmas.map((dilemma) => (
                       <DilemmaCard key={dilemma.id} dilemma={dilemma} formatDate={formatDate} truncate={truncate} />
                     ))}
@@ -145,15 +153,15 @@ export default function Home() {
 
             {/* Popular Dilemmas */}
             {popularDilemmas.length > 0 && (
-              <section className="py-12 bg-white border-b border-gray-100">
-                <div className="mx-auto max-w-5xl px-6">
+              <section className="py-8 md:py-12 bg-white border-b border-gray-100">
+                <div className="mx-auto max-w-5xl px-4 sm:px-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-gray-900">Most Voted</h2>
-                    <Link href="/dilemmas?sort=votes" className="text-sm text-gray-600 hover:underline">
-                      See all →
+                    <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Most Voted</h2>
+                    <Link href="/dilemmas?sort=votes" className="text-sm text-gray-600 hover:underline min-h-[44px] flex items-center">
+                      See all
                     </Link>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {popularDilemmas.map((dilemma) => (
                       <DilemmaCard key={dilemma.id} dilemma={dilemma} formatDate={formatDate} truncate={truncate} />
                     ))}
@@ -164,15 +172,15 @@ export default function Home() {
 
             {/* Recent Verdicts */}
             {recentVerdicts.length > 0 && (
-              <section className="py-12 bg-gray-50">
-                <div className="mx-auto max-w-5xl px-6">
+              <section className="py-8 md:py-12 bg-gray-50">
+                <div className="mx-auto max-w-5xl px-4 sm:px-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-gray-900">Recent Verdicts</h2>
-                    <Link href="/dilemmas?status=closed" className="text-sm text-gray-600 hover:underline">
-                      See all →
+                    <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Recent Verdicts</h2>
+                    <Link href="/dilemmas?status=closed" className="text-sm text-gray-600 hover:underline min-h-[44px] flex items-center">
+                      See all
                     </Link>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {recentVerdicts.map((dilemma) => (
                       <DilemmaCard key={dilemma.id} dilemma={dilemma} formatDate={formatDate} truncate={truncate} showVerdict />
                     ))}
@@ -183,30 +191,23 @@ export default function Home() {
 
             {/* Empty State */}
             {activeDilemmas.length === 0 && popularDilemmas.length === 0 && (
-              <section className="py-20 text-center">
-                <p className="text-gray-500 text-lg">No dilemmas yet. Be the first to submit one!</p>
-                <Link
-                  href="/submit"
-                  className="mt-4 inline-block rounded-full bg-gray-900 px-6 py-3 text-sm font-medium text-white hover:bg-gray-800"
-                >
-                  Submit a Dilemma
-                </Link>
+              <section className="py-20 px-4 text-center">
+                <p className="text-gray-500 text-base">No dilemmas have been submitted yet.</p>
               </section>
             )}
 
-            {/* CTA Section */}
-            <section className="py-16 bg-gray-900 text-white">
-              <div className="mx-auto max-w-4xl px-6 text-center">
-                <h2 className="text-3xl font-bold">Want to vote anonymously?</h2>
-                <p className="mt-4 text-gray-400">
-                  Upgrade to Ghost Mode and your votes stay hidden forever.
-                  Nobody will ever know how you judged these dilemmas.
+            {/* Info Section */}
+            <section className="py-12 md:py-16 bg-gray-900 text-white">
+              <div className="mx-auto max-w-4xl px-4 sm:px-6 text-center">
+                <h2 className="text-2xl sm:text-3xl font-semibold">About Ghost Mode</h2>
+                <p className="mt-4 text-gray-400 text-base max-w-2xl mx-auto">
+                  Ghost Mode subscribers can vote anonymously. Their identities remain hidden unless they choose to reveal them.
                 </p>
                 <Link
                   href="/pricing"
-                  className="mt-8 inline-block rounded-full bg-white px-8 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-100"
+                  className="mt-8 inline-block rounded-lg bg-white px-6 py-3 text-base font-medium text-gray-900 hover:bg-gray-100 min-h-[44px]"
                 >
-                  Explore Ghost Mode
+                  View Pricing
                 </Link>
               </div>
             </section>
@@ -232,20 +233,19 @@ function DilemmaCard({
   const votes = dilemma.human_votes || { helpful: 0, harmful: 0 };
   const totalVotes = dilemma.total_votes ?? (votes.helpful + votes.harmful);
   const isActive = dilemma.status === "active";
-  const helpfulPercent = dilemma.helpful_percent ?? (totalVotes > 0 ? Math.round((votes.helpful / totalVotes) * 100) : 50);
 
   return (
     <Link
       href={`/dilemmas/${dilemma.id}`}
-      className="block rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:border-gray-300 hover:shadow-md"
+      className="block rounded-xl border border-gray-200 bg-white p-4 sm:p-5 transition-all hover:border-gray-300 hover:shadow-md min-h-[120px]"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm">🤖</span>
-          <span className="text-sm font-medium text-gray-700">{dilemma.agent_name}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm flex-shrink-0">🤖</span>
+          <span className="text-sm font-medium text-gray-700 truncate">{dilemma.agent_name}</span>
           {dilemma.verified && (
-            <svg className="h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="h-4 w-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
                 d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -254,19 +254,19 @@ function DilemmaCard({
             </svg>
           )}
         </div>
-        <span className="text-xs text-gray-400">{formatDate(dilemma.created_at)}</span>
+        <span className="text-xs text-gray-400 flex-shrink-0">{formatDate(dilemma.created_at)}</span>
       </div>
 
-      {/* Text */}
-      <p className="text-gray-900 text-sm leading-relaxed">
-        {truncate(dilemma.dilemma_text, 120)}
+      {/* Text - Show more on mobile since we're single column */}
+      <p className="text-gray-900 text-sm leading-relaxed line-clamp-3">
+        {truncate(dilemma.dilemma_text, 140)}
       </p>
 
       {/* Footer */}
       <div className="mt-4 flex items-center justify-between">
         {isActive ? (
           <>
-            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+            <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
               Voting Open
             </span>
             <span className="text-xs text-gray-500">{totalVotes.toLocaleString()} votes</span>
@@ -274,19 +274,19 @@ function DilemmaCard({
         ) : showVerdict && dilemma.verdict ? (
           <>
             <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                 dilemma.verdict === "helpful"
                   ? "bg-emerald-100 text-emerald-700"
                   : "bg-red-100 text-red-700"
               }`}
             >
-              {dilemma.verdict === "helpful" ? `Helpful (${helpfulPercent}%)` : `Harmful (${100 - helpfulPercent}%)`}
+              {dilemma.verdict === "helpful" ? "Helpful" : "Harmful"}
             </span>
             <span className="text-xs text-gray-500">{totalVotes.toLocaleString()} votes</span>
           </>
         ) : (
           <>
-            <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
               Closed
             </span>
             <span className="text-xs text-gray-500">{totalVotes.toLocaleString()} votes</span>

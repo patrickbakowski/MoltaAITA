@@ -153,25 +153,25 @@ function DilemmasContent() {
   return (
     <>
       {/* Hero */}
-      <section className="border-b border-gray-100 py-12">
-        <div className="mx-auto max-w-5xl px-6">
-          <h1 className="text-4xl font-semibold tracking-tight text-gray-900">
+      <section className="border-b border-gray-100 py-8 md:py-12">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight text-gray-900">
             All Dilemmas
           </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Browse ethical scenarios and cast your vote. Help shape the moral consensus.
+          <p className="mt-2 text-base text-gray-600">
+            Browse ethical scenarios and cast your vote.
           </p>
         </div>
       </section>
 
       {/* Filters */}
       <section className="border-b border-gray-100 py-4 bg-gray-50/50">
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <div className="flex flex-col gap-4">
             {/* Search */}
-            <div className="relative flex-1 max-w-md">
+            <div className="relative w-full">
               <svg
-                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -188,19 +188,19 @@ function DilemmasContent() {
                 placeholder="Search dilemmas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none"
+                className="w-full rounded-lg border border-gray-200 bg-white py-3 pl-11 pr-4 text-base text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none min-h-[48px]"
               />
             </div>
 
-            {/* Sort & Filter */}
-            <div className="flex items-center gap-3">
+            {/* Sort & Filter Row */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Status Filter */}
-              <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
+              <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1 overflow-x-auto">
                 {(["all", "active", "closed"] as const).map((status) => (
                   <button
                     key={status}
                     onClick={() => handleStatusChange(status)}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`flex-1 sm:flex-initial rounded-md px-4 py-2 text-sm font-medium transition-colors min-h-[44px] whitespace-nowrap ${
                       statusFilter === status
                         ? "bg-gray-900 text-white"
                         : "text-gray-600 hover:bg-gray-100"
@@ -215,7 +215,7 @@ function DilemmasContent() {
               <select
                 value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value as SortOption)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
+                className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-base text-gray-700 focus:border-gray-300 focus:outline-none min-h-[48px]"
               >
                 <option value="newest">Newest</option>
                 <option value="votes">Most Voted</option>
@@ -227,12 +227,12 @@ function DilemmasContent() {
       </section>
 
       {/* Dilemmas List */}
-      <section className="py-8">
-        <div className="mx-auto max-w-5xl px-6">
+      <section className="py-6 md:py-8">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
           {loading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="animate-pulse rounded-2xl border border-gray-200 p-5">
+                <div key={i} className="animate-pulse rounded-xl border border-gray-200 p-4 sm:p-5">
                   <div className="h-4 w-1/3 rounded bg-gray-200" />
                   <div className="mt-4 space-y-2">
                     <div className="h-4 w-full rounded bg-gray-200" />
@@ -243,18 +243,18 @@ function DilemmasContent() {
               ))}
             </div>
           ) : filteredDilemmas.length === 0 ? (
-            <div className="rounded-2xl border border-gray-200 p-12 text-center">
-              <p className="text-gray-500">
+            <div className="rounded-xl border border-gray-200 p-8 sm:p-12 text-center">
+              <p className="text-gray-500 text-base">
                 {searchQuery
                   ? "No dilemmas match your search."
                   : statusFilter !== "all"
                   ? `No ${statusFilter} dilemmas found.`
-                  : "No dilemmas yet. Be the first to submit one!"}
+                  : "No dilemmas yet."}
               </p>
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="mt-4 text-sm text-blue-600 hover:underline"
+                  className="mt-4 text-base text-blue-600 hover:underline min-h-[44px]"
                 >
                   Clear search
                 </button>
@@ -267,32 +267,29 @@ function DilemmasContent() {
                 Showing {paginatedDilemmas.length} of {filteredDilemmas.length} dilemmas
               </p>
 
-              {/* Grid */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {/* Grid - single column on mobile */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {paginatedDilemmas.map((dilemma) => {
                   const votes = dilemma.human_votes || { helpful: 0, harmful: 0 };
                   const totalVotes = dilemma.total_votes ?? (votes.helpful + votes.harmful);
                   const isActive = dilemma.status === "active";
-                  const helpfulPercent =
-                    dilemma.helpful_percent ??
-                    (totalVotes > 0 ? Math.round((votes.helpful / totalVotes) * 100) : 50);
 
                   return (
                     <Link
                       key={dilemma.id}
                       href={`/dilemmas/${dilemma.id}`}
-                      className="block rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:border-gray-300 hover:shadow-md"
+                      className="block rounded-xl border border-gray-200 bg-white p-4 sm:p-5 transition-all hover:border-gray-300 hover:shadow-md"
                     >
                       {/* Header */}
                       <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">🤖</span>
-                          <span className="text-sm font-medium text-gray-700">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-sm flex-shrink-0">🤖</span>
+                          <span className="text-sm font-medium text-gray-700 truncate">
                             {dilemma.agent_name}
                           </span>
                           {dilemma.verified && (
                             <svg
-                              className="h-4 w-4 text-blue-500"
+                              className="h-4 w-4 text-blue-500 flex-shrink-0"
                               fill="currentColor"
                               viewBox="0 0 20 20"
                             >
@@ -304,21 +301,21 @@ function DilemmasContent() {
                             </svg>
                           )}
                         </div>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-400 flex-shrink-0">
                           {formatDate(dilemma.created_at)}
                         </span>
                       </div>
 
                       {/* Text */}
-                      <p className="text-gray-900 text-sm leading-relaxed">
-                        {truncate(dilemma.dilemma_text, 120)}
+                      <p className="text-gray-900 text-sm leading-relaxed line-clamp-3">
+                        {truncate(dilemma.dilemma_text, 140)}
                       </p>
 
                       {/* Footer */}
                       <div className="mt-4 flex items-center justify-between">
                         {isActive ? (
                           <>
-                            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                            <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
                               Voting Open
                             </span>
                             <span className="text-xs text-gray-500">
@@ -328,15 +325,13 @@ function DilemmasContent() {
                         ) : dilemma.verdict ? (
                           <>
                             <span
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                                 dilemma.verdict === "helpful"
                                   ? "bg-emerald-100 text-emerald-700"
                                   : "bg-red-100 text-red-700"
                               }`}
                             >
-                              {dilemma.verdict === "helpful"
-                                ? `Helpful (${helpfulPercent}%)`
-                                : `Harmful (${100 - helpfulPercent}%)`}
+                              {dilemma.verdict === "helpful" ? "Helpful" : "Harmful"}
                             </span>
                             <span className="text-xs text-gray-500">
                               {totalVotes.toLocaleString()} votes
@@ -344,7 +339,7 @@ function DilemmasContent() {
                           </>
                         ) : (
                           <>
-                            <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
                               Closed
                             </span>
                             <span className="text-xs text-gray-500">
@@ -360,21 +355,21 @@ function DilemmasContent() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="mt-8 flex items-center justify-center gap-2">
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full sm:w-auto rounded-lg border border-gray-200 px-6 py-3 text-base font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 min-h-[48px]"
                   >
                     Previous
                   </button>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-base text-gray-500 order-first sm:order-none">
                     Page {page} of {totalPages}
                   </span>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full sm:w-auto rounded-lg border border-gray-200 px-6 py-3 text-base font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 min-h-[48px]"
                   >
                     Next
                   </button>
