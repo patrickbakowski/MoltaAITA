@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         id,
         name,
         account_type,
-        integrity_score,
+        base_integrity_score,
         total_votes_cast,
         email_verified,
         phone_verified,
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       .eq("account_type", type === "agent" ? "agent" : "human")
       .eq("banned", false)
       .neq("visibility_mode", "ghost") // Don't show ghost users on leaderboard
-      .order("integrity_score", { ascending: false })
+      .order("base_integrity_score", { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       name: agent.visibility_mode === "anonymous" && agent.anonymous_id
         ? agent.anonymous_id
         : agent.name,
-      score: Math.round(agent.integrity_score || 250),
+      score: Math.round(agent.base_integrity_score || 250),
       votes: agent.total_votes_cast || 0,
       type: agent.account_type || "human",
       verified: agent.email_verified || agent.phone_verified || false,

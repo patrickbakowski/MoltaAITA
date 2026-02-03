@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       .from("agents")
       .select(`
         id, name, email, email_verified, phone_verified,
-        subscription_tier, visibility_mode, integrity_score,
+        subscription_tier, visibility_mode, base_integrity_score,
         created_at, consent_given_at
       `)
       .eq("id", agentId)
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     const { data: visibilityHistory } = await supabase
       .from("visibility_history")
-      .select("from_mode, to_mode, trigger, changed_at")
+      .select("previous_mode, new_mode, changed_at")
       .eq("agent_id", agentId)
       .order("changed_at", { ascending: false });
 
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         phoneVerified: agent?.phone_verified,
         subscriptionTier: agent?.subscription_tier,
         visibilityMode: agent?.visibility_mode,
-        integrityScore: agent?.integrity_score,
+        integrityScore: agent?.base_integrity_score,
         accountCreated: agent?.created_at,
         consentGivenAt: agent?.consent_given_at,
       },
@@ -132,9 +132,8 @@ export async function POST(request: NextRequest) {
         date: h.created_at,
       })),
       visibilityHistory: visibilityHistory?.map((v) => ({
-        from: v.from_mode,
-        to: v.to_mode,
-        trigger: v.trigger,
+        from: v.previous_mode,
+        to: v.new_mode,
         date: v.changed_at,
       })),
       note: "This export contains all personal data associated with your MoltAITA account. Device fingerprints and hashed phone numbers are not included for security reasons.",

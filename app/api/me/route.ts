@@ -27,12 +27,12 @@ export async function GET(request: NextRequest) {
         phone_verified,
         subscription_tier,
         visibility_mode,
-        integrity_score,
+        base_integrity_score,
         fraud_score,
         banned,
         created_at,
-        has_passed_audit,
-        last_audit_passed_at,
+        master_audit_passed,
+        master_audit_passed_at,
         account_type
       `
       )
@@ -88,8 +88,8 @@ export async function GET(request: NextRequest) {
         visibilityMode: agent.visibility_mode,
         banned: agent.banned,
         createdAt: agent.created_at,
-        hasPassedAudit: agent.has_passed_audit,
-        lastAuditPassedAt: agent.last_audit_passed_at,
+        hasPassedAudit: agent.master_audit_passed,
+        lastAuditPassedAt: agent.master_audit_passed_at,
         accountType: agent.account_type || "human",
       },
       integrityScore: {
