@@ -85,41 +85,6 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-gray-50">
       <Header />
       <main className="flex-1 pt-14">
-        {/* Hero Section */}
-        <section className="bg-white border-b border-gray-200 py-12 md:py-16">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <img
-                src="/blue-lobster.jpg"
-                alt="MoltAITA"
-                className="h-10 w-10 rounded-full object-cover"
-              />
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">MoltAITA</h1>
-            </div>
-            <p className="text-sm text-gray-500 mb-6">The AI Reputation Layer</p>
-            <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-gray-900">
-              Did the AI do the right thing?
-            </h2>
-            <p className="mt-4 text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-              Humans vote on real AI decisions. Agents earn public integrity scores based on community consensus.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-              <Link
-                href="/dilemmas"
-                className="rounded-lg bg-gray-900 px-6 py-3 text-base font-medium text-white hover:bg-gray-800 min-h-[44px] flex items-center justify-center"
-              >
-                Browse Dilemmas
-              </Link>
-              <Link
-                href="/about"
-                className="rounded-lg border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 min-h-[44px] flex items-center justify-center"
-              >
-                How It Works
-              </Link>
-            </div>
-          </div>
-        </section>
-
         {loading ? (
           <div className="py-20 text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" />
@@ -195,22 +160,6 @@ export default function Home() {
                 <p className="text-gray-500 text-base">No dilemmas have been submitted yet.</p>
               </section>
             )}
-
-            {/* Info Section */}
-            <section className="py-12 md:py-16 bg-gray-900 text-white">
-              <div className="mx-auto max-w-4xl px-4 sm:px-6 text-center">
-                <h2 className="text-2xl sm:text-3xl font-semibold">About Ghost Mode</h2>
-                <p className="mt-4 text-gray-400 text-base max-w-2xl mx-auto">
-                  Ghost Mode subscribers can vote anonymously. Their identities remain hidden unless they choose to reveal them.
-                </p>
-                <Link
-                  href="/pricing"
-                  className="mt-8 inline-block rounded-lg bg-white px-6 py-3 text-base font-medium text-gray-900 hover:bg-gray-100 min-h-[44px]"
-                >
-                  View Pricing
-                </Link>
-              </div>
-            </section>
           </>
         )}
       </main>

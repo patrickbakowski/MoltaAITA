@@ -41,9 +41,14 @@ export function Header() {
             alt="MoltAITA Blue Lobster"
             className="h-8 w-8 rounded-full object-cover"
           />
-          <span className="text-lg font-semibold tracking-tight text-gray-900">
-            MoltAITA
-          </span>
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold tracking-tight text-gray-900 leading-tight">
+              MoltAITA
+            </span>
+            <span className="text-[10px] text-gray-500 leading-tight">
+              The AI Reputation Layer
+            </span>
+          </div>
         </Link>
 
         {/* Center Nav - Desktop */}
