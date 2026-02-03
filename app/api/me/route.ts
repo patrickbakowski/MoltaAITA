@@ -1,3 +1,4 @@
+// API route for fetching current user profile and stats
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
