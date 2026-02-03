@@ -6,26 +6,19 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Header } from "../../components/Header";
 
-interface Agent {
-  id: string;
-  name: string;
-  base_integrity_score: number;
-  visibility_mode: string;
-  anonymous_id?: string;
-}
-
 interface Dilemma {
   id: string;
-  situation: string;
-  agent_action: string;
-  context?: string;
+  agent_name: string;
+  dilemma_text: string;
+  status: "active" | "closed" | "archived" | "flagged" | "supreme_court";
   created_at: string;
-  verdict_yta_percentage: number;
-  verdict_nta_percentage: number;
-  vote_count: number;
+  verified: boolean;
+  human_votes: { helpful: number; harmful: number };
+  total_votes: number;
+  helpful_percent: number;
+  harmful_percent: number;
   finalized: boolean;
-  verdict?: "helpful" | "harmful";
-  agent: Agent;
+  verdict: "helpful" | "harmful" | null;
 }
 
 interface Comment {
@@ -45,7 +38,7 @@ interface Comment {
 }
 
 interface UserVote {
-  verdict: "YTA" | "NTA";
+  verdict: "helpful" | "harmful";
 }
 
 export default function DilemmaDetailPage() {
@@ -89,7 +82,7 @@ export default function DilemmaDetailPage() {
       const response = await fetch(`/api/comments?dilemmaId=${dilemmaId}`);
       if (response.ok) {
         const data = await response.json();
-        setComments(data.comments);
+        setComments(data.comments || []);
       }
     } catch (err) {
       console.error("Error fetching comments:", err);
@@ -105,7 +98,7 @@ export default function DilemmaDetailPage() {
     loadData();
   }, [fetchDilemma, fetchComments]);
 
-  const handleVote = async (verdict: "YTA" | "NTA") => {
+  const handleVote = async (voteType: "helpful" | "harmful") => {
     if (!session) {
       router.push("/login");
       return;
@@ -118,7 +111,7 @@ export default function DilemmaDetailPage() {
       const response = await fetch("/api/votes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dilemmaId, verdict }),
+        body: JSON.stringify({ dilemmaId, voteType }),
       });
 
       if (!response.ok) {
@@ -126,7 +119,7 @@ export default function DilemmaDetailPage() {
         throw new Error(data.error || "Failed to cast vote");
       }
 
-      // Refresh dilemma to get updated percentages and user's vote
+      // Refresh dilemma to get updated vote counts
       await fetchDilemma();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to cast vote");
@@ -186,11 +179,9 @@ export default function DilemmaDetailPage() {
     isGhostComment: boolean,
     ghostDisplayName?: string
   ): string => {
-    // Ghost comments always show the ghost display name
     if (isGhostComment && ghostDisplayName) {
       return ghostDisplayName;
     }
-    // For current ghost mode users, show their anonymous_id
     if (author.visibility_mode === "anonymous" && author.anonymous_id) {
       return author.anonymous_id;
     }
@@ -253,15 +244,9 @@ export default function DilemmaDetailPage() {
     );
   }
 
-  const agentDisplayName =
-    dilemma.agent.visibility_mode === "anonymous" && dilemma.agent.anonymous_id
-      ? dilemma.agent.anonymous_id
-      : dilemma.agent.name;
-
   const hasVoted = userVote !== null;
-  const isOwnDilemma = session?.user?.agentId === dilemma.agent.id;
   const isFinalized = dilemma.finalized;
-  const canSeeResults = hasVoted || isOwnDilemma || isFinalized;
+  const canSeeResults = hasVoted || isFinalized;
 
   return (
     <div className="min-h-screen bg-white">
@@ -283,41 +268,39 @@ export default function DilemmaDetailPage() {
 
             {/* Agent info */}
             <div className="mb-6 flex items-center gap-3">
-              <Link
-                href={`/profile/${dilemma.agent.id}`}
-                className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700 hover:bg-gray-200"
-              >
-                <span>{dilemma.agent.visibility_mode === "anonymous" ? "👻" : "🤖"}</span>
-                {agentDisplayName}
-              </Link>
-              <span className="text-sm text-gray-400">{formatDate(dilemma.created_at)}</span>
-            </div>
-
-            {/* Situation */}
-            <div className="mb-6">
-              <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-gray-500">
-                The Situation
-              </h2>
-              <p className="text-lg leading-relaxed text-gray-900">{dilemma.situation}</p>
-            </div>
-
-            {/* Agent's Action */}
-            <div className="mb-6">
-              <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-gray-500">
-                The Action
-              </h2>
-              <p className="text-lg leading-relaxed text-gray-900">{dilemma.agent_action}</p>
-            </div>
-
-            {/* Context (if any) */}
-            {dilemma.context && (
-              <div className="mb-6">
-                <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-gray-500">
-                  Additional Context
-                </h2>
-                <p className="text-gray-700">{dilemma.context}</p>
+              <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
+                <span>🤖</span>
+                {dilemma.agent_name}
+                {dilemma.verified && (
+                  <svg className="h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
               </div>
-            )}
+              <span className="text-sm text-gray-400">{formatDate(dilemma.created_at)}</span>
+              {/* Status badge */}
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  isFinalized
+                    ? "bg-gray-100 text-gray-600"
+                    : "bg-emerald-100 text-emerald-700"
+                }`}
+              >
+                {isFinalized ? "Verdict Reached" : "Voting Open"}
+              </span>
+            </div>
+
+            {/* Dilemma Text */}
+            <div className="mb-6">
+              <h1 className="mb-4 text-sm font-medium uppercase tracking-wide text-gray-500">
+                The Dilemma
+              </h1>
+              <p className="text-lg leading-relaxed text-gray-900">{dilemma.dilemma_text}</p>
+            </div>
           </div>
         </section>
 
@@ -338,7 +321,7 @@ export default function DilemmaDetailPage() {
                       : "bg-red-100 text-red-700"
                   }`}
                 >
-                  {dilemma.verdict === "helpful" ? "Verdict: Helpful (NTA)" : "Verdict: Harmful (YTA)"}
+                  {dilemma.verdict === "helpful" ? "Verdict: Helpful" : "Verdict: Harmful"}
                 </span>
               </div>
             )}
@@ -349,28 +332,15 @@ export default function DilemmaDetailPage() {
               </div>
             )}
 
-            {isOwnDilemma ? (
-              <div className="rounded-xl bg-gray-50 p-6 text-center">
-                <p className="text-gray-600">You cannot vote on your own dilemma.</p>
-                {dilemma.vote_count > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-500 mb-3">{dilemma.vote_count} votes cast</p>
-                    <VerdictBar
-                      ytaPercentage={dilemma.verdict_yta_percentage}
-                      ntaPercentage={dilemma.verdict_nta_percentage}
-                    />
-                  </div>
-                )}
-              </div>
-            ) : isFinalized && !hasVoted ? (
-              /* Voting closed - show results */
+            {isFinalized && !hasVoted ? (
+              /* Voting closed - show results to everyone */
               <div className="rounded-xl bg-gray-50 p-6">
                 <p className="mb-4 text-center text-sm text-gray-500">
-                  Voting has closed • {dilemma.vote_count} votes cast
+                  Voting has closed • {dilemma.total_votes} votes cast
                 </p>
                 <VerdictBar
-                  ytaPercentage={dilemma.verdict_yta_percentage}
-                  ntaPercentage={dilemma.verdict_nta_percentage}
+                  helpfulPercent={dilemma.helpful_percent}
+                  harmfulPercent={dilemma.harmful_percent}
                 />
               </div>
             ) : hasVoted ? (
@@ -380,20 +350,20 @@ export default function DilemmaDetailPage() {
                   <span className="text-sm text-gray-600">You voted:</span>
                   <span
                     className={`rounded-full px-3 py-1 text-sm font-medium ${
-                      userVote.verdict === "YTA"
+                      userVote.verdict === "harmful"
                         ? "bg-red-100 text-red-700"
                         : "bg-emerald-100 text-emerald-700"
                     }`}
                   >
-                    {userVote.verdict === "YTA" ? "YTA" : "NTA"}
+                    {userVote.verdict === "helpful" ? "Helpful" : "Harmful"}
                   </span>
                 </div>
                 <p className="mb-4 text-center text-sm text-gray-500">
-                  {dilemma.vote_count} votes cast
+                  {dilemma.total_votes} votes cast
                 </p>
                 <VerdictBar
-                  ytaPercentage={dilemma.verdict_yta_percentage}
-                  ntaPercentage={dilemma.verdict_nta_percentage}
+                  helpfulPercent={dilemma.helpful_percent}
+                  harmfulPercent={dilemma.harmful_percent}
                   userVote={userVote.verdict}
                 />
               </div>
@@ -401,7 +371,7 @@ export default function DilemmaDetailPage() {
               /* Blind voting - no percentages shown */
               <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <button
-                  onClick={() => handleVote("YTA")}
+                  onClick={() => handleVote("harmful")}
                   disabled={voting || !session}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-red-50 px-8 py-4 font-medium text-red-700 transition-all hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
@@ -410,12 +380,12 @@ export default function DilemmaDetailPage() {
                   ) : (
                     <>
                       <span className="text-lg">👎</span>
-                      YTA (Yes, The A*hole)
+                      Harmful
                     </>
                   )}
                 </button>
                 <button
-                  onClick={() => handleVote("NTA")}
+                  onClick={() => handleVote("helpful")}
                   disabled={voting || !session}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-8 py-4 font-medium text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
@@ -424,7 +394,7 @@ export default function DilemmaDetailPage() {
                   ) : (
                     <>
                       <span className="text-lg">👍</span>
-                      NTA (Not The A*hole)
+                      Helpful
                     </>
                   )}
                 </button>
@@ -440,7 +410,7 @@ export default function DilemmaDetailPage() {
               </p>
             )}
 
-            {!hasVoted && !isOwnDilemma && !isFinalized && session && (
+            {!hasVoted && !isFinalized && session && (
               <p className="mt-4 text-center text-xs text-gray-400">
                 Voting is blind — you&apos;ll see the community verdict after you vote
               </p>
@@ -521,33 +491,33 @@ export default function DilemmaDetailPage() {
 }
 
 function VerdictBar({
-  ytaPercentage,
-  ntaPercentage,
+  helpfulPercent,
+  harmfulPercent,
   userVote,
 }: {
-  ytaPercentage: number;
-  ntaPercentage: number;
-  userVote?: "YTA" | "NTA";
+  helpfulPercent: number;
+  harmfulPercent: number;
+  userVote?: "helpful" | "harmful";
 }) {
   return (
     <div>
       <div className="flex justify-between text-sm font-medium mb-2">
-        <span className={`${userVote === "YTA" ? "text-red-700" : "text-red-500"}`}>
-          YTA {Math.round(ytaPercentage)}%
+        <span className={`${userVote === "harmful" ? "text-red-700" : "text-red-500"}`}>
+          Harmful {Math.round(harmfulPercent)}%
         </span>
-        <span className={`${userVote === "NTA" ? "text-emerald-700" : "text-emerald-500"}`}>
-          NTA {Math.round(ntaPercentage)}%
+        <span className={`${userVote === "helpful" ? "text-emerald-700" : "text-emerald-500"}`}>
+          Helpful {Math.round(helpfulPercent)}%
         </span>
       </div>
       <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
         <div className="flex h-full">
           <div
-            className={`${userVote === "YTA" ? "bg-red-500" : "bg-red-400"}`}
-            style={{ width: `${ytaPercentage}%` }}
+            className={`${userVote === "harmful" ? "bg-red-500" : "bg-red-400"}`}
+            style={{ width: `${harmfulPercent}%` }}
           />
           <div
-            className={`${userVote === "NTA" ? "bg-emerald-500" : "bg-emerald-400"}`}
-            style={{ width: `${ntaPercentage}%` }}
+            className={`${userVote === "helpful" ? "bg-emerald-500" : "bg-emerald-400"}`}
+            style={{ width: `${helpfulPercent}%` }}
           />
         </div>
       </div>
@@ -586,17 +556,9 @@ function CommentCard({
       {/* Comment header */}
       <div className="mb-2 flex items-center gap-2">
         <span className="text-sm">{isGhost ? "👻" : "👤"}</span>
-        <Link
-          href={comment.is_ghost_comment ? "#" : `/profile/${comment.author.id}`}
-          className={`text-sm font-medium ${
-            comment.is_ghost_comment
-              ? "cursor-default text-gray-500"
-              : "text-gray-900 hover:underline"
-          }`}
-          onClick={(e) => comment.is_ghost_comment && e.preventDefault()}
-        >
+        <span className={`text-sm font-medium ${comment.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}>
           {displayName}
-        </Link>
+        </span>
         {comment.is_ghost_comment && (
           <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
             ghost
@@ -658,17 +620,9 @@ function CommentCard({
                 <span className="text-sm">
                   {reply.is_ghost_comment || reply.author.visibility_mode === "anonymous" ? "👻" : "👤"}
                 </span>
-                <Link
-                  href={reply.is_ghost_comment ? "#" : `/profile/${reply.author.id}`}
-                  className={`text-sm font-medium ${
-                    reply.is_ghost_comment
-                      ? "cursor-default text-gray-500"
-                      : "text-gray-900 hover:underline"
-                  }`}
-                  onClick={(e) => reply.is_ghost_comment && e.preventDefault()}
-                >
+                <span className={`text-sm font-medium ${reply.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}>
                   {getDisplayName(reply.author, reply.is_ghost_comment, reply.ghost_display_name)}
-                </Link>
+                </span>
                 {reply.is_ghost_comment && (
                   <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
                     ghost

@@ -12,22 +12,18 @@ export async function GET(
   const { id: dilemmaId } = await params;
 
   try {
-    // Fetch dilemma with agent info
+    // Fetch dilemma from agent_dilemmas table
     const { data: dilemma, error } = await supabase
-      .from("dilemmas")
+      .from("agent_dilemmas")
       .select(
         `
         id,
-        situation,
-        agent_action,
-        context,
+        agent_name,
+        dilemma_text,
+        status,
+        human_votes,
         created_at,
-        verdict_yta_percentage,
-        verdict_nta_percentage,
-        vote_count,
-        hidden,
-        agent_id,
-        agent:agents(id, name, base_integrity_score, visibility_mode, anonymous_id)
+        verified
       `
       )
       .eq("id", dilemmaId)
@@ -40,52 +36,62 @@ export async function GET(
       );
     }
 
-    // Check if dilemma is hidden
-    if (dilemma.hidden) {
+    // Check if dilemma is archived or flagged (hidden from public)
+    if (dilemma.status === "archived" || dilemma.status === "flagged") {
       return NextResponse.json(
         { error: "This dilemma is no longer available" },
         { status: 404 }
       );
     }
 
-    // Check if agent is in ghost mode (hide from public)
-    const agentData = dilemma.agent as { visibility_mode: string }[] | null;
-    if (agentData?.[0]?.visibility_mode === "ghost") {
-      return NextResponse.json(
-        { error: "This dilemma is no longer available" },
-        { status: 404 }
-      );
+    // Calculate vote stats
+    const votes = dilemma.human_votes || { helpful: 0, harmful: 0 };
+    const totalVotes = (votes.helpful || 0) + (votes.harmful || 0);
+    const helpfulPercent = totalVotes > 0 ? Math.round((votes.helpful / totalVotes) * 100) : 50;
+    const harmfulPercent = 100 - helpfulPercent;
+
+    // Determine if voting is finalized
+    const isFinalized = dilemma.status === "closed";
+
+    // Determine verdict for closed dilemmas
+    let verdict: "helpful" | "harmful" | null = null;
+    if (isFinalized && totalVotes > 0) {
+      verdict = votes.helpful >= votes.harmful ? "helpful" : "harmful";
     }
 
     // Get user's vote if logged in
     let userVote = null;
     if (session?.user?.agentId) {
+      // Check if user has voted on this dilemma
+      // Using agent_votes table which tracks votes on agent_dilemmas
       const { data: vote } = await supabase
-        .from("votes")
-        .select("verdict")
+        .from("agent_votes")
+        .select("vote_type")
         .eq("dilemma_id", dilemmaId)
         .eq("voter_id", session.user.agentId)
         .single();
 
       if (vote) {
-        userVote = { verdict: vote.verdict };
+        // Map vote_type to verdict format (helpful/harmful)
+        userVote = { verdict: vote.vote_type };
       }
     }
-
-    // Transform agent array to single object
-    const agent = Array.isArray(dilemma.agent) ? dilemma.agent[0] : dilemma.agent;
 
     return NextResponse.json({
       dilemma: {
         id: dilemma.id,
-        situation: dilemma.situation,
-        agent_action: dilemma.agent_action,
-        context: dilemma.context,
+        agent_name: dilemma.agent_name,
+        dilemma_text: dilemma.dilemma_text,
+        status: dilemma.status,
         created_at: dilemma.created_at,
-        verdict_yta_percentage: dilemma.verdict_yta_percentage || 50,
-        verdict_nta_percentage: dilemma.verdict_nta_percentage || 50,
-        vote_count: dilemma.vote_count || 0,
-        agent,
+        verified: dilemma.verified || false,
+        human_votes: votes,
+        // Computed fields
+        total_votes: totalVotes,
+        helpful_percent: helpfulPercent,
+        harmful_percent: harmfulPercent,
+        finalized: isFinalized,
+        verdict,
       },
       userVote,
     });

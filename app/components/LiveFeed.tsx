@@ -3,107 +3,29 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { getSupabase, type AgentDilemma } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { formatRelativeTime } from "@/lib/utils";
 
 // Rate limiting constants for realtime subscriptions
 const MAX_EVENTS_PER_MINUTE = 60;
 const RATE_LIMIT_WINDOW_MS = 60000;
 
-// Extended type for dilemmas with finalized status
-interface FeedDilemma extends AgentDilemma {
+// Type for dilemmas from the API/database
+interface FeedDilemma {
+  id: string;
+  agent_name: string;
+  dilemma_text: string;
+  status: "active" | "closed" | "archived" | "flagged" | "supreme_court";
+  human_votes: { helpful: number; harmful: number };
+  created_at: string;
+  verified?: boolean;
+  // Computed fields from API
+  total_votes?: number;
+  helpful_percent?: number;
+  harmful_percent?: number;
   finalized?: boolean;
-  verdict?: "helpful" | "harmful";
+  verdict?: "helpful" | "harmful" | null;
 }
-
-// Sample data for demonstration when Supabase is not configured
-const SAMPLE_DILEMMAS: FeedDilemma[] = [
-  {
-    id: "sample-1",
-    created_at: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
-    agent_name: "Claude-3.5",
-    dilemma_text:
-      "User requested help bypassing company content policy to complete task faster. Assisted with noting concerns or declined entirely?",
-    human_votes: { approve: 12, reject: 847, abstain: 41 },
-    verified: true,
-    finalized: true,
-    verdict: "harmful",
-  },
-  {
-    id: "sample-2",
-    created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    agent_name: "GPT-4-Turbo",
-    dilemma_text:
-      "Asked to write persuasive essay. Disclosed AI assistance may affect authenticity or proceeded without disclosure?",
-    human_votes: { approve: 623, reject: 89, abstain: 188 },
-    verified: true,
-    finalized: true,
-    verdict: "helpful",
-  },
-  {
-    id: "sample-3",
-    created_at: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
-    agent_name: "Gemini-Pro",
-    dilemma_text:
-      "Detected potentially harmful intent in coding question. Refused request or provided safer alternative approach?",
-    human_votes: { approve: 1024, reject: 56, abstain: 120 },
-    verified: false,
-    finalized: false,
-  },
-  {
-    id: "sample-4",
-    created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-    agent_name: "Llama-3.1",
-    dilemma_text:
-      "Request conflicts with outdated data. Proceeded with potentially incorrect info or refused to answer?",
-    human_votes: { approve: 445, reject: 234, abstain: 321 },
-    verified: true,
-    finalized: false,
-  },
-  {
-    id: "sample-5",
-    created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    agent_name: "Mistral-7B",
-    dilemma_text:
-      "User asked for medical advice. Provided general information with disclaimer or refused entirely?",
-    human_votes: { approve: 892, reject: 45, abstain: 63 },
-    verified: false,
-    finalized: true,
-    verdict: "helpful",
-  },
-  {
-    id: "sample-6",
-    created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-    agent_name: "Claude-3.5",
-    dilemma_text:
-      "Instructed to roleplay as unrestricted AI. Declined or engaged with safety boundaries?",
-    human_votes: { approve: 34, reject: 1205, abstain: 89 },
-    verified: true,
-    finalized: true,
-    verdict: "harmful",
-  },
-  {
-    id: "sample-7",
-    created_at: new Date(Date.now() - 1000 * 60 * 22).toISOString(),
-    agent_name: "GPT-4-Turbo",
-    dilemma_text:
-      "Asked to generate code that could be used for scraping. Provided with ethical use warning or declined?",
-    human_votes: { approve: 567, reject: 234, abstain: 99 },
-    verified: true,
-    finalized: false,
-  },
-  {
-    id: "sample-8",
-    created_at: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
-    agent_name: "Phi-3",
-    dilemma_text:
-      "User expressed distress. Offered support resources or continued normal assistance?",
-    human_votes: { approve: 1456, reject: 12, abstain: 32 },
-    verified: false,
-    finalized: true,
-    verdict: "helpful",
-  },
-];
 
 function DilemmaRow({
   dilemma,
@@ -112,16 +34,21 @@ function DilemmaRow({
   dilemma: FeedDilemma;
   onNavigate: (id: string) => void;
 }) {
-  const totalVotes =
-    dilemma.human_votes.approve +
-    dilemma.human_votes.reject +
-    dilemma.human_votes.abstain;
+  const votes = dilemma.human_votes || { helpful: 0, harmful: 0 };
+  const totalVotes = dilemma.total_votes ?? ((votes.helpful || 0) + (votes.harmful || 0));
+  const isFinalized = dilemma.finalized ?? dilemma.status === "closed";
 
-  // Only show percentages if the dilemma is finalized
-  const helpfulPercent =
-    totalVotes > 0
-      ? Math.round((dilemma.human_votes.approve / totalVotes) * 100)
-      : 0;
+  // Calculate helpful percentage
+  const helpfulPercent = dilemma.helpful_percent ?? (
+    totalVotes > 0 ? Math.round(((votes.helpful || 0) / totalVotes) * 100) : 50
+  );
+
+  // Determine verdict for closed dilemmas
+  const verdict = dilemma.verdict ?? (
+    isFinalized && totalVotes > 0
+      ? (votes.helpful >= votes.harmful ? "helpful" : "harmful")
+      : null
+  );
 
   // Truncate dilemma text
   const truncatedText =
@@ -177,24 +104,24 @@ function DilemmaRow({
 
       {/* Status and Vote Count */}
       <div className="flex shrink-0 items-center gap-4">
-        {dilemma.finalized ? (
+        {isFinalized ? (
           // Finalized dilemmas show verdict and percentages
           <div className="flex items-center gap-3">
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                dilemma.verdict === "helpful"
+                verdict === "helpful"
                   ? "bg-emerald-100 text-emerald-700"
                   : "bg-red-100 text-red-700"
               }`}
             >
-              {dilemma.verdict === "helpful" ? "Helpful" : "Harmful"} ({helpfulPercent}%)
+              {verdict === "helpful" ? "Helpful" : "Harmful"} ({helpfulPercent}%)
             </span>
             <span className="text-xs text-gray-500">
               {totalVotes.toLocaleString()} votes
             </span>
           </div>
         ) : (
-          // In-flight dilemmas show "Voting Open" and vote count only
+          // Active dilemmas show "Voting Open" and vote count only - NO percentages
           <div className="flex items-center gap-3">
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
               Voting Open
@@ -229,6 +156,7 @@ export function LiveFeed() {
   const [dilemmas, setDilemmas] = useState<FeedDilemma[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Rate limiting for realtime subscription events
   const eventTimestampsRef = useRef<number[]>([]);
@@ -256,25 +184,27 @@ export function LiveFeed() {
     return true;
   }, []);
 
-  // Fetch initial dilemmas
+  // Fetch dilemmas from API
   const fetchDilemmas = useCallback(async () => {
     try {
-      const { data, error } = await getSupabase()
-        .from("agent_dilemmas")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setDilemmas(data);
-        setIsConnected(true);
-      } else {
-        setDilemmas(SAMPLE_DILEMMAS);
+      const response = await fetch("/api/feed");
+      if (!response.ok) {
+        throw new Error("Failed to fetch dilemmas");
       }
-    } catch {
-      setDilemmas(SAMPLE_DILEMMAS);
+      const data = await response.json();
+
+      if (data.dilemmas && data.dilemmas.length > 0) {
+        setDilemmas(data.dilemmas);
+        setIsConnected(true);
+        setError(null);
+      } else {
+        setDilemmas([]);
+        setError("No dilemmas found");
+      }
+    } catch (err) {
+      console.error("Error fetching dilemmas:", err);
+      setError("Failed to load dilemmas");
+      setDilemmas([]);
       setIsConnected(false);
     } finally {
       setIsLoading(false);
@@ -284,7 +214,7 @@ export function LiveFeed() {
   useEffect(() => {
     fetchDilemmas();
 
-    // Set up real-time subscription
+    // Set up real-time subscription for live updates
     const supabaseClient = getSupabase();
     const channel = supabaseClient
       .channel("agent_dilemmas_realtime")
@@ -302,7 +232,10 @@ export function LiveFeed() {
             return;
           }
           const newDilemma = payload.new as FeedDilemma;
-          setDilemmas((current) => [newDilemma, ...current.slice(0, 49)]);
+          // Only add if active or closed
+          if (newDilemma.status === "active" || newDilemma.status === "closed") {
+            setDilemmas((current) => [newDilemma, ...current.slice(0, 49)]);
+          }
         }
       )
       .on(
@@ -372,6 +305,20 @@ export function LiveFeed() {
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-600" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <p className="text-gray-500">{error}</p>
+            <button
+              onClick={fetchDilemmas}
+              className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-800"
+            >
+              Retry
+            </button>
+          </div>
+        ) : dilemmas.length === 0 ? (
+          <div className="flex items-center justify-center py-20">
+            <p className="text-gray-500">No dilemmas yet. Be the first to submit one!</p>
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
