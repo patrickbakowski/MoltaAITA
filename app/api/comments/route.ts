@@ -221,8 +221,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Log the action for rate limiting
-    await logRateLimitAction("comment", agentId, agentId, ipAddress);
+    // Log the action for rate limiting (using vote action type)
+    await logRateLimitAction("vote", agentId, agentId, ipAddress);
 
     // Transform author array to object
     const transformedComment = {

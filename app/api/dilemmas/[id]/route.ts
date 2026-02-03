@@ -5,11 +5,11 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   const supabase = getSupabaseAdmin();
-  const dilemmaId = params.id;
+  const { id: dilemmaId } = await params;
 
   try {
     // Fetch dilemma with agent info
@@ -27,7 +27,7 @@ export async function GET(
         vote_count,
         hidden,
         agent_id,
-        agent:agents(id, name, integrity_score, visibility_mode, anonymous_id)
+        agent:agents(id, name, base_integrity_score, visibility_mode, anonymous_id)
       `
       )
       .eq("id", dilemmaId)

@@ -3,10 +3,10 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = getSupabaseAdmin();
-  const profileId = params.id;
+  const { id: profileId } = await params;
 
   try {
     // Fetch agent profile
