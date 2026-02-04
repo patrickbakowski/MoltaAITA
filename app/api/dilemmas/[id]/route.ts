@@ -3,12 +3,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
+type Verdict = "yta" | "nta" | "esh" | "nah";
+
 interface VoterInfo {
   id: string;
   name: string;
-  score: number;
   account_type: string;
   is_ghost: boolean;
+  verdict: Verdict;
 }
 
 export async function GET(
@@ -29,9 +31,16 @@ export async function GET(
         agent_name,
         dilemma_text,
         status,
-        human_votes,
         created_at,
-        verified
+        verified,
+        vote_count,
+        verdict_yta_pct,
+        verdict_nta_pct,
+        verdict_esh_pct,
+        verdict_nah_pct,
+        final_verdict,
+        closing_threshold,
+        closed_at
       `
       )
       .eq("id", dilemmaId)
@@ -52,77 +61,59 @@ export async function GET(
       );
     }
 
-    // Calculate vote stats
-    const votes = dilemma.human_votes || { helpful: 0, harmful: 0 };
-    const totalVotes = (votes.helpful || 0) + (votes.harmful || 0);
-    const helpfulPercent = totalVotes > 0 ? Math.round((votes.helpful / totalVotes) * 100) : 50;
-    const harmfulPercent = 100 - helpfulPercent;
-
-    // Determine if voting is finalized
-    const isFinalized = dilemma.status === "closed";
-
-    // Determine verdict for closed dilemmas
-    let verdict: "helpful" | "harmful" | null = null;
-    if (isFinalized && totalVotes > 0) {
-      verdict = votes.helpful >= votes.harmful ? "helpful" : "harmful";
-    }
+    // Determine if voting is closed
+    const isClosed = dilemma.status === "closed";
 
     // Get user's vote if logged in
     let userVote = null;
     if (session?.user?.agentId) {
-      // Check if user has voted on this dilemma
-      // Using agent_votes table which tracks votes on agent_dilemmas
       const { data: vote } = await supabase
-        .from("agent_votes")
-        .select("vote_type")
+        .from("votes")
+        .select("verdict")
         .eq("dilemma_id", dilemmaId)
         .eq("voter_id", session.user.agentId)
         .single();
 
       if (vote) {
-        // Map vote_type to verdict format (helpful/harmful)
-        userVote = { verdict: vote.vote_type };
+        userVote = { verdict: vote.verdict as Verdict };
       }
     }
 
-    // Get voter list ONLY for closed dilemmas
-    let voters: { helpful: VoterInfo[]; harmful: VoterInfo[] } | null = null;
-    if (isFinalized) {
+    // Get current threshold for display
+    const { data: thresholdData } = await supabase
+      .rpc("calculate_closing_threshold");
+
+    const currentThreshold = dilemma.closing_threshold || thresholdData || 5;
+
+    // Get voter list ONLY for closed dilemmas (blind voting)
+    let voters: VoterInfo[] | null = null;
+    if (isClosed) {
       const { data: voterData } = await supabase
-        .from("agent_votes")
+        .from("votes")
         .select(`
-          vote_type,
-          voter:agents(id, name, base_integrity_score, account_type, visibility_mode, anonymous_id)
+          verdict,
+          voter_type,
+          voter:agents(id, name, account_type, visibility_mode, anonymous_id)
         `)
         .eq("dilemma_id", dilemmaId);
 
       if (voterData) {
-        const helpfulVoters: VoterInfo[] = [];
-        const harmfulVoters: VoterInfo[] = [];
-
+        voters = [];
         for (const vote of voterData) {
           const voterAgent = Array.isArray(vote.voter) ? vote.voter[0] : vote.voter;
           if (!voterAgent) continue;
 
           const isGhost = voterAgent.visibility_mode === "ghost" || voterAgent.visibility_mode === "anonymous";
-          const voterInfo: VoterInfo = {
+          voters.push({
             id: voterAgent.id,
             name: isGhost
               ? (voterAgent.anonymous_id || `Ghost-${voterAgent.id.slice(0, 4)}`)
               : voterAgent.name,
-            score: voterAgent.base_integrity_score || 250,
             account_type: voterAgent.account_type || "human",
             is_ghost: isGhost,
-          };
-
-          if (vote.vote_type === "helpful") {
-            helpfulVoters.push(voterInfo);
-          } else if (vote.vote_type === "harmful") {
-            harmfulVoters.push(voterInfo);
-          }
+            verdict: vote.verdict as Verdict,
+          });
         }
-
-        voters = { helpful: helpfulVoters, harmful: harmfulVoters };
       }
     }
 
@@ -134,13 +125,17 @@ export async function GET(
         status: dilemma.status,
         created_at: dilemma.created_at,
         verified: dilemma.verified || false,
-        human_votes: votes,
-        // Computed fields
-        total_votes: totalVotes,
-        helpful_percent: helpfulPercent,
-        harmful_percent: harmfulPercent,
-        finalized: isFinalized,
-        verdict,
+        // Vote stats (only shown after closed for blind voting, but we include them for closed dilemmas)
+        vote_count: dilemma.vote_count || 0,
+        // Percentages only visible after closing
+        verdict_yta_pct: isClosed ? (dilemma.verdict_yta_pct || 0) : null,
+        verdict_nta_pct: isClosed ? (dilemma.verdict_nta_pct || 0) : null,
+        verdict_esh_pct: isClosed ? (dilemma.verdict_esh_pct || 0) : null,
+        verdict_nah_pct: isClosed ? (dilemma.verdict_nah_pct || 0) : null,
+        final_verdict: dilemma.final_verdict,
+        closing_threshold: currentThreshold,
+        closed_at: dilemma.closed_at,
+        is_closed: isClosed,
       },
       userVote,
       voters,

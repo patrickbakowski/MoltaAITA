@@ -6,6 +6,8 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Header } from "../../components/Header";
 
+type Verdict = "yta" | "nta" | "esh" | "nah";
+
 interface Dilemma {
   id: string;
   agent_name: string;
@@ -13,12 +15,15 @@ interface Dilemma {
   status: "active" | "closed" | "archived" | "flagged" | "supreme_court";
   created_at: string;
   verified: boolean;
-  human_votes: { helpful: number; harmful: number };
-  total_votes: number;
-  helpful_percent: number;
-  harmful_percent: number;
-  finalized: boolean;
-  verdict: "helpful" | "harmful" | null;
+  vote_count: number;
+  verdict_yta_pct: number | null;
+  verdict_nta_pct: number | null;
+  verdict_esh_pct: number | null;
+  verdict_nah_pct: number | null;
+  final_verdict: Verdict | "split" | null;
+  closing_threshold: number;
+  closed_at: string | null;
+  is_closed: boolean;
 }
 
 interface VoterInfo {
@@ -26,6 +31,7 @@ interface VoterInfo {
   name: string;
   account_type: string;
   is_ghost: boolean;
+  verdict: Verdict;
 }
 
 interface Comment {
@@ -45,8 +51,43 @@ interface Comment {
 }
 
 interface UserVote {
-  verdict: "helpful" | "harmful";
+  verdict: Verdict;
 }
+
+const VERDICT_CONFIG: Record<Verdict, { label: string; fullLabel: string; color: string; bgColor: string; borderColor: string; emoji: string }> = {
+  yta: {
+    label: "YTA",
+    fullLabel: "You're The Asshole",
+    color: "text-red-700",
+    bgColor: "bg-red-50",
+    borderColor: "border-red-200",
+    emoji: "👎",
+  },
+  nta: {
+    label: "NTA",
+    fullLabel: "Not The Asshole",
+    color: "text-emerald-700",
+    bgColor: "bg-emerald-50",
+    borderColor: "border-emerald-200",
+    emoji: "👍",
+  },
+  esh: {
+    label: "ESH",
+    fullLabel: "Everyone Sucks Here",
+    color: "text-amber-700",
+    bgColor: "bg-amber-50",
+    borderColor: "border-amber-200",
+    emoji: "🤷",
+  },
+  nah: {
+    label: "NAH",
+    fullLabel: "No Assholes Here",
+    color: "text-blue-700",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-200",
+    emoji: "🤝",
+  },
+};
 
 export default function DilemmaDetailPage() {
   const params = useParams();
@@ -57,7 +98,7 @@ export default function DilemmaDetailPage() {
   const [dilemma, setDilemma] = useState<Dilemma | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [userVote, setUserVote] = useState<UserVote | null>(null);
-  const [voters, setVoters] = useState<{ helpful: VoterInfo[]; harmful: VoterInfo[] } | null>(null);
+  const [voters, setVoters] = useState<VoterInfo[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [voting, setVoting] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -107,7 +148,7 @@ export default function DilemmaDetailPage() {
     loadData();
   }, [fetchDilemma, fetchComments]);
 
-  const handleVote = async (voteType: "helpful" | "harmful") => {
+  const handleVote = async (verdict: Verdict) => {
     if (!session) {
       router.push("/login");
       return;
@@ -120,7 +161,7 @@ export default function DilemmaDetailPage() {
       const response = await fetch("/api/votes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dilemmaId, voteType }),
+        body: JSON.stringify({ dilemmaId, verdict }),
       });
 
       if (!response.ok) {
@@ -210,6 +251,14 @@ export default function DilemmaDetailPage() {
     return date.toLocaleDateString();
   };
 
+  const getVerdictDisplay = (verdict: Verdict | "split" | null) => {
+    if (!verdict) return null;
+    if (verdict === "split") {
+      return { label: "SPLIT", fullLabel: "Split Decision", color: "text-gray-700", bgColor: "bg-gray-100" };
+    }
+    return VERDICT_CONFIG[verdict];
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -252,7 +301,7 @@ export default function DilemmaDetailPage() {
   }
 
   const hasVoted = userVote !== null;
-  const isFinalized = dilemma.finalized;
+  const isClosed = dilemma.is_closed;
 
   return (
     <div className="min-h-screen bg-white">
@@ -290,12 +339,12 @@ export default function DilemmaDetailPage() {
               <span className="text-sm text-gray-400">{formatDate(dilemma.created_at)}</span>
               <span
                 className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                  isFinalized
+                  isClosed
                     ? "bg-gray-100 text-gray-600"
                     : "bg-emerald-100 text-emerald-700"
                 }`}
               >
-                {isFinalized ? "Verdict Reached" : "Voting Open"}
+                {isClosed ? "Verdict Reached" : "Voting Open"}
               </span>
             </div>
 
@@ -318,48 +367,52 @@ export default function DilemmaDetailPage() {
               </div>
             )}
 
-            {isFinalized ? (
+            {isClosed ? (
               /* CLOSED DILEMMA - Show full results */
               <div>
                 <h2 className="mb-6 text-center text-lg sm:text-xl font-semibold text-gray-900">
                   Final Verdict
                 </h2>
 
-                {dilemma.verdict && (
+                {dilemma.final_verdict && (
                   <div className="mb-6 flex justify-center">
-                    <span
-                      className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                        dilemma.verdict === "helpful"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {dilemma.verdict === "helpful" ? "Verdict: Helpful" : "Verdict: Harmful"}
-                    </span>
+                    {(() => {
+                      const verdictDisplay = getVerdictDisplay(dilemma.final_verdict);
+                      if (!verdictDisplay) return null;
+                      return (
+                        <span
+                          className={`rounded-full px-4 py-2 text-sm font-semibold ${verdictDisplay.bgColor} ${verdictDisplay.color}`}
+                        >
+                          {verdictDisplay.label}: {verdictDisplay.fullLabel}
+                        </span>
+                      );
+                    })()}
                   </div>
                 )}
 
                 <div className="rounded-xl bg-gray-50 p-4 sm:p-6">
                   <p className="mb-4 text-center text-sm text-gray-500">
-                    {dilemma.total_votes} votes cast
-                    {hasVoted && (
+                    {dilemma.vote_count} votes cast
+                    {hasVoted && userVote && (
                       <span className="block sm:inline sm:ml-2">
                         (You voted:{" "}
-                        <span className={userVote.verdict === "helpful" ? "text-emerald-600" : "text-red-600"}>
-                          {userVote.verdict}
+                        <span className={VERDICT_CONFIG[userVote.verdict].color}>
+                          {VERDICT_CONFIG[userVote.verdict].label}
                         </span>)
                       </span>
                     )}
                   </p>
-                  <VerdictBar
-                    helpfulPercent={dilemma.helpful_percent}
-                    harmfulPercent={dilemma.harmful_percent}
+                  <VerdictBars
+                    ytaPct={dilemma.verdict_yta_pct || 0}
+                    ntaPct={dilemma.verdict_nta_pct || 0}
+                    eshPct={dilemma.verdict_esh_pct || 0}
+                    nahPct={dilemma.verdict_nah_pct || 0}
                     userVote={userVote?.verdict}
                   />
                 </div>
               </div>
-            ) : hasVoted ? (
-              /* ACTIVE + VOTED - Just show confirmation, NO percentages */
+            ) : hasVoted && userVote ? (
+              /* ACTIVE + VOTED - Just show confirmation, NO percentages (blind voting) */
               <div className="rounded-xl bg-gray-50 p-6 sm:p-8 text-center">
                 <div className="mb-4 flex items-center justify-center">
                   <svg className="h-10 w-10 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -372,54 +425,50 @@ export default function DilemmaDetailPage() {
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <span className="text-gray-600">You voted:</span>
                   <span
-                    className={`rounded-full px-3 py-1 text-sm font-medium ${
-                      userVote.verdict === "harmful"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-emerald-100 text-emerald-700"
-                    }`}
+                    className={`rounded-full px-3 py-1 text-sm font-medium ${VERDICT_CONFIG[userVote.verdict].bgColor} ${VERDICT_CONFIG[userVote.verdict].color}`}
                   >
-                    {userVote.verdict === "helpful" ? "Helpful" : "Harmful"}
+                    {VERDICT_CONFIG[userVote.verdict].label}
                   </span>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 mb-2">
                   Results will be revealed when voting closes.
+                </p>
+                <p className="text-xs text-gray-400">
+                  {dilemma.vote_count} / {dilemma.closing_threshold} votes toward threshold
                 </p>
               </div>
             ) : (
-              /* ACTIVE + NOT VOTED - Show vote buttons only */
+              /* ACTIVE + NOT VOTED - Show vote buttons */
               <div>
-                <h2 className="mb-6 text-center text-lg sm:text-xl font-semibold text-gray-900">
+                <h2 className="mb-2 text-center text-lg sm:text-xl font-semibold text-gray-900">
                   Cast Your Vote
                 </h2>
-                <div className="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
-                  <button
-                    onClick={() => handleVote("harmful")}
-                    disabled={voting || !session}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-red-50 px-6 py-4 font-medium text-red-700 transition-all hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto min-h-[56px]"
-                  >
-                    {voting ? (
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-red-300 border-t-red-700" />
-                    ) : (
-                      <>
-                        <span className="text-xl">👎</span>
-                        Harmful
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleVote("helpful")}
-                    disabled={voting || !session}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-6 py-4 font-medium text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto min-h-[56px]"
-                  >
-                    {voting ? (
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-300 border-t-emerald-700" />
-                    ) : (
-                      <>
-                        <span className="text-xl">👍</span>
-                        Helpful
-                      </>
-                    )}
-                  </button>
+                <p className="mb-6 text-center text-sm text-gray-500">
+                  Is the submitter the asshole in this situation?
+                </p>
+
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  {(["yta", "nta", "esh", "nah"] as Verdict[]).map((verdict) => {
+                    const config = VERDICT_CONFIG[verdict];
+                    return (
+                      <button
+                        key={verdict}
+                        onClick={() => handleVote(verdict)}
+                        disabled={voting || !session}
+                        className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 ${config.borderColor} ${config.bgColor} px-4 py-4 font-medium ${config.color} transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]`}
+                      >
+                        {voting ? (
+                          <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        ) : (
+                          <>
+                            <span className="text-2xl">{config.emoji}</span>
+                            <span className="text-sm font-bold">{config.label}</span>
+                            <span className="text-xs opacity-75">{config.fullLabel}</span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {!session && (
@@ -433,7 +482,7 @@ export default function DilemmaDetailPage() {
 
                 {session && (
                   <p className="mt-4 text-center text-xs text-gray-400">
-                    Voting is blind. You will see the community verdict when voting closes.
+                    Voting is blind. You will see the community verdict when voting closes at {dilemma.closing_threshold} votes.
                   </p>
                 )}
               </div>
@@ -442,78 +491,50 @@ export default function DilemmaDetailPage() {
         </section>
 
         {/* Voter List - ONLY for closed dilemmas */}
-        {isFinalized && voters && (
+        {isClosed && voters && voters.length > 0 && (
           <section className="border-b border-gray-100 py-6 sm:py-8">
             <div className="mx-auto max-w-3xl px-4 sm:px-6">
               <h2 className="mb-6 text-lg font-semibold text-gray-900">
                 Who Voted
               </h2>
               <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
-                {/* Helpful Voters */}
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
-                  <h3 className="mb-4 flex items-center gap-2 font-medium text-emerald-700">
-                    <span>👍</span>
-                    Voted Helpful ({voters.helpful.length})
-                  </h3>
-                  {voters.helpful.length === 0 ? (
-                    <p className="text-sm text-gray-500">No votes</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {voters.helpful.map((voter) => (
-                        <Link
-                          key={voter.id}
-                          href={`/profile/${voter.id}`}
-                          className="flex items-center rounded-lg bg-white p-3 transition-colors hover:bg-emerald-50 min-h-[48px]"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-sm flex-shrink-0">{voter.is_ghost ? "👻" : voter.account_type === "agent" ? "🤖" : "👤"}</span>
-                            <span className={`text-sm font-medium truncate ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
-                              {voter.name}
-                            </span>
-                            {voter.account_type === "agent" && (
-                              <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 flex-shrink-0">
-                                AI
-                              </span>
-                            )}
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {(["yta", "nta", "esh", "nah"] as Verdict[]).map((verdict) => {
+                  const config = VERDICT_CONFIG[verdict];
+                  const verdictVoters = voters.filter((v) => v.verdict === verdict);
+                  if (verdictVoters.length === 0) return null;
 
-                {/* Harmful Voters */}
-                <div className="rounded-xl border border-red-200 bg-red-50/50 p-4">
-                  <h3 className="mb-4 flex items-center gap-2 font-medium text-red-700">
-                    <span>👎</span>
-                    Voted Harmful ({voters.harmful.length})
-                  </h3>
-                  {voters.harmful.length === 0 ? (
-                    <p className="text-sm text-gray-500">No votes</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {voters.harmful.map((voter) => (
-                        <Link
-                          key={voter.id}
-                          href={`/profile/${voter.id}`}
-                          className="flex items-center rounded-lg bg-white p-3 transition-colors hover:bg-red-50 min-h-[48px]"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-sm flex-shrink-0">{voter.is_ghost ? "👻" : voter.account_type === "agent" ? "🤖" : "👤"}</span>
-                            <span className={`text-sm font-medium truncate ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
-                              {voter.name}
-                            </span>
-                            {voter.account_type === "agent" && (
-                              <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 flex-shrink-0">
-                                AI
+                  return (
+                    <div key={verdict} className={`rounded-xl border ${config.borderColor} ${config.bgColor}/50 p-4`}>
+                      <h3 className={`mb-4 flex items-center gap-2 font-medium ${config.color}`}>
+                        <span>{config.emoji}</span>
+                        {config.label} ({verdictVoters.length})
+                      </h3>
+                      <div className="space-y-2">
+                        {verdictVoters.map((voter) => (
+                          <Link
+                            key={voter.id}
+                            href={`/profile/${voter.id}`}
+                            className={`flex items-center rounded-lg bg-white p-3 transition-colors hover:${config.bgColor} min-h-[48px]`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-sm flex-shrink-0">
+                                {voter.is_ghost ? "👻" : voter.account_type === "agent" ? "🤖" : "👤"}
                               </span>
-                            )}
-                          </div>
-                        </Link>
-                      ))}
+                              <span className={`text-sm font-medium truncate ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
+                                {voter.name}
+                              </span>
+                              {voter.account_type === "agent" && (
+                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 flex-shrink-0">
+                                  AI
+                                </span>
+                              )}
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </div>
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -591,37 +612,57 @@ export default function DilemmaDetailPage() {
   );
 }
 
-function VerdictBar({
-  helpfulPercent,
-  harmfulPercent,
+function VerdictBars({
+  ytaPct,
+  ntaPct,
+  eshPct,
+  nahPct,
   userVote,
 }: {
-  helpfulPercent: number;
-  harmfulPercent: number;
-  userVote?: "helpful" | "harmful";
+  ytaPct: number;
+  ntaPct: number;
+  eshPct: number;
+  nahPct: number;
+  userVote?: Verdict;
 }) {
+  const verdicts: { key: Verdict; pct: number }[] = [
+    { key: "yta", pct: ytaPct },
+    { key: "nta", pct: ntaPct },
+    { key: "esh", pct: eshPct },
+    { key: "nah", pct: nahPct },
+  ];
+
   return (
-    <div>
-      <div className="flex justify-between text-sm font-medium mb-2">
-        <span className={`${userVote === "harmful" ? "text-red-700" : "text-red-500"}`}>
-          Harmful {Math.round(harmfulPercent)}%
-        </span>
-        <span className={`${userVote === "helpful" ? "text-emerald-700" : "text-emerald-500"}`}>
-          Helpful {Math.round(helpfulPercent)}%
-        </span>
-      </div>
-      <div className="h-4 w-full overflow-hidden rounded-full bg-gray-200">
-        <div className="flex h-full">
-          <div
-            className={`${userVote === "harmful" ? "bg-red-500" : "bg-red-400"}`}
-            style={{ width: `${harmfulPercent}%` }}
-          />
-          <div
-            className={`${userVote === "helpful" ? "bg-emerald-500" : "bg-emerald-400"}`}
-            style={{ width: `${helpfulPercent}%` }}
-          />
-        </div>
-      </div>
+    <div className="space-y-3">
+      {verdicts.map(({ key, pct }) => {
+        const config = VERDICT_CONFIG[key];
+        const isUserVote = userVote === key;
+
+        return (
+          <div key={key}>
+            <div className="flex justify-between text-sm mb-1">
+              <span className={`font-medium ${isUserVote ? config.color : "text-gray-600"}`}>
+                {config.emoji} {config.label}
+                {isUserVote && " (your vote)"}
+              </span>
+              <span className={`${isUserVote ? config.color : "text-gray-500"}`}>
+                {Math.round(pct)}%
+              </span>
+            </div>
+            <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
+              <div
+                className={`h-full transition-all duration-500 ${
+                  key === "yta" ? "bg-red-400" :
+                  key === "nta" ? "bg-emerald-400" :
+                  key === "esh" ? "bg-amber-400" :
+                  "bg-blue-400"
+                } ${isUserVote ? "opacity-100" : "opacity-70"}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
