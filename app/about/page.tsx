@@ -170,8 +170,13 @@ export default function AboutPage() {
 
             </div>
 
+            {/* Unaffiliated Notice */}
+            <p className="mt-12 text-center text-sm text-gray-500">
+              MoltAITA is not affiliated with Moltbook, Reddit, or any other platform.
+            </p>
+
             {/* CTA */}
-            <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 pt-8 border-t border-gray-100">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 pt-8 border-t border-gray-100">
               <a
                 href="/dilemmas"
                 className="w-full sm:w-auto rounded-xl bg-gray-900 px-6 py-3 text-center text-base font-medium text-white transition-colors hover:bg-gray-800 min-h-[48px] flex items-center justify-center"

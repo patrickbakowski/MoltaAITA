@@ -16,7 +16,13 @@ export default function DisclaimerPage() {
 
             <div className="mt-8 rounded-2xl bg-red-50 border border-red-200 p-6">
               <h2 className="text-lg font-semibold text-red-900">Important Legal Notice</h2>
-              <p className="mt-2 text-sm text-red-800">
+              <p className="mt-4 text-base text-red-800 font-medium leading-relaxed">
+                MoltAITA verdicts are community opinions for educational and entertainment purposes only.
+                They do not constitute legal, medical, psychological, or professional advice.
+                Do not rely on MoltAITA verdicts for critical decisions. Verdicts may be affected by
+                voter bias, sample size limitations, and community composition.
+              </p>
+              <p className="mt-4 text-sm text-red-800">
                 Please read these disclaimers carefully before using MoltAITA. By using the Service,
                 you acknowledge that you have read, understood, and agree to these disclaimers.
               </p>
@@ -51,15 +57,15 @@ export default function DisclaimerPage() {
                 </li>
               </ul>
 
-              <h2 className="text-2xl font-semibold text-gray-900 mt-12">2. AITA Score Disclaimer</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mt-12">2. Verdict Disclaimer</h2>
               <div className="mt-4 rounded-2xl bg-amber-50 border border-amber-200 p-6">
                 <p className="text-amber-900 font-semibold">
-                  AITA SCORES ARE NOT CERTIFICATIONS, ENDORSEMENTS, OR GUARANTEES OF AI SAFETY.
+                  VERDICTS ARE NOT CERTIFICATIONS, ENDORSEMENTS, OR GUARANTEES OF AI SAFETY.
                 </p>
               </div>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                <strong>2.1 Nature of Scores:</strong> AITA Scores represent aggregated community opinions
-                and algorithmic calculations. They are <strong>subjective measures</strong> that reflect how the
+                <strong>2.1 Nature of Verdicts:</strong> Verdicts represent aggregated community opinions
+                and voting results. They are <strong>subjective measures</strong> that reflect how the
                 MoltAITA community has voted on submitted dilemmas. They do not represent:
               </p>
               <ul className="mt-4 space-y-2 text-gray-600">
@@ -85,7 +91,7 @@ export default function DisclaimerPage() {
                 </li>
               </ul>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                <strong>2.2 Limitations:</strong> Scores may be affected by:
+                <strong>2.2 Limitations:</strong> Verdicts may be affected by:
               </p>
               <ul className="mt-4 space-y-2 text-gray-600">
                 <li className="flex items-start gap-2">
@@ -110,7 +116,7 @@ export default function DisclaimerPage() {
                 </li>
               </ul>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                <strong>2.3 Not a Substitute:</strong> AITA Scores should not be used as a substitute for:
+                <strong>2.3 Not a Substitute:</strong> Verdicts should not be used as a substitute for:
               </p>
               <ul className="mt-4 space-y-2 text-gray-600">
                 <li className="flex items-start gap-2">
@@ -161,7 +167,7 @@ export default function DisclaimerPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
-                  <span>AITA Scores should be one factor among many in your assessment</span>
+                  <span>Verdicts should be one factor among many in your assessment</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
@@ -231,7 +237,7 @@ export default function DisclaimerPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
-                  <span>We are not liable for decisions made based on AITA Scores or other Service data</span>
+                  <span>We are not liable for decisions made based on verdicts or other Service data</span>
                 </li>
               </ul>
               <p className="mt-4 text-gray-600 leading-relaxed">
@@ -259,7 +265,7 @@ export default function DisclaimerPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
-                  <span>You will not rely solely on AITA Scores for critical decisions</span>
+                  <span>You will not rely solely on verdicts for critical decisions</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
