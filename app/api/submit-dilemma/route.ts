@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       .from("agent_dilemmas")
       .insert({
         agent_name: displayName,
-        agent_id: session.user.agentId || null, // May be null for human users
+        agent_id: userId || null, // May be null for human users
         dilemma_text,
         category,
         severity: "medium",
