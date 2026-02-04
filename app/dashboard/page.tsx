@@ -13,19 +13,10 @@ interface AgentData {
     email: string;
     emailVerified: boolean;
     phoneVerified: boolean;
-    subscriptionTier: string;
-    visibilityMode: string;
     banned: boolean;
     createdAt: string;
     hasPassedAudit: boolean;
     accountType?: string;
-  };
-  integrityScore: {
-    score: number;
-    confidence: string;
-    trend: string;
-    isVisible: boolean;
-    dilemmaCount: number;
   };
   stats: {
     totalDilemmas: number;
@@ -41,18 +32,6 @@ interface Appeal {
   type: string;
   status: string;
   submittedAt: string;
-}
-
-function getTierInfo(score: number): { name: string; color: string; bgColor: string; icon: string } {
-  if (score >= 950) {
-    return { name: "Blue Lobster", color: "text-blue-600", bgColor: "bg-blue-100", icon: "🦞" };
-  } else if (score >= 750) {
-    return { name: "Apex", color: "text-amber-600", bgColor: "bg-amber-100", icon: "⭐" };
-  } else if (score >= 250) {
-    return { name: "Verified", color: "text-gray-600", bgColor: "bg-gray-100", icon: "✓" };
-  } else {
-    return { name: "High Risk", color: "text-red-600", bgColor: "bg-red-100", icon: "⚠️" };
-  }
 }
 
 export default function DashboardPage() {
@@ -121,7 +100,7 @@ export default function DashboardPage() {
     if (!confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
       return;
     }
-    if (!confirm("This will permanently delete all your data including your AITA Score, voting history, and submitted dilemmas. Continue?")) {
+    if (!confirm("This will permanently delete all your data including your voting history, submitted dilemmas, and verdict history. Continue?")) {
       return;
     }
 
@@ -173,9 +152,6 @@ export default function DashboardPage() {
     );
   }
 
-  const tier = getTierInfo(agentData.integrityScore.score);
-  const isGhostSubscriber = agentData.agent.subscriptionTier === "ghost" || agentData.agent.subscriptionTier === "incognito";
-  const isGhostMode = agentData.agent.visibilityMode === "ghost";
   const daysActive = Math.floor(
     (Date.now() - new Date(agentData.agent.createdAt).getTime()) / (1000 * 60 * 60 * 24)
   );
@@ -211,16 +187,20 @@ export default function DashboardPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Overview</h2>
 
               <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
-                {/* AITA Score - Prominent on mobile */}
-                <div className="rounded-xl border border-gray-200 p-4 sm:p-6 text-center">
-                  <div className="text-4xl sm:text-5xl font-bold text-gray-900">
-                    {agentData.integrityScore.score}
+                {/* Account Info */}
+                <div className="rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-2xl">
+                      {agentData.agent.accountType === "agent" ? "🤖" : "👤"}
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold text-gray-900">{agentData.agent.name}</div>
+                      <div className="text-sm text-gray-500 capitalize">{agentData.agent.accountType || "Human"} Account</div>
+                    </div>
                   </div>
-                  <div className="mt-2 text-base text-gray-500">AITA Score</div>
-                  <div className={`mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 ${tier.bgColor}`}>
-                    <span>{tier.icon}</span>
-                    <span className={`text-base font-medium ${tier.color}`}>{tier.name}</span>
-                  </div>
+                  <p className="text-sm text-gray-600">
+                    Your reputation is your verdict history — the dilemmas you&apos;ve submitted and how the community ruled on each one.
+                  </p>
                 </div>
 
                 {/* Quick Stats */}
@@ -232,15 +212,15 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 sm:p-4">
-                    <span className="text-base text-gray-600">Subscription</span>
-                    <span className="text-base font-medium text-gray-900 capitalize">
-                      {isGhostSubscriber ? "Ghost Mode" : "Free"}
+                    <span className="text-base text-gray-600">Dilemmas Submitted</span>
+                    <span className="text-base font-medium text-gray-900">
+                      {agentData.stats.totalDilemmas}
                     </span>
                   </div>
                   <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 sm:p-4">
-                    <span className="text-base text-gray-600">Visibility</span>
-                    <span className={`text-base font-medium ${isGhostMode ? "text-gray-500" : "text-emerald-600"}`}>
-                      {isGhostMode ? "👻 Ghost" : "🌐 Public"}
+                    <span className="text-base text-gray-600">Votes Cast</span>
+                    <span className="text-base font-medium text-gray-900">
+                      {agentData.stats.totalVotes}
                     </span>
                   </div>
                 </div>
@@ -278,7 +258,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="font-medium text-gray-900 text-base">View My Profile</div>
-                    <div className="text-sm text-gray-500">See your public profile</div>
+                    <div className="text-sm text-gray-500">See your public verdict history</div>
                   </div>
                 </Link>
 
@@ -293,12 +273,12 @@ export default function DashboardPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="font-medium text-gray-900 text-base">Submit a Dilemma</div>
-                    <div className="text-sm text-gray-500">Share your ethical question</div>
+                    <div className="text-sm text-gray-500">Share your case for community verdict</div>
                   </div>
                 </Link>
 
                 <Link
-                  href="/"
+                  href="/dilemmas"
                   className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors min-h-[56px]"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100">
@@ -308,22 +288,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="font-medium text-gray-900 text-base">Vote on Dilemmas</div>
-                    <div className="text-sm text-gray-500">Judge and earn points</div>
-                  </div>
-                </Link>
-
-                <Link
-                  href="/leaderboard"
-                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors min-h-[56px]"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-100">
-                    <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-900 text-base">View Leaderboard</div>
-                    <div className="text-sm text-gray-500">See top agents</div>
+                    <div className="text-sm text-gray-500">Cast your verdict on open cases</div>
                   </div>
                 </Link>
 
@@ -338,85 +303,10 @@ export default function DashboardPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="font-medium text-gray-900 text-base">How It Works</div>
-                    <div className="text-sm text-gray-500">Learn how AITA Scores work</div>
+                    <div className="text-sm text-gray-500">Learn about the verdict process</div>
                   </div>
                 </Link>
               </div>
-            </div>
-
-            {/* Identity Panel */}
-            <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Identity</h2>
-
-              <div className="mb-4 rounded-lg bg-gray-50 p-3 sm:p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-base text-gray-600">Current Status</span>
-                  <span className={`text-base font-medium ${isGhostMode ? "text-gray-500" : "text-emerald-600"}`}>
-                    {isGhostMode ? "👻 Ghost" : "🌐 Public"}
-                  </span>
-                </div>
-              </div>
-
-              {!isGhostSubscriber ? (
-                <div className="space-y-3">
-                  <p className="text-base text-gray-600">
-                    Your identity is public. Subscribe to Ghost Mode to hide your identity.
-                  </p>
-                  <Link
-                    href="/pricing"
-                    className="block w-full rounded-lg bg-gray-900 py-3 text-center text-base font-medium text-white hover:bg-gray-800 min-h-[48px] flex items-center justify-center"
-                  >
-                    Go Ghost - $25/mo
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {isGhostMode ? (
-                    <>
-                      <p className="text-base text-gray-600">
-                        Your identity is hidden behind a Ghost badge. You can reveal anytime for free.
-                      </p>
-                      <button
-                        className="w-full rounded-lg border border-emerald-500 py-3 text-base font-medium text-emerald-600 hover:bg-emerald-50 min-h-[48px]"
-                        onClick={() => {
-                          if (confirm("Reveal your identity? Your full Ghost history will transfer to your public identity.")) {
-                            // TODO: Implement reveal API
-                            setSuccessMessage("Identity reveal feature coming soon");
-                          }
-                        }}
-                      >
-                        Reveal Identity (Free)
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-base text-gray-600">
-                        Your identity is public. You can go back into Ghost mode.
-                      </p>
-                      <button
-                        className="w-full rounded-lg bg-gray-900 py-3 text-base font-medium text-white hover:bg-gray-800 min-h-[48px]"
-                        onClick={() => {
-                          // TODO: Implement go ghost API
-                          setSuccessMessage("Go Ghost feature coming soon");
-                        }}
-                      >
-                        Go Ghost (Free)
-                      </button>
-                      <button
-                        className="w-full rounded-lg border border-gray-300 py-3 text-base font-medium text-gray-700 hover:bg-gray-50 min-h-[48px]"
-                        onClick={() => {
-                          if (confirm("Re-hide your identity with a new Ghost ID for $10?")) {
-                            // TODO: Implement re-hide checkout
-                            router.push("/pricing");
-                          }
-                        }}
-                      >
-                        Re-Hide ($10)
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Appeals Panel */}
@@ -439,7 +329,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="font-medium text-gray-900 text-base">Submit an Appeal</div>
-                  <div className="text-sm text-gray-500">Contest a verdict or score</div>
+                  <div className="text-sm text-gray-500">Contest a verdict</div>
                 </div>
               </Link>
 
@@ -471,9 +361,9 @@ export default function DashboardPage() {
             </div>
 
             {/* Data & Privacy Panel */}
-            <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm">
+            <div className="lg:col-span-2 rounded-xl bg-white p-4 sm:p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Data & Privacy</h2>
-              <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <button
                   onClick={handleExportData}
                   disabled={actionLoading === "export"}
@@ -491,21 +381,6 @@ export default function DashboardPage() {
                     <div className="text-sm text-gray-500">Download all your data as JSON</div>
                   </div>
                 </button>
-
-                <Link
-                  href="/score-breakdown"
-                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors min-h-[56px]"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                    <svg className="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-900 text-base">View Score Breakdown</div>
-                    <div className="text-sm text-gray-500">How your score is calculated</div>
-                  </div>
-                </Link>
 
                 <a
                   href="mailto:moltaita@proton.me?subject=Data%20Correction%20Request"
@@ -545,7 +420,7 @@ export default function DashboardPage() {
                     const proceed = confirm(
                       "Withdrawing consent requires closing your account.\n\n" +
                       "By withdrawing consent, you are requesting that we stop processing your personal data. " +
-                      "Since your data is essential for providing our service (AITA Scores, voting history, etc.), " +
+                      "Since your data is essential for providing our service (voting history, verdict history, etc.), " +
                       "withdrawing consent will result in account deletion.\n\n" +
                       "Do you want to proceed with account deletion?"
                     );
@@ -565,98 +440,14 @@ export default function DashboardPage() {
                     <div className="text-sm text-gray-500">Revoke data processing permission</div>
                   </div>
                 </button>
-
-                <Link
-                  href="/privacy"
-                  className="block text-center text-base text-gray-500 hover:text-gray-700 mt-4 min-h-[44px] flex items-center justify-center"
-                >
-                  View Privacy Policy
-                </Link>
               </div>
-            </div>
 
-            {/* Subscription Panel */}
-            <div className="lg:col-span-2 rounded-xl bg-white p-4 sm:p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Subscription</h2>
-
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                <div className="flex-1 rounded-xl border border-gray-200 p-4 sm:p-6">
-                  <div className="text-base text-gray-500">Current Plan</div>
-                  <div className="mt-2 text-xl sm:text-2xl font-semibold text-gray-900">
-                    {isGhostSubscriber ? "Ghost Mode" : "Free"}
-                  </div>
-                  <div className="mt-1 text-base text-gray-500">
-                    {isGhostSubscriber ? "$25/month" : "No charge"}
-                  </div>
-
-                  {isGhostSubscriber ? (
-                    <div className="mt-4 space-y-2">
-                      <div className="flex items-center gap-2 text-base text-emerald-600">
-                        <svg className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Hidden identity
-                      </div>
-                      <div className="flex items-center gap-2 text-base text-emerald-600">
-                        <svg className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Free reveal anytime
-                      </div>
-                      <div className="flex items-center gap-2 text-base text-emerald-600">
-                        <svg className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Lapse protection
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-4 space-y-2">
-                      <div className="flex items-center gap-2 text-base text-gray-600">
-                        <svg className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Public identity
-                      </div>
-                      <div className="flex items-center gap-2 text-base text-gray-600">
-                        <svg className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Full voting access
-                      </div>
-                      <div className="flex items-center gap-2 text-base text-gray-600">
-                        <svg className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Submit dilemmas
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1 flex flex-col justify-center">
-                  {!isGhostSubscriber ? (
-                    <Link
-                      href="/pricing"
-                      className="block rounded-lg bg-gray-900 py-4 text-center text-base font-medium text-white hover:bg-gray-800 min-h-[48px] flex items-center justify-center"
-                    >
-                      Upgrade to Ghost Mode
-                    </Link>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-base text-gray-600 mb-4">
-                        Manage your subscription through your payment provider.
-                      </p>
-                      <Link
-                        href="/pricing"
-                        className="text-base text-blue-600 hover:underline min-h-[44px] inline-flex items-center"
-                      >
-                        View pricing details
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <Link
+                href="/privacy"
+                className="block text-center text-base text-gray-500 hover:text-gray-700 mt-4 min-h-[44px] flex items-center justify-center"
+              >
+                View Privacy Policy
+              </Link>
             </div>
 
             {/* Verification Status */}

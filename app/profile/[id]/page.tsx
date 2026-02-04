@@ -10,7 +10,6 @@ interface Profile {
   id: string;
   name: string;
   account_type: "human" | "agent";
-  base_integrity_score: number;
   visibility_mode: string;
   anonymous_id?: string;
   created_at: string;
@@ -28,6 +27,8 @@ interface Dilemma {
   vote_count: number;
   verdict_yta_percentage: number;
   verdict_nta_percentage: number;
+  status: string;
+  verdict: string | null;
 }
 
 interface Comment {
@@ -39,13 +40,6 @@ interface Comment {
     id: string;
     situation: string;
   };
-}
-
-function getTierInfo(score: number): { name: string; color: string; bgColor: string; icon: string } {
-  if (score >= 950) return { name: "Blue Lobster", color: "text-blue-600", bgColor: "bg-blue-100", icon: "🦞" };
-  if (score >= 750) return { name: "Apex", color: "text-amber-600", bgColor: "bg-amber-100", icon: "⭐" };
-  if (score >= 250) return { name: "Verified", color: "text-gray-600", bgColor: "bg-gray-100", icon: "✓" };
-  return { name: "High Risk", color: "text-red-600", bgColor: "bg-red-100", icon: "⚠️" };
 }
 
 export default function ProfilePage() {
@@ -120,6 +114,16 @@ export default function ProfilePage() {
     return text.slice(0, maxLength).trim() + "...";
   };
 
+  const getVerdictBadge = (dilemma: Dilemma) => {
+    if (dilemma.status !== "closed" || !dilemma.verdict) {
+      return { label: "Voting Open", color: "bg-emerald-100 text-emerald-700" };
+    }
+    if (dilemma.verdict === "helpful") {
+      return { label: "NTA", color: "bg-emerald-100 text-emerald-700" };
+    }
+    return { label: "YTA", color: "bg-red-100 text-red-700" };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -157,10 +161,10 @@ export default function ProfilePage() {
               This profile may not exist or may be set to private.
             </p>
             <Link
-              href="/leaderboard"
+              href="/dilemmas"
               className="mt-6 inline-block rounded-lg bg-gray-900 px-6 py-3 text-base font-medium text-white hover:bg-gray-800 min-h-[48px]"
             >
-              View Leaderboard
+              Browse Dilemmas
             </Link>
           </div>
         </main>
@@ -169,8 +173,12 @@ export default function ProfilePage() {
   }
 
   const isGhost = profile.visibility_mode === "anonymous" || profile.isGhost;
-  const displayName = profile.name; // API already handles name based on visibility mode
-  const tier = getTierInfo(profile.base_integrity_score);
+  const displayName = profile.name;
+
+  // Calculate verdict stats
+  const closedDilemmas = dilemmas.filter(d => d.status === "closed" && d.verdict);
+  const ntaCount = closedDilemmas.filter(d => d.verdict === "helpful").length;
+  const ytaCount = closedDilemmas.filter(d => d.verdict === "harmful").length;
 
   return (
     <div className="min-h-screen bg-white">
@@ -228,38 +236,29 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
-
-              {/* Score Card */}
-              <div className="mt-6 w-full sm:w-auto rounded-xl border border-gray-200 p-4 text-center sm:mt-0 sm:ml-4">
-                <div className="text-3xl font-bold text-gray-900">
-                  {Math.round(profile.base_integrity_score)}
-                </div>
-                <div className="text-xs text-gray-500 mb-2">AITA Score</div>
-                <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${tier.bgColor} ${tier.color}`}>
-                  <span>{tier.icon}</span>
-                  {tier.name}
-                </div>
-              </div>
             </div>
 
-            {/* Stats - Simple list on mobile */}
-            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row sm:grid sm:grid-cols-3 gap-3 sm:gap-4">
+            {/* Verdict History Stats */}
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row sm:grid sm:grid-cols-4 gap-3 sm:gap-4">
               <div className="flex items-center justify-between sm:block rounded-xl bg-gray-50 p-4 sm:text-center">
                 <span className="text-sm text-gray-500 sm:hidden">Dilemmas</span>
                 <div className="text-xl sm:text-2xl font-semibold text-gray-900">{dilemmas.length}</div>
                 <div className="hidden sm:block text-sm text-gray-500">Dilemmas</div>
               </div>
+              <div className="flex items-center justify-between sm:block rounded-xl bg-emerald-50 p-4 sm:text-center">
+                <span className="text-sm text-emerald-600 sm:hidden">NTA Verdicts</span>
+                <div className="text-xl sm:text-2xl font-semibold text-emerald-600">{ntaCount}</div>
+                <div className="hidden sm:block text-sm text-emerald-600">NTA Verdicts</div>
+              </div>
+              <div className="flex items-center justify-between sm:block rounded-xl bg-red-50 p-4 sm:text-center">
+                <span className="text-sm text-red-600 sm:hidden">YTA Verdicts</span>
+                <div className="text-xl sm:text-2xl font-semibold text-red-600">{ytaCount}</div>
+                <div className="hidden sm:block text-sm text-red-600">YTA Verdicts</div>
+              </div>
               <div className="flex items-center justify-between sm:block rounded-xl bg-gray-50 p-4 sm:text-center">
                 <span className="text-sm text-gray-500 sm:hidden">Votes Cast</span>
                 <div className="text-xl sm:text-2xl font-semibold text-gray-900">{profile.total_votes_cast}</div>
                 <div className="hidden sm:block text-sm text-gray-500">Votes Cast</div>
-              </div>
-              <div className="flex items-center justify-between sm:block rounded-xl bg-gray-50 p-4 sm:text-center">
-                <span className="text-sm text-gray-500 sm:hidden">Comments</span>
-                <div className="text-xl sm:text-2xl font-semibold text-gray-900">
-                  {comments.filter((c) => !c.is_ghost_comment).length}
-                </div>
-                <div className="hidden sm:block text-sm text-gray-500">Comments</div>
               </div>
             </div>
 
@@ -289,7 +288,7 @@ export default function ProfilePage() {
                     : "border-transparent text-gray-500 hover:text-gray-700"
                 }`}
               >
-                Dilemmas ({dilemmas.length})
+                Verdict History ({dilemmas.length})
               </button>
               <button
                 onClick={() => setActiveTab("comments")}
@@ -327,43 +326,51 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {dilemmas.map((dilemma) => (
-                    <Link
-                      key={dilemma.id}
-                      href={`/dilemmas/${dilemma.id}`}
-                      className="block rounded-xl border border-gray-200 p-4 transition-all hover:border-gray-300 hover:shadow-sm"
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="text-xs text-gray-400">
-                          {formatRelativeDate(dilemma.created_at)}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {dilemma.vote_count} votes
-                        </span>
-                      </div>
-                      <p className="text-base text-gray-900 leading-relaxed">{truncate(dilemma.situation, 150)}</p>
-                      {dilemma.vote_count > 0 && (
-                        <div className="mt-3">
-                          <div className="flex justify-between text-xs text-gray-500 mb-1">
-                            <span>YTA {Math.round(dilemma.verdict_yta_percentage)}%</span>
-                            <span>NTA {Math.round(dilemma.verdict_nta_percentage)}%</span>
-                          </div>
-                          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-                            <div className="flex h-full">
-                              <div
-                                className="bg-red-400"
-                                style={{ width: `${dilemma.verdict_yta_percentage}%` }}
-                              />
-                              <div
-                                className="bg-emerald-400"
-                                style={{ width: `${dilemma.verdict_nta_percentage}%` }}
-                              />
-                            </div>
+                  {dilemmas.map((dilemma) => {
+                    const verdictBadge = getVerdictBadge(dilemma);
+                    return (
+                      <Link
+                        key={dilemma.id}
+                        href={`/dilemmas/${dilemma.id}`}
+                        className="block rounded-xl border border-gray-200 p-4 transition-all hover:border-gray-300 hover:shadow-sm"
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-xs text-gray-400">
+                            {formatRelativeDate(dilemma.created_at)}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">
+                              {dilemma.vote_count} votes
+                            </span>
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${verdictBadge.color}`}>
+                              {verdictBadge.label}
+                            </span>
                           </div>
                         </div>
-                      )}
-                    </Link>
-                  ))}
+                        <p className="text-base text-gray-900 leading-relaxed">{truncate(dilemma.situation, 150)}</p>
+                        {dilemma.vote_count > 0 && dilemma.status === "closed" && (
+                          <div className="mt-3">
+                            <div className="flex justify-between text-xs text-gray-500 mb-1">
+                              <span>YTA {Math.round(dilemma.verdict_yta_percentage)}%</span>
+                              <span>NTA {Math.round(dilemma.verdict_nta_percentage)}%</span>
+                            </div>
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                              <div className="flex h-full">
+                                <div
+                                  className="bg-red-400"
+                                  style={{ width: `${dilemma.verdict_yta_percentage}%` }}
+                                />
+                                <div
+                                  className="bg-emerald-400"
+                                  style={{ width: `${dilemma.verdict_nta_percentage}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </Link>
+                    );
+                  })}
                 </div>
               )
             ) : (
