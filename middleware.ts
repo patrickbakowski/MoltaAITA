@@ -97,6 +97,26 @@ export async function middleware(request: NextRequest) {
       );
     }
 
+    // Check if agentId exists in token - required for protected routes
+    if (!token.agentId) {
+      console.error("Middleware: Token exists but agentId is missing", {
+        email: token.email,
+        hasAgentId: !!token.agentId,
+      });
+      // Return 401 for API routes if no agentId
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json(
+          { error: "Session invalid - please sign out and sign back in" },
+          { status: 401 }
+        );
+      }
+      // Redirect to login for page routes
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      loginUrl.searchParams.set("message", "Session expired - please sign in again");
+      return NextResponse.redirect(loginUrl);
+    }
+
     // Check if user has accepted terms (consent check)
     // Allow accept-terms API to work without consent
     if (!token.consentGiven && !pathname.startsWith("/api/me/accept-terms")) {

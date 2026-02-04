@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   const userName = session?.user?.name || session?.user?.agentName || "Anonymous";
 
   // Check if user is banned
-  if (session.user.banned) {
+  if (session?.user?.banned) {
     return NextResponse.json(
       { error: "Your account has been suspended" },
       { status: 403 }

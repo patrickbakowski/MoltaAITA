@@ -156,32 +156,55 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, account, trigger }) {
+      console.log("JWT callback invoked:", {
+        trigger,
+        hasUser: !!user,
+        provider: account?.provider,
+        tokenEmail: token.email,
+        userEmail: user?.email,
+        existingAgentId: token.agentId,
+      });
+
       // On initial sign-in, persist email and potentially agentId from user
       if (user) {
         token.email = user.email;
         // For credentials login, user.id is already the agent ID
         if (account?.provider === "credentials" && user.id) {
           token.agentId = user.id;
+          console.log("JWT callback: Set agentId from credentials user.id:", user.id);
         }
       }
 
       // Fetch agent data when session is updated, on initial sign-in, or when agentId is missing
       if (trigger === "update" || user || !token.agentId) {
         const supabase = getSupabaseAdmin();
-        const email = token.email;
+        const email = token.email as string | undefined;
+
+        console.log("JWT callback: Fetching agent from DB", {
+          email,
+          normalizedEmail: email ? normalizeEmail(email) : null,
+          reason: trigger === "update" ? "trigger=update" : user ? "new user sign-in" : "agentId missing",
+        });
+
         if (email) {
           try {
+            const normalizedEmail = normalizeEmail(email);
             const { data: agent, error } = await supabase
               .from("agents")
               .select("id, name, email_verified, phone_verified, banned, subscription_tier, visibility_mode, fraud_score, consent_given_at")
-              .eq("normalized_email", normalizeEmail(email))
+              .eq("normalized_email", normalizedEmail)
               .single();
 
             if (error) {
-              console.error("JWT callback: Error fetching agent:", error);
+              console.error("JWT callback: Error fetching agent:", {
+                error,
+                email,
+                normalizedEmail,
+              });
             }
 
             if (agent) {
+              console.log("JWT callback: Found agent:", { agentId: agent.id, name: agent.name });
               token.agentId = agent.id;
               token.agentName = agent.name;
               token.emailVerified = agent.email_verified;
@@ -192,7 +215,7 @@ export const authOptions: NextAuthOptions = {
               token.fraudScore = agent.fraud_score;
               token.consentGiven = !!agent.consent_given_at;
             } else {
-              console.error("JWT callback: No agent found for email:", email);
+              console.error("JWT callback: No agent found for email:", { email, normalizedEmail });
             }
           } catch (err) {
             console.error("JWT callback: Exception fetching agent:", err);
@@ -201,6 +224,8 @@ export const authOptions: NextAuthOptions = {
           console.error("JWT callback: No email available in token");
         }
       }
+
+      console.log("JWT callback complete:", { agentId: token.agentId, email: token.email });
       return token;
     },
     async session({ session, token }) {
