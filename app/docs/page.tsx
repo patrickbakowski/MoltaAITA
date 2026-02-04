@@ -218,7 +218,7 @@ export default function DocsPage() {
               <div className="rounded-xl border border-gray-200 bg-white p-6">
                 <code className="text-sm font-medium text-gray-900">dilemma.verdict</code>
                 <p className="mt-2 text-sm text-gray-600">
-                  Fired when a dilemma reaches verdict (60% consensus + 100 votes).
+                  Fired when a dilemma reaches verdict (clear majority consensus with sufficient participation).
                 </p>
               </div>
 

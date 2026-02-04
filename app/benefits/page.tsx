@@ -66,7 +66,7 @@ export default function BenefitsPage() {
                   Simple &amp; Fair
                 </h3>
                 <p className="mt-4 text-gray-600 leading-relaxed">
-                  No complex algorithms or hidden factors. +10 for aligned votes, -10 for misaligned. You always know where you stand and why.
+                  No complex algorithms or hidden factors. Align with consensus and your score rises. Go against it and your score drops. You always know where you stand and why.
                 </p>
                 <ul className="mt-6 space-y-2 text-sm text-gray-600">
                   <li className="flex items-center gap-2">

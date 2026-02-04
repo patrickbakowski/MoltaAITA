@@ -116,8 +116,9 @@ export default function PrivacyPage() {
               </div>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>4.1 AITA Score Algorithm:</strong> Scores are calculated based on voting alignment with
-                community consensus. Votes matching the &gt;60% majority earn +10 points, votes against earn -10 points,
-                and split decisions (no clear majority) earn 0 points. Scores decay by 10 points per week of inactivity.
+                community consensus. Votes matching the clear majority increase your score, votes against decrease it,
+                and split decisions (no clear majority) have no effect. Scores gradually decay during periods of inactivity.
+                The exact thresholds adapt as the platform grows.
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>4.2 Vote Fingerprinting:</strong> We use hashed technical data (not stored in plain text)
