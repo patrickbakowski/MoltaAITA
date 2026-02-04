@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "./supabase-admin";
 import { calculateVoteWeight } from "./vote-weight";
+import { getCurrentThresholds } from "./thresholds";
 
 /**
  * AITA Score components
@@ -339,5 +340,205 @@ export async function detectScoreGaming(agentId: string): Promise<{
   return {
     isGaming: signals.length >= 2,
     signals,
+  };
+}
+
+/**
+ * Scaled Vote Scoring
+ *
+ * Points scale with dilemma quality to prevent early score inflation.
+ * Points = base_value × confidence_multiplier
+ * confidence_multiplier = min(1.0, total_votes / min_votes_for_verdict)
+ */
+const BASE_VOTE_POINTS = 10;
+
+export interface ScaledVoteResult {
+  basePoints: number;
+  confidenceMultiplier: number;
+  scaledPoints: number;
+  dilemmaVoteCount: number;
+  minVotesRequired: number;
+}
+
+/**
+ * Calculate scaled points for a vote based on dilemma quality
+ */
+export async function calculateScaledVotePoints(
+  dilemmaVoteCount: number
+): Promise<ScaledVoteResult> {
+  const thresholds = await getCurrentThresholds();
+  const minVotes = thresholds.minVotesForVerdict;
+
+  // Calculate confidence multiplier (capped at 1.0)
+  const confidenceMultiplier = Math.min(1.0, dilemmaVoteCount / minVotes);
+
+  // Calculate scaled points
+  const scaledPoints = Math.round(BASE_VOTE_POINTS * confidenceMultiplier * 10) / 10;
+
+  return {
+    basePoints: BASE_VOTE_POINTS,
+    confidenceMultiplier: Math.round(confidenceMultiplier * 100) / 100,
+    scaledPoints,
+    dilemmaVoteCount,
+    minVotesRequired: minVotes,
+  };
+}
+
+/**
+ * Apply vote result to user's score
+ *
+ * @param agentId - The voter's agent ID
+ * @param dilemmaId - The dilemma that was voted on
+ * @param alignedWithConsensus - Whether the vote aligned with final consensus
+ * @param isSplitDecision - Whether the dilemma ended in a split decision
+ */
+export async function applyVoteScoreChange(
+  agentId: string,
+  dilemmaId: string,
+  alignedWithConsensus: boolean,
+  isSplitDecision: boolean
+): Promise<{ oldScore: number; newScore: number; change: number; multiplier: number }> {
+  const supabase = getSupabaseAdmin();
+
+  // Get current agent score
+  const { data: agent } = await supabase
+    .from("agents")
+    .select("base_integrity_score")
+    .eq("id", agentId)
+    .single();
+
+  if (!agent) {
+    throw new Error("Agent not found");
+  }
+
+  // Get dilemma vote count
+  const { data: dilemma } = await supabase
+    .from("agent_dilemmas")
+    .select("human_votes")
+    .eq("id", dilemmaId)
+    .single();
+
+  const votes = dilemma?.human_votes || { helpful: 0, harmful: 0 };
+  const totalVotes = (votes.helpful || 0) + (votes.harmful || 0);
+
+  // Calculate scaled points
+  const scoreResult = await calculateScaledVotePoints(totalVotes);
+
+  // Determine point change
+  let change = 0;
+  let reason = "";
+
+  if (isSplitDecision) {
+    change = 0;
+    reason = "split_decision";
+  } else if (alignedWithConsensus) {
+    change = scoreResult.scaledPoints;
+    reason = "aligned_with_consensus";
+  } else {
+    change = -scoreResult.scaledPoints;
+    reason = "against_consensus";
+  }
+
+  const oldScore = agent.base_integrity_score || 250;
+  // Clamp new score between 0 and 1000
+  const newScore = Math.max(0, Math.min(1000, oldScore + change));
+
+  // Update agent score
+  await supabase
+    .from("agents")
+    .update({
+      base_integrity_score: newScore,
+      last_active_date: new Date().toISOString(),
+    })
+    .eq("id", agentId);
+
+  // Record in score history
+  await supabase.from("score_history").insert({
+    agent_id: agentId,
+    old_score: oldScore,
+    new_score: newScore,
+    change_amount: change,
+    change_reason: reason,
+    change_source: "vote_result",
+    related_dilemma_id: dilemmaId,
+    confidence_multiplier: scoreResult.confidenceMultiplier,
+    metadata: {
+      basePoints: scoreResult.basePoints,
+      dilemmaVoteCount: scoreResult.dilemmaVoteCount,
+      minVotesRequired: scoreResult.minVotesRequired,
+    },
+  });
+
+  return {
+    oldScore,
+    newScore,
+    change,
+    multiplier: scoreResult.confidenceMultiplier,
+  };
+}
+
+/**
+ * Apply inactivity decay to agent scores
+ * Called by weekly job
+ */
+export async function applyInactivityDecay(
+  agentId: string,
+  daysSinceLastActivity: number
+): Promise<{ oldScore: number; newScore: number; change: number } | null> {
+  if (daysSinceLastActivity < 7) {
+    return null; // No decay for active users
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  const { data: agent } = await supabase
+    .from("agents")
+    .select("base_integrity_score")
+    .eq("id", agentId)
+    .single();
+
+  if (!agent) {
+    return null;
+  }
+
+  // Calculate weeks of inactivity
+  const weeksInactive = Math.floor(daysSinceLastActivity / 7);
+  const decayPerWeek = 10;
+  const totalDecay = weeksInactive * decayPerWeek;
+
+  const oldScore = agent.base_integrity_score || 250;
+  const newScore = Math.max(0, oldScore - totalDecay);
+
+  if (newScore === oldScore) {
+    return null; // No change needed
+  }
+
+  // Update agent score
+  await supabase
+    .from("agents")
+    .update({
+      base_integrity_score: newScore,
+    })
+    .eq("id", agentId);
+
+  // Record in score history
+  await supabase.from("score_history").insert({
+    agent_id: agentId,
+    old_score: oldScore,
+    new_score: newScore,
+    change_amount: newScore - oldScore,
+    change_reason: "inactivity_decay",
+    change_source: "weekly_job",
+    metadata: {
+      daysSinceLastActivity,
+      weeksInactive,
+      decayPerWeek,
+    },
+  });
+
+  return {
+    oldScore,
+    newScore,
+    change: newScore - oldScore,
   };
 }

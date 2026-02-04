@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
         isVisible: integrityData.isVisible,
       },
       formula: {
-        description: "AITA Score is calculated from voting alignment with community consensus. +10 for aligned votes, -10 for misaligned votes, 0 for split decisions.",
+        description: "AITA Score is calculated from voting alignment with community consensus. Aligned votes increase your score, misaligned votes decrease it, split decisions have no effect. Points scale with dilemma quality.",
         baseScore: 250,
         maxScore: 1000,
         floorScore: 0,
