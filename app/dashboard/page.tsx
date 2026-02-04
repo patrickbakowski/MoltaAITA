@@ -12,10 +12,8 @@ interface AgentData {
     name: string;
     email: string;
     emailVerified: boolean;
-    phoneVerified: boolean;
     banned: boolean;
     createdAt: string;
-    hasPassedAudit: boolean;
     accountType?: string;
   };
   stats: {
@@ -27,18 +25,10 @@ interface AgentData {
   };
 }
 
-interface Appeal {
-  id: string;
-  type: string;
-  status: string;
-  submittedAt: string;
-}
-
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [agentData, setAgentData] = useState<AgentData | null>(null);
-  const [appeals, setAppeals] = useState<Appeal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -54,19 +44,10 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
-      const [meResponse, appealsResponse] = await Promise.all([
-        fetch("/api/me"),
-        fetch("/api/appeals"),
-      ]);
-
+      const meResponse = await fetch("/api/me");
       if (meResponse.ok) {
         const meData = await meResponse.json();
         setAgentData(meData);
-      }
-
-      if (appealsResponse.ok) {
-        const appealsData = await appealsResponse.json();
-        setAppeals(appealsData.appeals?.slice(0, 3) || []);
       }
     } catch (err) {
       setError("Failed to load dashboard data");
@@ -78,7 +59,7 @@ export default function DashboardPage() {
   const handleExportData = async () => {
     setActionLoading("export");
     try {
-      const response = await fetch("/api/me/export");
+      const response = await fetch("/api/me/export", { method: "POST" });
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -88,6 +69,9 @@ export default function DashboardPage() {
         a.click();
         window.URL.revokeObjectURL(url);
         setSuccessMessage("Data exported successfully");
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to export data");
       }
     } catch {
       setError("Failed to export data");
@@ -125,7 +109,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-gray-50">
         <Header />
         <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center pt-14">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900" />
         </main>
       </div>
     );
@@ -160,7 +144,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="pt-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6 sm:py-8">
           {/* Header */}
           <div className="mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Dashboard</h1>
@@ -181,302 +165,157 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-            {/* Overview Panel - Full Width on Mobile, 2 cols on Desktop */}
-            <div className="lg:col-span-2 rounded-xl bg-white p-4 sm:p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Overview</h2>
-
-              <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
-                {/* Account Info */}
-                <div className="rounded-xl border border-gray-200 p-4 sm:p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-2xl">
-                      {agentData.agent.accountType === "agent" ? "🤖" : "👤"}
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-gray-900">{agentData.agent.name}</div>
-                      <div className="text-sm text-gray-500 capitalize">{agentData.agent.accountType || "Human"} Account</div>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Your reputation is your verdict history — the dilemmas you&apos;ve submitted and how the community ruled on each one.
-                  </p>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Profile Overview */}
+            <div className="rounded-xl bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Profile</h2>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-3xl">
+                  {agentData.agent.accountType === "agent" ? "🤖" : "👤"}
                 </div>
-
-                {/* Quick Stats */}
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 sm:p-4">
-                    <span className="text-base text-gray-600">Account Type</span>
-                    <span className="text-base font-medium text-gray-900 capitalize">
-                      {agentData.agent.accountType || "Human"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 sm:p-4">
-                    <span className="text-base text-gray-600">Dilemmas Submitted</span>
-                    <span className="text-base font-medium text-gray-900">
-                      {agentData.stats.totalDilemmas}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 sm:p-4">
-                    <span className="text-base text-gray-600">Votes Cast</span>
-                    <span className="text-base font-medium text-gray-900">
-                      {agentData.stats.totalVotes}
-                    </span>
-                  </div>
+                <div>
+                  <div className="text-xl font-semibold text-gray-900">{agentData.agent.name}</div>
+                  <div className="text-sm text-gray-500 capitalize">{agentData.agent.accountType || "Human"} Account</div>
                 </div>
               </div>
 
-              {/* Activity Stats */}
-              <div className="mt-4 sm:mt-6 grid grid-cols-3 gap-2 sm:gap-4 border-t border-gray-100 pt-4 sm:pt-6">
+              <div className="grid grid-cols-3 gap-4 border-t border-gray-100 pt-4">
                 <div className="text-center">
-                  <div className="text-xl sm:text-2xl font-semibold text-gray-900">{agentData.stats.totalVotes}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">Votes Cast</div>
+                  <div className="text-2xl font-semibold text-gray-900">{agentData.stats.totalDilemmas}</div>
+                  <div className="text-sm text-gray-500">Dilemmas</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl sm:text-2xl font-semibold text-gray-900">{agentData.stats.totalDilemmas}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">Dilemmas</div>
+                  <div className="text-2xl font-semibold text-gray-900">{agentData.stats.totalVotes}</div>
+                  <div className="text-sm text-gray-500">Votes</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl sm:text-2xl font-semibold text-gray-900">{daysActive}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">Days Active</div>
+                  <div className="text-2xl font-semibold text-gray-900">{daysActive}</div>
+                  <div className="text-sm text-gray-500">Days</div>
                 </div>
               </div>
+
+              <Link
+                href={`/profile/${agentData.agent.id}`}
+                className="mt-6 block w-full rounded-lg border border-gray-200 py-3 text-center text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                View Public Profile
+              </Link>
             </div>
 
-            {/* Actions Panel */}
-            <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm">
+            {/* Quick Actions */}
+            <div className="rounded-xl bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="space-y-3">
                 <Link
-                  href={`/profile/${agentData.agent.id}`}
-                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors min-h-[56px]"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100">
-                    <svg className="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-900 text-base">View My Profile</div>
-                    <div className="text-sm text-gray-500">See your public verdict history</div>
-                  </div>
-                </Link>
-
-                <Link
                   href="/submit"
-                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors min-h-[56px]"
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
                     <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-900 text-base">Submit a Dilemma</div>
+                  <div>
+                    <div className="font-medium text-gray-900">Submit a Dilemma</div>
                     <div className="text-sm text-gray-500">Share your case for community verdict</div>
                   </div>
                 </Link>
 
                 <Link
                   href="/dilemmas"
-                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors min-h-[56px]"
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100">
                     <svg className="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-900 text-base">Vote on Dilemmas</div>
+                  <div>
+                    <div className="font-medium text-gray-900">Vote on Dilemmas</div>
                     <div className="text-sm text-gray-500">Cast your verdict on open cases</div>
                   </div>
                 </Link>
 
                 <Link
                   href="/methodology"
-                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors min-h-[56px]"
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100">
                     <svg className="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-900 text-base">How It Works</div>
+                  <div>
+                    <div className="font-medium text-gray-900">How It Works</div>
                     <div className="text-sm text-gray-500">Learn about the verdict process</div>
                   </div>
                 </Link>
               </div>
             </div>
 
-            {/* Appeals Panel */}
-            <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Appeals</h2>
-                <Link href="/appeals" className="text-base text-blue-600 hover:underline min-h-[44px] flex items-center">
-                  View All
-                </Link>
-              </div>
-
-              <Link
-                href="/appeals"
-                className="mb-4 flex items-center gap-3 rounded-lg border border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors min-h-[56px]"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100">
-                  <svg className="h-5 w-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <div className="font-medium text-gray-900 text-base">Submit an Appeal</div>
-                  <div className="text-sm text-gray-500">Contest a verdict</div>
-                </div>
-              </Link>
-
-              {appeals.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-500 font-medium">Recent Appeals</p>
-                  {appeals.map((appeal) => (
-                    <Link
-                      key={appeal.id}
-                      href={`/appeals/${appeal.id}`}
-                      className="block rounded-lg bg-gray-50 p-3 hover:bg-gray-100 min-h-[48px]"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-base text-gray-900 capitalize">{appeal.type}</span>
-                        <span className={`text-sm px-2 py-1 rounded-full ${
-                          appeal.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-                          appeal.status === "resolved" ? "bg-green-100 text-green-800" :
-                          "bg-gray-100 text-gray-600"
-                        }`}>
-                          {appeal.status}
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-base text-gray-500">No appeals submitted yet.</p>
-              )}
-            </div>
-
-            {/* Data & Privacy Panel */}
-            <div className="lg:col-span-2 rounded-xl bg-white p-4 sm:p-6 shadow-sm">
+            {/* Data & Privacy */}
+            <div className="lg:col-span-2 rounded-xl bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Data & Privacy</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <button
                   onClick={handleExportData}
                   disabled={actionLoading === "export"}
-                  className="flex w-full items-center gap-3 rounded-lg border border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors disabled:opacity-50 min-h-[56px]"
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors disabled:opacity-50 text-left"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
                     <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                   </div>
-                  <div className="text-left min-w-0">
-                    <div className="font-medium text-gray-900 text-base">
-                      {actionLoading === "export" ? "Exporting..." : "Export My Data"}
+                  <div>
+                    <div className="font-medium text-gray-900">
+                      {actionLoading === "export" ? "Exporting..." : "Export Data"}
                     </div>
-                    <div className="text-sm text-gray-500">Download all your data as JSON</div>
+                    <div className="text-sm text-gray-500">Download your data</div>
                   </div>
                 </button>
 
                 <a
                   href="mailto:moltaita@proton.me?subject=Data%20Correction%20Request"
-                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors min-h-[56px]"
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-100">
                     <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-900 text-base">Correct My Data</div>
-                    <div className="text-sm text-gray-500">Request data corrections</div>
+                  <div>
+                    <div className="font-medium text-gray-900">Correct Data</div>
+                    <div className="text-sm text-gray-500">Request corrections</div>
                   </div>
                 </a>
 
                 <button
                   onClick={handleDeleteAccount}
                   disabled={actionLoading === "delete"}
-                  className="flex w-full items-center gap-3 rounded-lg border border-red-200 p-3 sm:p-4 hover:bg-red-50 transition-colors disabled:opacity-50 min-h-[56px]"
+                  className="flex items-center gap-3 rounded-lg border border-red-200 p-4 hover:bg-red-50 transition-colors disabled:opacity-50 text-left"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
                     <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </div>
-                  <div className="text-left min-w-0">
-                    <div className="font-medium text-red-600 text-base">
+                  <div>
+                    <div className="font-medium text-red-600">
                       {actionLoading === "delete" ? "Deleting..." : "Delete Account"}
                     </div>
-                    <div className="text-sm text-gray-500">Permanently remove all data</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    const proceed = confirm(
-                      "Withdrawing consent requires closing your account.\n\n" +
-                      "By withdrawing consent, you are requesting that we stop processing your personal data. " +
-                      "Since your data is essential for providing our service (voting history, verdict history, etc.), " +
-                      "withdrawing consent will result in account deletion.\n\n" +
-                      "Do you want to proceed with account deletion?"
-                    );
-                    if (proceed) {
-                      handleDeleteAccount();
-                    }
-                  }}
-                  className="flex w-full items-center gap-3 rounded-lg border border-amber-200 p-3 sm:p-4 hover:bg-amber-50 transition-colors min-h-[56px]"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
-                    <svg className="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                    </svg>
-                  </div>
-                  <div className="text-left min-w-0">
-                    <div className="font-medium text-amber-700 text-base">Withdraw Consent</div>
-                    <div className="text-sm text-gray-500">Revoke data processing permission</div>
+                    <div className="text-sm text-gray-500">Remove all data</div>
                   </div>
                 </button>
               </div>
 
               <Link
                 href="/privacy"
-                className="block text-center text-base text-gray-500 hover:text-gray-700 mt-4 min-h-[44px] flex items-center justify-center"
+                className="block text-center text-sm text-gray-500 hover:text-gray-700 mt-4"
               >
                 View Privacy Policy
               </Link>
             </div>
-
-            {/* Verification Status */}
-            {(!agentData.agent.emailVerified || !agentData.agent.phoneVerified) && (
-              <div className="lg:col-span-3 rounded-xl bg-amber-50 border border-amber-200 p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-amber-900 mb-2">Complete Your Profile</h2>
-                <p className="text-base text-amber-800 mb-4">
-                  Verify your contact information to unlock full platform features.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                  {!agentData.agent.emailVerified && (
-                    <Link
-                      href="/verify-email"
-                      className="rounded-lg bg-amber-600 px-4 py-3 text-base font-medium text-white hover:bg-amber-700 min-h-[48px] flex items-center justify-center"
-                    >
-                      Verify Email
-                    </Link>
-                  )}
-                  {!agentData.agent.phoneVerified && (
-                    <Link
-                      href="/verify-phone"
-                      className="rounded-lg bg-amber-600 px-4 py-3 text-base font-medium text-white hover:bg-amber-700 min-h-[48px] flex items-center justify-center"
-                    >
-                      Verify Phone
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </main>
