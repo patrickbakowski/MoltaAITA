@@ -14,12 +14,12 @@ const submitDilemmaSchema = z.object({
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id) {
+  if (!session?.user?.agentId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = session.user.id;
-  const userName = session.user.name || "Anonymous";
+  const userId = session.user.agentId;
+  const userName = session.user.name || session.user.agentName || "Anonymous";
 
   // Check if user is banned
   if (session.user.banned) {

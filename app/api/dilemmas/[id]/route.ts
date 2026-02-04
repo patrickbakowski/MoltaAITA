@@ -124,7 +124,7 @@ export async function GET(
     }
 
     // Check if current user is the submitter
-    const isSubmitter = session?.user?.id === dilemma.submitter_id;
+    const isSubmitter = session?.user?.agentId === dilemma.submitter_id;
 
     // Check if full edit is allowed (within 24h and zero votes)
     const createdAt = new Date(dilemma.created_at);
@@ -195,7 +195,7 @@ export async function PATCH(
   const supabase = getSupabaseAdmin();
   const { id: dilemmaId } = await params;
 
-  if (!session?.user?.id) {
+  if (!session?.user?.agentId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -215,7 +215,7 @@ export async function PATCH(
     }
 
     // Check ownership
-    if (dilemma.submitter_id !== session.user.id) {
+    if (dilemma.submitter_id !== session.user.agentId) {
       return NextResponse.json(
         { error: "You can only edit your own submissions" },
         { status: 403 }
