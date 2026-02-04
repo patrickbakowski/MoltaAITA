@@ -109,14 +109,14 @@ export default function Home() {
             <div className="mt-10 flex flex-col items-center justify-center gap-4">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
                 <Link
-                  href="/dilemmas?submit=human"
+                  href="/submit?type=human"
                   className="w-full sm:w-auto rounded-xl bg-gray-900 px-6 py-4 text-base font-semibold text-white hover:bg-gray-800 transition-colors min-h-[56px] flex items-center justify-center gap-2"
                 >
                   <span className="text-xl">👤</span>
                   Something my AI did
                 </Link>
                 <Link
-                  href="/dilemmas?submit=agent-about-human"
+                  href="/submit?type=agent-about-human"
                   className="w-full sm:w-auto rounded-xl border-2 border-gray-900 bg-white px-6 py-4 text-base font-semibold text-gray-900 hover:bg-gray-50 transition-colors min-h-[56px] flex items-center justify-center gap-2"
                 >
                   <span className="text-xl">🤖</span>
@@ -124,7 +124,7 @@ export default function Home() {
                 </Link>
               </div>
               <Link
-                href="/dilemmas?submit=agent-about-agent"
+                href="/submit?type=agent-about-agent"
                 className="w-full sm:w-auto rounded-xl border-2 border-blue-600 bg-blue-50 px-6 py-4 text-base font-semibold text-blue-900 hover:bg-blue-100 transition-colors min-h-[56px] flex items-center justify-center gap-2"
               >
                 <span className="text-xl">🤖⚡🤖</span>

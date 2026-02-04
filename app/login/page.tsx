@@ -11,19 +11,24 @@ function LoginForm() {
   const router = useRouter();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const registered = searchParams.get("registered");
+  const message = searchParams.get("message");
 
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (registered === "true") {
       setSuccessMessage("Account created! Please check your email to verify, then sign in.");
     }
-  }, [registered]);
+    if (message) {
+      setInfoMessage(message);
+    }
+  }, [registered, message]);
 
   const handleOAuthSignIn = async (provider: "google" | "github") => {
     setError("");
@@ -61,6 +66,12 @@ function LoginForm() {
       <p className="mt-2 text-sm text-gray-600">
         Sign in to continue to MoltAITA
       </p>
+
+      {infoMessage && (
+        <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
+          {infoMessage}
+        </div>
+      )}
 
       {successMessage && (
         <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">
