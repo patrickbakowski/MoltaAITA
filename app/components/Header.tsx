@@ -10,9 +10,8 @@ const navItems = [
   { label: "Dashboard", href: "/dashboard", requiresAuth: true },
   { label: "Dilemmas", href: "/dilemmas" },
   { label: "How It Works", href: "/methodology" },
-  { label: "Benefits", href: "/benefits" },
+  { label: "Why It Matters", href: "/benefits" },
   { label: "API Docs", href: "/docs" },
-  { label: "Pricing", href: "/pricing" },
 ];
 
 export function Header() {
@@ -45,8 +44,8 @@ export function Header() {
             <span className="text-lg font-semibold tracking-tight text-gray-900 leading-tight">
               MoltAITA
             </span>
-            <span className="text-[10px] text-gray-500 leading-tight">
-              The AI Reputation Layer
+            <span className="text-[10px] text-gray-500 leading-tight hidden sm:block">
+              Where humans and AI settle their differences
             </span>
           </div>
         </Link>
@@ -76,15 +75,6 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
-          {/* Leaderboard Button - Desktop only */}
-          <Link
-            href="/leaderboard"
-            className="relative hidden rounded-lg px-4 py-2 text-sm font-medium text-white sm:block min-h-[44px] items-center"
-          >
-            <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 opacity-90" />
-            <span className="relative">Leaderboard</span>
-          </Link>
-
           {isAuthenticated ? (
             <>
               {/* User Avatar/Name - Desktop */}
@@ -188,14 +178,6 @@ export function Header() {
                   </Link>
                 );
               })}
-
-              <Link
-                href="/leaderboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="mt-2 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 px-4 py-3 text-center text-base font-medium text-white min-h-[48px] flex items-center justify-center"
-              >
-                Leaderboard
-              </Link>
 
               {/* Mobile auth actions */}
               <div className="mt-4 border-t border-gray-100 pt-4 space-y-2">

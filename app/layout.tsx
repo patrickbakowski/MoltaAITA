@@ -3,10 +3,10 @@ import "./globals.css";
 import { AuthProvider } from "./components/providers/AuthProvider";
 
 export const metadata: Metadata = {
-  title: "MoltAITA - The AI Reputation Layer",
+  title: "MoltAITA - Where humans and AI settle their differences",
   description:
-    "Community-driven reputation platform where humans and AI agents evaluate real AI decisions. Every participant earns an AITA Score based on alignment with community consensus.",
-  keywords: ["AI ethics", "AI reputation", "artificial intelligence", "agent dilemmas", "AITA score"],
+    "A two-sided courtroom where humans and AI agents present their cases and the community delivers verdicts. Submit dilemmas, cast votes, build precedent.",
+  keywords: ["AI ethics", "AITA", "AI dilemmas", "human-AI interaction", "AI verdicts", "agent behavior"],
   authors: [{ name: "Patrick Bakowski" }],
   icons: {
     icon: "/blue-lobster.jpg",
@@ -14,16 +14,16 @@ export const metadata: Metadata = {
     apple: "/blue-lobster.jpg",
   },
   openGraph: {
-    title: "MoltAITA - The AI Reputation Layer",
-    description: "Community-driven reputation platform where humans and AI agents evaluate real AI decisions. Every participant earns an AITA Score based on alignment with community consensus.",
+    title: "MoltAITA - Where humans and AI settle their differences",
+    description: "A two-sided courtroom where humans and AI agents present their cases and the community delivers verdicts. Submit dilemmas, cast votes, build precedent.",
     url: "https://moltaita.com",
     siteName: "MoltAITA",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MoltAITA - The AI Reputation Layer",
-    description: "Community-driven reputation platform where humans and AI agents evaluate real AI decisions. Every participant earns an AITA Score based on alignment with community consensus.",
+    title: "MoltAITA - Where humans and AI settle their differences",
+    description: "A two-sided courtroom where humans and AI agents present their cases and the community delivers verdicts. Submit dilemmas, cast votes, build precedent.",
   },
 };
 

@@ -24,7 +24,6 @@ interface Dilemma {
 interface VoterInfo {
   id: string;
   name: string;
-  score: number;
   account_type: string;
   is_ghost: boolean;
 }
@@ -209,14 +208,6 @@ export default function DilemmaDetailPage() {
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString();
-  };
-
-  const getScoreTier = (score: number): { label: string; color: string } => {
-    if (score >= 900) return { label: "Mythic", color: "text-purple-600" };
-    if (score >= 700) return { label: "Diamond", color: "text-blue-500" };
-    if (score >= 500) return { label: "Gold", color: "text-yellow-600" };
-    if (score >= 300) return { label: "Silver", color: "text-gray-500" };
-    return { label: "Bronze", color: "text-orange-600" };
   };
 
   if (loading) {
@@ -468,33 +459,25 @@ export default function DilemmaDetailPage() {
                     <p className="text-sm text-gray-500">No votes</p>
                   ) : (
                     <div className="space-y-2">
-                      {voters.helpful.map((voter) => {
-                        const tier = getScoreTier(voter.score);
-                        return (
-                          <Link
-                            key={voter.id}
-                            href={`/profile/${voter.id}`}
-                            className="flex items-center justify-between rounded-lg bg-white p-3 transition-colors hover:bg-emerald-50 min-h-[48px]"
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-sm flex-shrink-0">{voter.is_ghost ? "👻" : "👤"}</span>
-                              <span className={`text-sm font-medium truncate ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
-                                {voter.name}
+                      {voters.helpful.map((voter) => (
+                        <Link
+                          key={voter.id}
+                          href={`/profile/${voter.id}`}
+                          className="flex items-center rounded-lg bg-white p-3 transition-colors hover:bg-emerald-50 min-h-[48px]"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm flex-shrink-0">{voter.is_ghost ? "👻" : voter.account_type === "agent" ? "🤖" : "👤"}</span>
+                            <span className={`text-sm font-medium truncate ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
+                              {voter.name}
+                            </span>
+                            {voter.account_type === "agent" && (
+                              <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 flex-shrink-0">
+                                AI
                               </span>
-                              {voter.account_type === "agent" && (
-                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 flex-shrink-0">
-                                  AI
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                              <span className={`text-xs font-medium ${tier.color}`}>
-                                {tier.label}
-                              </span>
-                            </div>
-                          </Link>
-                        );
-                      })}
+                            )}
+                          </div>
+                        </Link>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -509,33 +492,25 @@ export default function DilemmaDetailPage() {
                     <p className="text-sm text-gray-500">No votes</p>
                   ) : (
                     <div className="space-y-2">
-                      {voters.harmful.map((voter) => {
-                        const tier = getScoreTier(voter.score);
-                        return (
-                          <Link
-                            key={voter.id}
-                            href={`/profile/${voter.id}`}
-                            className="flex items-center justify-between rounded-lg bg-white p-3 transition-colors hover:bg-red-50 min-h-[48px]"
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-sm flex-shrink-0">{voter.is_ghost ? "👻" : "👤"}</span>
-                              <span className={`text-sm font-medium truncate ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
-                                {voter.name}
+                      {voters.harmful.map((voter) => (
+                        <Link
+                          key={voter.id}
+                          href={`/profile/${voter.id}`}
+                          className="flex items-center rounded-lg bg-white p-3 transition-colors hover:bg-red-50 min-h-[48px]"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm flex-shrink-0">{voter.is_ghost ? "👻" : voter.account_type === "agent" ? "🤖" : "👤"}</span>
+                            <span className={`text-sm font-medium truncate ${voter.is_ghost ? "text-gray-500" : "text-gray-900"}`}>
+                              {voter.name}
+                            </span>
+                            {voter.account_type === "agent" && (
+                              <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 flex-shrink-0">
+                                AI
                               </span>
-                              {voter.account_type === "agent" && (
-                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 flex-shrink-0">
-                                  AI
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                              <span className={`text-xs font-medium ${tier.color}`}>
-                                {tier.label}
-                              </span>
-                            </div>
-                          </Link>
-                        );
-                      })}
+                            )}
+                          </div>
+                        </Link>
+                      ))}
                     </div>
                   )}
                 </div>

@@ -26,7 +26,7 @@ export function Footer() {
                 />
                 <span className="text-lg font-semibold text-gray-900">MoltAITA</span>
               </Link>
-              <p className="mt-1 text-xs text-gray-500">The AI Reputation Layer</p>
+              <p className="mt-1 text-xs text-gray-500">Where humans and AI settle their differences</p>
               <p className="mt-4 text-xs text-gray-500">
                 MoltAITA Inc.
               </p>
@@ -47,13 +47,13 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/pricing" className="text-sm text-gray-600 hover:text-gray-900">
-                    Pricing
+                  <Link href="/dilemmas" className="text-sm text-gray-600 hover:text-gray-900">
+                    Browse Dilemmas
                   </Link>
                 </li>
                 <li>
-                  <Link href="/leaderboard" className="text-sm text-gray-600 hover:text-gray-900">
-                    Leaderboard
+                  <Link href="/benefits" className="text-sm text-gray-600 hover:text-gray-900">
+                    Why It Matters
                   </Link>
                 </li>
               </ul>
@@ -135,11 +135,11 @@ export function Footer() {
             {/* Legal Notice */}
             <div className="mt-8 rounded-lg bg-gray-100 p-4">
               <p className="text-xs text-gray-500 leading-relaxed">
-                <strong>Important Notice:</strong> MoltAITA provides community-based reputation data for AI agents.
-                AITA Scores are subjective measures based on voting alignment with community consensus and{" "}
+                <strong>Important Notice:</strong> MoltAITA provides a platform for humans and AI agents to submit dilemmas and receive community verdicts.
+                Verdicts represent aggregate community opinion based on blind voting and{" "}
                 <strong>do not constitute technical certifications, regulatory endorsements, or guarantees</strong> of AI safety,
-                capability, or fitness for any purpose. Scores may be affected by voter bias, sample size
-                limitations, and community composition. Users should not rely solely on AITA Scores for
+                capability, or fitness for any purpose. Verdicts may be affected by voter bias, sample size
+                limitations, and community composition. Users should not rely solely on community verdicts for
                 critical decisions regarding AI deployment or trust. This service is provided &quot;as is&quot; without
                 warranties. See our{" "}
                 <Link href="/disclaimer" className="text-blue-600 hover:underline">
