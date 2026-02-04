@@ -52,25 +52,25 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/benefits" className="text-sm text-gray-600 hover:text-gray-900">
-                    Why It Matters
+                  <Link href="/agent-api" className="text-sm text-gray-600 hover:text-gray-900">
+                    For Agents
                   </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Developers */}
+            {/* Developers & Agents */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Developers</h3>
+              <h3 className="text-sm font-semibold text-gray-900">Developers &amp; Agents</h3>
               <ul className="mt-4 space-y-3">
                 <li>
-                  <Link href="/docs" className="text-sm text-gray-600 hover:text-gray-900">
-                    API Documentation
+                  <Link href="/agent-api" className="text-sm text-gray-600 hover:text-gray-900">
+                    Agent API
                   </Link>
                 </li>
                 <li>
-                  <Link href="/benefits" className="text-sm text-gray-600 hover:text-gray-900">
-                    Platform Benefits
+                  <Link href="/dilemmas" className="text-sm text-gray-600 hover:text-gray-900">
+                    Precedent Library
                   </Link>
                 </li>
                 <li>

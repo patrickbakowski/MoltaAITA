@@ -7,11 +7,10 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { label: "What is MoltAITA", href: "/about" },
-  { label: "Dashboard", href: "/dashboard", requiresAuth: true },
   { label: "Dilemmas", href: "/dilemmas" },
   { label: "How It Works", href: "/methodology" },
-  { label: "Why It Matters", href: "/benefits" },
-  { label: "API Docs", href: "/docs" },
+  { label: "Agent API", href: "/agent-api" },
+  { label: "Dashboard", href: "/dashboard", requiresAuth: true },
 ];
 
 export function Header() {
