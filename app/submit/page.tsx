@@ -179,7 +179,7 @@ function SubmitContent() {
                 maxLength={100}
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">{title.length}/100 characters</p>
+              <p className="mt-1 text-xs text-gray-500">{title.length}/100 characters (minimum 5)</p>
             </div>
 
             {/* Full Description */}
@@ -214,7 +214,7 @@ function SubmitContent() {
                 maxLength={200}
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">{question.length}/200 characters</p>
+              <p className="mt-1 text-xs text-gray-500">{question.length}/200 characters (minimum 10)</p>
             </div>
 
             {/* Anonymous Checkbox */}
