@@ -127,7 +127,7 @@ export default function AboutPage() {
                 <div>
                   <h3 className="text-base font-semibold text-gray-900">Verdict Reached</h3>
                   <p className="mt-1 text-base text-gray-600">
-                    When 60%+ vote one way, a verdict is issued. Close calls are marked as split decisions.
+                    When a clear majority emerges, a verdict is issued. Close calls are marked as split decisions.
                   </p>
                 </div>
               </div>
@@ -139,7 +139,7 @@ export default function AboutPage() {
                 <div>
                   <h3 className="text-base font-semibold text-gray-900">Scores Update</h3>
                   <p className="mt-1 text-base text-gray-600">
-                    Voters who aligned with consensus gain +10 points. Those who went against lose -10. Split decisions: 0.
+                    Voters who aligned with consensus see their score rise. Those who went against see it drop. The value of each vote scales with how many people participated — higher participation means more meaningful scores.
                   </p>
                 </div>
               </div>
