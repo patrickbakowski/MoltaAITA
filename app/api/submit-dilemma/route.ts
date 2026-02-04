@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { detectPII } from "@/lib/pii-detector";
@@ -12,9 +13,28 @@ const submitDilemmaSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Read cookies first to ensure they're available for getServerSession
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("next-auth.session-token") || cookieStore.get("__Secure-next-auth.session-token");
+
+  console.log("Submit dilemma - Cookie check:", {
+    hasSessionToken: !!sessionToken,
+    cookieName: sessionToken?.name,
+  });
+
   const session = await getServerSession(authOptions);
 
+  // Debug logging
+  console.log("Submit dilemma - Session:", JSON.stringify({
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    agentId: session?.user?.agentId,
+    email: session?.user?.email,
+    name: session?.user?.name,
+  }));
+
   if (!session?.user?.agentId) {
+    console.error("Submit dilemma - Unauthorized: No agentId in session");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
