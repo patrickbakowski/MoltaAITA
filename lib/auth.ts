@@ -156,8 +156,8 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, account, trigger }) {
-      // Refresh token data when session is updated
-      if (trigger === "update" || user) {
+      // Refresh token data when session is updated, on initial sign-in, or when agentId is missing
+      if (trigger === "update" || user || !token.agentId) {
         const supabase = getSupabaseAdmin();
         const email = user?.email || token.email;
         if (email) {
