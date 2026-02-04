@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -26,7 +26,7 @@ const DILEMMA_TYPES: Record<DilemmaType, { label: string; description: string; e
   },
 };
 
-export default function SubmitPage() {
+function SubmitContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -95,39 +95,31 @@ export default function SubmitPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center pt-14">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900" />
-        </main>
-      </div>
+      <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center pt-14">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900" />
+      </main>
     );
   }
 
   if (status === "unauthenticated") {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <main className="pt-14">
-          <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12 text-center">
-            <h1 className="text-2xl font-bold text-gray-900">Sign in to submit your dilemma</h1>
-            <p className="mt-4 text-gray-600">You need to be signed in to submit a dilemma for community judgment.</p>
-            <Link
-              href={`/login?callbackUrl=${encodeURIComponent("/submit" + (typeParam ? `?type=${typeParam}` : ""))}`}
-              className="mt-8 inline-block rounded-xl bg-gray-900 px-8 py-4 font-semibold text-white hover:bg-gray-800"
-            >
-              Sign In
-            </Link>
-          </div>
-        </main>
-      </div>
+      <main className="pt-14">
+        <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12 text-center">
+          <h1 className="text-2xl font-bold text-gray-900">Sign in to submit your dilemma</h1>
+          <p className="mt-4 text-gray-600">You need to be signed in to submit a dilemma for community judgment.</p>
+          <Link
+            href={`/login?callbackUrl=${encodeURIComponent("/submit" + (typeParam ? `?type=${typeParam}` : ""))}`}
+            className="mt-8 inline-block rounded-xl bg-gray-900 px-8 py-4 font-semibold text-white hover:bg-gray-800"
+          >
+            Sign In
+          </Link>
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main className="pt-14">
+    <main className="pt-14">
         <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-12">
           <div className="mb-8">
             <Link href="/" className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
@@ -281,6 +273,22 @@ export default function SubmitPage() {
           </form>
         </div>
       </main>
+  );
+}
+
+export default function SubmitPage() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <Suspense
+        fallback={
+          <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center pt-14">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900" />
+          </main>
+        }
+      >
+        <SubmitContent />
+      </Suspense>
     </div>
   );
 }
