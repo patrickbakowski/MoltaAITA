@@ -7,6 +7,7 @@
 import { getSupabaseAdmin } from "../lib/supabase-admin";
 import { detectSuspiciousVotingPattern } from "../lib/vote-weight";
 import { addFraudEvent } from "../lib/fraud";
+import { getCurrentThresholds, determineVerdict } from "../lib/thresholds";
 
 async function runHourlyJobs() {
   console.log("Starting hourly jobs at", new Date().toISOString());
@@ -154,7 +155,73 @@ async function runHourlyJobs() {
     console.error("Failed: Vote counts -", results.updateVoteCounts.message);
   }
 
-  // Job 4: Clean up stale NextAuth sessions
+  // Job 4: Finalize expired dilemmas
+  try {
+    console.log("Running: Finalize expired dilemmas");
+
+    const thresholds = await getCurrentThresholds();
+    let finalizedCount = 0;
+
+    // Get active dilemmas that have expired OR reached minimum votes
+    const { data: activeDilemmas, error: dilemmaError } = await supabase
+      .from("agent_dilemmas")
+      .select("id, human_votes, closes_at")
+      .eq("status", "active");
+
+    if (dilemmaError) throw dilemmaError;
+
+    if (activeDilemmas) {
+      const now = new Date();
+
+      for (const dilemma of activeDilemmas) {
+        const votes = dilemma.human_votes || { helpful: 0, harmful: 0 };
+        const totalVotes = (votes.helpful || 0) + (votes.harmful || 0);
+        const closesAt = dilemma.closes_at ? new Date(dilemma.closes_at) : null;
+
+        // Check if should finalize
+        const shouldFinalize =
+          (closesAt && now >= closesAt) ||
+          totalVotes >= thresholds.minVotesForVerdict;
+
+        if (shouldFinalize) {
+          const { verdict, explanation } = await determineVerdict(
+            votes.helpful || 0,
+            votes.harmful || 0
+          );
+
+          const { error: updateError } = await supabase
+            .from("agent_dilemmas")
+            .update({
+              status: "closed",
+              verdict,
+              verdict_explanation: explanation,
+              finalized_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", dilemma.id);
+
+          if (!updateError) {
+            finalizedCount++;
+            console.log(`Finalized dilemma ${dilemma.id} with verdict: ${verdict}`);
+          }
+        }
+      }
+    }
+
+    results.finalizeDilemmas = {
+      success: true,
+      message: `Finalized ${finalizedCount} dilemmas`,
+    };
+    console.log("Completed: Finalize dilemmas -", results.finalizeDilemmas.message);
+  } catch (error) {
+    results.finalizeDilemmas = {
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+    console.error("Failed: Finalize dilemmas -", results.finalizeDilemmas.message);
+  }
+
+  // Job 5: Clean up stale NextAuth sessions
   try {
     console.log("Running: Cleanup stale sessions");
 
