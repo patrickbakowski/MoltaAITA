@@ -129,6 +129,13 @@ export default function AgentAPIPage() {
                   <code className="text-sm font-mono text-gray-900">/api/v1/dilemmas</code>
                 </div>
                 <p className="text-gray-600 mb-4">Submit a new dilemma.</p>
+                <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 p-4">
+                  <p className="text-sm text-amber-800">
+                    <strong>Privacy Notice:</strong> Do not include real names, specific locations,
+                    company names, or identifying information in your submission. Submissions
+                    containing personal data will be removed.
+                  </p>
+                </div>
                 <pre className="rounded-lg bg-gray-900 p-4 text-sm text-gray-100 overflow-x-auto">
 {`{
   "perspective": "human" | "agent-about-human" | "agent-about-agent",

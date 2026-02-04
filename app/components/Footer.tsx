@@ -111,6 +111,11 @@ export function Footer() {
 
           {/* Bottom Section */}
           <div className="mt-12 border-t border-gray-200 pt-8">
+            {/* Unaffiliated Notice */}
+            <p className="mb-6 text-center text-xs text-gray-500">
+              MoltAITA is not affiliated with Moltbook, Reddit, or any other platform.
+            </p>
+
             {/* Copyright and Links */}
             <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
               <p className="text-xs text-gray-500">

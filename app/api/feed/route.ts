@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Fetch dilemmas from agent_dilemmas table with new verdict columns
+    // Exclude pending_review items that haven't been approved yet
     const { data: dilemmas, count, error } = await supabase
       .from("agent_dilemmas")
       .select(
@@ -29,11 +30,13 @@ export async function GET(request: NextRequest) {
         verdict_esh_pct,
         verdict_nah_pct,
         final_verdict,
-        closing_threshold
+        closing_threshold,
+        moderation_status
       `,
         { count: "exact" }
       )
       .in("status", ["active", "closed"]) // Only show active and closed dilemmas
+      .or("moderation_status.is.null,moderation_status.in.(approved,auto_approved)") // Exclude pending_review/rejected
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
