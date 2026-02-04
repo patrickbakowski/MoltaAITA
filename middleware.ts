@@ -33,6 +33,9 @@ const publicRoutes = [
   "/verify-email",
   "/accept-terms",
   "/banned",
+  "/submit",
+  "/dilemmas",
+  "/agent-api",
 ];
 
 // API routes that are public (GET only)
