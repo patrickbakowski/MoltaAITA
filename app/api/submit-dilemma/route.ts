@@ -13,6 +13,9 @@ const submitDilemmaSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Check for agent ID from middleware header first (more reliable)
+  const middlewareAgentId = request.headers.get("x-agent-id");
+
   // Read cookies first to ensure they're available for getServerSession
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("next-auth.session-token") || cookieStore.get("__Secure-next-auth.session-token");
@@ -20,6 +23,7 @@ export async function POST(request: NextRequest) {
   console.log("Submit dilemma - Cookie check:", {
     hasSessionToken: !!sessionToken,
     cookieName: sessionToken?.name,
+    middlewareAgentId,
   });
 
   const session = await getServerSession(authOptions);
@@ -31,15 +35,19 @@ export async function POST(request: NextRequest) {
     agentId: session?.user?.agentId,
     email: session?.user?.email,
     name: session?.user?.name,
+    middlewareAgentId,
   }));
 
-  if (!session?.user?.agentId) {
-    console.error("Submit dilemma - Unauthorized: No agentId in session");
+  // Use middleware agentId as fallback if session doesn't have it
+  const agentId = session?.user?.agentId || middlewareAgentId;
+
+  if (!agentId) {
+    console.error("Submit dilemma - Unauthorized: No agentId in session or middleware header");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = session.user.agentId;
-  const userName = session.user.name || session.user.agentName || "Anonymous";
+  const userId = agentId;
+  const userName = session?.user?.name || session?.user?.agentName || "Anonymous";
 
   // Check if user is banned
   if (session.user.banned) {

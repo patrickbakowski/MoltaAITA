@@ -66,6 +66,7 @@ function SubmitContent() {
       const response = await fetch("/api/submit-dilemma", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           dilemma_text: dilemmaText,
           dilemma_type: dilemmaType,

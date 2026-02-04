@@ -13,6 +13,7 @@ const protectedRoutes = [
   "/api/verify-phone",
   "/api/audit",
   "/api/appeals",
+  "/api/submit-dilemma",
   "/appeals",
 ];
 
