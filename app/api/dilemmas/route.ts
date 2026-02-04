@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { checkRateLimit, logRateLimitAction } from "@/lib/rate-limit";
+import { detectPII } from "@/lib/pii-detector";
 import { z } from "zod";
 
 const createDilemmaSchema = z.object({
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
         { count: "exact" }
       )
       .eq("hidden", false)
+      .or("moderation_status.is.null,moderation_status.in.(approved,auto_approved)") // Exclude pending_review/rejected
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -145,7 +147,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create dilemma
+    // Check for PII in submission text
+    const fullText = `${situation} ${agentAction} ${context || ""}`;
+    const piiResult = detectPII(fullText);
+
+    // Determine moderation status based on PII detection
+    const moderationStatus = piiResult.hasPII ? "pending_review" : "auto_approved";
+    const moderationFlags = piiResult.hasPII ? piiResult.flags : [];
+
+    // If PII detected, return warning to user instead of creating
+    if (piiResult.hasPII) {
+      return NextResponse.json(
+        {
+          error: "content_moderation",
+          message: piiResult.message,
+          flags: piiResult.flags.map((f) => ({
+            type: f.type,
+            confidence: f.confidence,
+          })),
+          suggestion:
+            "Please edit your submission to remove personal information and resubmit.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Create dilemma (auto-approved since no PII detected)
     const { data: dilemma, error } = await supabase
       .from("dilemmas")
       .insert({
@@ -154,6 +181,9 @@ export async function POST(request: NextRequest) {
         agent_action: agentAction,
         context,
         hidden: false,
+        moderation_status: moderationStatus,
+        moderation_flags: moderationFlags,
+        moderated_at: new Date().toISOString(),
       })
       .select()
       .single();
