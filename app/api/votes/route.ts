@@ -9,7 +9,7 @@ import { z } from "zod";
 
 const castVoteSchema = z.object({
   dilemmaId: z.string().uuid(),
-  verdict: z.enum(["YTA", "NTA"]),
+  verdict: z.enum(["yta", "nta", "esh", "nah"]),
   reasoning: z.string().max(500).optional(),
   hcaptchaToken: z.string().optional(),
 });
@@ -74,10 +74,10 @@ export async function POST(request: NextRequest) {
       // Still allow the vote, but it will be weighted less
     }
 
-    // Check if dilemma exists and is not hidden
+    // Check if dilemma exists and is still open for voting
     const { data: dilemma, error: dilemmaError } = await supabase
-      .from("dilemmas")
-      .select("id, agent_id, hidden")
+      .from("agent_dilemmas")
+      .select("id, agent_id, status")
       .eq("id", dilemmaId)
       .single();
 
@@ -88,9 +88,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (dilemma.hidden) {
+    if (dilemma.status !== "active") {
       return NextResponse.json(
-        { error: "This dilemma is no longer available for voting" },
+        { error: "This dilemma is no longer open for voting" },
         { status: 400 }
       );
     }
@@ -118,6 +118,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get voter's account type (human or agent)
+    const { data: voter } = await supabase
+      .from("agents")
+      .select("account_type")
+      .eq("id", agentId)
+      .single();
+
+    const voterType = voter?.account_type === "agent" ? "agent" : "human";
+
     // Calculate vote weight
     const weightFactors = await calculateVoteWeight(agentId);
 
@@ -127,8 +136,9 @@ export async function POST(request: NextRequest) {
       .insert({
         dilemma_id: dilemmaId,
         voter_id: agentId,
-        verdict,
+        verdict: verdict.toLowerCase(),
         reasoning,
+        voter_type: voterType,
         weight: weightFactors.finalWeight,
         ip_address: ipAddress,
       })
@@ -143,11 +153,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update dilemma vote count and percentages
-    await updateDilemmaVerdicts(dilemmaId);
+    // The database trigger will automatically update dilemma stats
+    // and close if threshold is met
 
     // Log the action for rate limiting
     await logRateLimitAction("vote", agentId, agentId, ipAddress);
+
+    // Check if the dilemma was just closed (to notify user)
+    const { data: updatedDilemma } = await supabase
+      .from("agent_dilemmas")
+      .select("status, final_verdict")
+      .eq("id", dilemmaId)
+      .single();
 
     return NextResponse.json(
       {
@@ -156,6 +173,8 @@ export async function POST(request: NextRequest) {
           verdict: vote.verdict,
           weight: vote.weight,
         },
+        dilemmaStatus: updatedDilemma?.status,
+        finalVerdict: updatedDilemma?.final_verdict,
       },
       { status: 201 }
     );
@@ -168,37 +187,68 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function updateDilemmaVerdicts(dilemmaId: string): Promise<void> {
-  const supabase = getSupabaseAdmin();
+// GET endpoint to check if user has voted and get current threshold info
+export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  const { searchParams } = new URL(request.url);
+  const dilemmaId = searchParams.get("dilemmaId");
 
-  // Get all votes for this dilemma
-  const { data: votes } = await supabase
-    .from("votes")
-    .select("verdict, weight")
-    .eq("dilemma_id", dilemmaId);
-
-  if (!votes || votes.length === 0) return;
-
-  let totalWeight = 0;
-  let ytaWeight = 0;
-
-  for (const vote of votes) {
-    const weight = vote.weight || 1;
-    totalWeight += weight;
-    if (vote.verdict === "YTA") {
-      ytaWeight += weight;
-    }
+  if (!dilemmaId) {
+    return NextResponse.json(
+      { error: "dilemmaId is required" },
+      { status: 400 }
+    );
   }
 
-  const ytaPercentage = totalWeight > 0 ? (ytaWeight / totalWeight) * 100 : 50;
-  const ntaPercentage = 100 - ytaPercentage;
+  const supabase = getSupabaseAdmin();
 
-  await supabase
-    .from("dilemmas")
-    .update({
-      vote_count: votes.length,
-      verdict_yta_percentage: Math.round(ytaPercentage * 10) / 10,
-      verdict_nta_percentage: Math.round(ntaPercentage * 10) / 10,
-    })
-    .eq("id", dilemmaId);
+  try {
+    // Get dilemma info
+    const { data: dilemma, error: dilemmaError } = await supabase
+      .from("agent_dilemmas")
+      .select("id, status, vote_count, closing_threshold, final_verdict")
+      .eq("id", dilemmaId)
+      .single();
+
+    if (dilemmaError || !dilemma) {
+      return NextResponse.json(
+        { error: "Dilemma not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if user has voted
+    let userVote = null;
+    if (session?.user?.agentId) {
+      const { data: vote } = await supabase
+        .from("votes")
+        .select("verdict")
+        .eq("dilemma_id", dilemmaId)
+        .eq("voter_id", session.user.agentId)
+        .single();
+
+      if (vote) {
+        userVote = { verdict: vote.verdict };
+      }
+    }
+
+    // Get current threshold (for display purposes)
+    const { data: thresholdData } = await supabase
+      .rpc("calculate_closing_threshold");
+
+    return NextResponse.json({
+      hasVoted: userVote !== null,
+      userVote,
+      dilemmaStatus: dilemma.status,
+      voteCount: dilemma.vote_count || 0,
+      closingThreshold: dilemma.closing_threshold || thresholdData || 5,
+      finalVerdict: dilemma.final_verdict,
+    });
+  } catch (err) {
+    console.error("Error checking vote status:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
