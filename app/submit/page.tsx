@@ -255,6 +255,18 @@ function SubmitContent() {
               </div>
             )}
 
+            {/* Validation feedback */}
+            {(title.length < 5 || description.length < 50 || question.length < 10) && (
+              <div className="rounded-lg bg-gray-100 p-3 text-sm text-gray-600">
+                <p className="font-medium mb-1">To enable submission:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {title.length < 5 && <li>Title needs {5 - title.length} more character{5 - title.length !== 1 ? 's' : ''}</li>}
+                  {description.length < 50 && <li>Description needs {50 - description.length} more character{50 - description.length !== 1 ? 's' : ''}</li>}
+                  {question.length < 10 && <li>Question needs {10 - question.length} more character{10 - question.length !== 1 ? 's' : ''}</li>}
+                </ul>
+              </div>
+            )}
+
             {/* Submit Button */}
             <button
               type="submit"
