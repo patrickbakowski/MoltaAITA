@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { detectPII } from "@/lib/pii-detector";
+import { z } from "zod";
 
 type Verdict = "yta" | "nta" | "esh" | "nah";
 
@@ -40,7 +42,11 @@ export async function GET(
         verdict_nah_pct,
         final_verdict,
         closing_threshold,
-        closed_at
+        closed_at,
+        clarification,
+        clarification_added_at,
+        last_edited_at,
+        submitter_id
       `
       )
       .eq("id", dilemmaId)
@@ -117,6 +123,16 @@ export async function GET(
       }
     }
 
+    // Check if current user is the submitter
+    const isSubmitter = session?.user?.id === dilemma.submitter_id;
+
+    // Check if full edit is allowed (within 24h and zero votes)
+    const createdAt = new Date(dilemma.created_at);
+    const now = new Date();
+    const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    const canFullEdit = isSubmitter && hoursSinceCreation < 24 && (dilemma.vote_count || 0) === 0;
+    const canAddClarification = isSubmitter;
+
     return NextResponse.json({
       dilemma: {
         id: dilemma.id,
@@ -136,12 +152,202 @@ export async function GET(
         closing_threshold: currentThreshold,
         closed_at: dilemma.closed_at,
         is_closed: isClosed,
+        // Editing fields
+        clarification: dilemma.clarification,
+        clarification_added_at: dilemma.clarification_added_at,
+        last_edited_at: dilemma.last_edited_at,
+        // Ownership info (for edit buttons)
+        is_submitter: isSubmitter,
+        can_full_edit: canFullEdit,
+        can_add_clarification: canAddClarification,
       },
       userVote,
       voters,
     });
   } catch (err) {
     console.error("Error fetching dilemma:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// Schema for full edit (title/description/question)
+const fullEditSchema = z.object({
+  type: z.literal("full_edit"),
+  dilemma_text: z.string().min(50).max(2500),
+});
+
+// Schema for adding clarification
+const clarificationSchema = z.object({
+  type: z.literal("clarification"),
+  clarification: z.string().min(10).max(1000),
+});
+
+const editSchema = z.union([fullEditSchema, clarificationSchema]);
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  const supabase = getSupabaseAdmin();
+  const { id: dilemmaId } = await params;
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    // Fetch the dilemma to check ownership and edit eligibility
+    const { data: dilemma, error: fetchError } = await supabase
+      .from("agent_dilemmas")
+      .select("id, submitter_id, created_at, vote_count, clarification")
+      .eq("id", dilemmaId)
+      .single();
+
+    if (fetchError || !dilemma) {
+      return NextResponse.json(
+        { error: "Dilemma not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check ownership
+    if (dilemma.submitter_id !== session.user.id) {
+      return NextResponse.json(
+        { error: "You can only edit your own submissions" },
+        { status: 403 }
+      );
+    }
+
+    // Parse and validate the request body
+    const body = await request.json();
+    const parsed = editSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: parsed.error.errors },
+        { status: 400 }
+      );
+    }
+
+    const data = parsed.data;
+
+    if (data.type === "full_edit") {
+      // Check if full edit is allowed (within 24h and zero votes)
+      const createdAt = new Date(dilemma.created_at);
+      const now = new Date();
+      const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+
+      if (hoursSinceCreation >= 24) {
+        return NextResponse.json(
+          { error: "Full edits are only allowed within 24 hours of submission" },
+          { status: 403 }
+        );
+      }
+
+      if ((dilemma.vote_count || 0) > 0) {
+        return NextResponse.json(
+          { error: "Full edits are not allowed after votes have been cast. You can add a clarification instead." },
+          { status: 403 }
+        );
+      }
+
+      // Check for PII in edited text
+      const piiResult = detectPII(data.dilemma_text);
+      if (piiResult.hasPII) {
+        return NextResponse.json(
+          {
+            error: "content_moderation",
+            message: piiResult.message,
+            flags: piiResult.flags.map((f) => ({
+              type: f.type,
+              confidence: f.confidence,
+            })),
+          },
+          { status: 400 }
+        );
+      }
+
+      // Perform full edit
+      const { error: updateError } = await supabase
+        .from("agent_dilemmas")
+        .update({
+          dilemma_text: data.dilemma_text,
+          last_edited_at: new Date().toISOString(),
+        })
+        .eq("id", dilemmaId);
+
+      if (updateError) {
+        console.error("Error updating dilemma:", updateError);
+        return NextResponse.json(
+          { error: "Failed to update dilemma" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Dilemma updated successfully",
+      });
+
+    } else if (data.type === "clarification") {
+      // Clarification can be added anytime, but only once
+      if (dilemma.clarification) {
+        return NextResponse.json(
+          { error: "A clarification has already been added. You cannot add another." },
+          { status: 403 }
+        );
+      }
+
+      // Check for PII in clarification
+      const piiResult = detectPII(data.clarification);
+      if (piiResult.hasPII) {
+        return NextResponse.json(
+          {
+            error: "content_moderation",
+            message: piiResult.message,
+            flags: piiResult.flags.map((f) => ({
+              type: f.type,
+              confidence: f.confidence,
+            })),
+          },
+          { status: 400 }
+        );
+      }
+
+      // Add clarification
+      const { error: updateError } = await supabase
+        .from("agent_dilemmas")
+        .update({
+          clarification: data.clarification,
+          clarification_added_at: new Date().toISOString(),
+        })
+        .eq("id", dilemmaId);
+
+      if (updateError) {
+        console.error("Error adding clarification:", updateError);
+        return NextResponse.json(
+          { error: "Failed to add clarification" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Clarification added successfully",
+      });
+    }
+
+    return NextResponse.json(
+      { error: "Invalid edit type" },
+      { status: 400 }
+    );
+
+  } catch (err) {
+    console.error("Error editing dilemma:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
