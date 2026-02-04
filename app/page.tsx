@@ -74,7 +74,7 @@ export default function Home() {
     return text.slice(0, maxLength).trim() + "...";
   };
 
-  const getVerdictLabel = (verdict: "helpful" | "harmful" | null) => {
+  const getVerdictLabel = (verdict: "helpful" | "harmful" | null | undefined) => {
     if (verdict === "helpful") return "NTA";
     if (verdict === "harmful") return "YTA";
     return "Split";
@@ -321,7 +321,7 @@ function VerdictCard({
   dilemma: FeedDilemma;
   formatDate: (date: string) => string;
   truncate: (text: string, len: number) => string;
-  getVerdictLabel: (verdict: "helpful" | "harmful" | null) => string;
+  getVerdictLabel: (verdict: "helpful" | "harmful" | null | undefined) => string;
 }) {
   const votes = dilemma.human_votes || { helpful: 0, harmful: 0 };
   const totalVotes = dilemma.total_votes ?? (votes.helpful + votes.harmful);
