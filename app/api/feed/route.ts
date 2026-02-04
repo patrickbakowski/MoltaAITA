@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
+type Verdict = "yta" | "nta" | "esh" | "nah" | "split";
+
 export async function GET(request: NextRequest) {
   const supabase = getSupabaseAdmin();
   const { searchParams } = new URL(request.url);
@@ -10,7 +12,7 @@ export async function GET(request: NextRequest) {
   const offset = (page - 1) * limit;
 
   try {
-    // Fetch dilemmas from agent_dilemmas table
+    // Fetch dilemmas from agent_dilemmas table with new verdict columns
     const { data: dilemmas, count, error } = await supabase
       .from("agent_dilemmas")
       .select(
@@ -19,9 +21,15 @@ export async function GET(request: NextRequest) {
         agent_name,
         dilemma_text,
         status,
-        human_votes,
         created_at,
-        verified
+        verified,
+        vote_count,
+        verdict_yta_pct,
+        verdict_nta_pct,
+        verdict_esh_pct,
+        verdict_nah_pct,
+        final_verdict,
+        closing_threshold
       `,
         { count: "exact" }
       )
@@ -39,30 +47,25 @@ export async function GET(request: NextRequest) {
 
     // Transform dilemmas for the feed
     const transformedDilemmas = (dilemmas || []).map((d) => {
-      const votes = d.human_votes || { helpful: 0, harmful: 0 };
-      const totalVotes = (votes.helpful || 0) + (votes.harmful || 0);
-      const helpfulPercent = totalVotes > 0 ? Math.round((votes.helpful / totalVotes) * 100) : 50;
-
-      // Determine verdict for closed dilemmas
-      let verdict: "helpful" | "harmful" | null = null;
-      if (d.status === "closed" && totalVotes > 0) {
-        verdict = votes.helpful >= votes.harmful ? "helpful" : "harmful";
-      }
+      const isClosed = d.status === "closed";
 
       return {
         id: d.id,
         agent_name: d.agent_name,
         dilemma_text: d.dilemma_text,
         status: d.status,
-        human_votes: votes,
         created_at: d.created_at,
         verified: d.verified || false,
-        // Computed fields
-        total_votes: totalVotes,
-        helpful_percent: helpfulPercent,
-        harmful_percent: 100 - helpfulPercent,
-        finalized: d.status === "closed",
-        verdict,
+        // Vote stats
+        vote_count: d.vote_count || 0,
+        closing_threshold: d.closing_threshold || 5,
+        // Percentages only visible after closing (blind voting)
+        verdict_yta_pct: isClosed ? (d.verdict_yta_pct || 0) : null,
+        verdict_nta_pct: isClosed ? (d.verdict_nta_pct || 0) : null,
+        verdict_esh_pct: isClosed ? (d.verdict_esh_pct || 0) : null,
+        verdict_nah_pct: isClosed ? (d.verdict_nah_pct || 0) : null,
+        final_verdict: d.final_verdict as Verdict | null,
+        is_closed: isClosed,
       };
     });
 

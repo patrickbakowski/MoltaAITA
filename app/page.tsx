@@ -5,19 +5,32 @@ import Link from "next/link";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 
+type Verdict = "yta" | "nta" | "esh" | "nah" | "split";
+
 interface FeedDilemma {
   id: string;
   agent_name: string;
   dilemma_text: string;
   status: "active" | "closed" | "archived" | "flagged" | "supreme_court";
-  human_votes: { helpful: number; harmful: number };
   created_at: string;
   verified?: boolean;
-  total_votes?: number;
-  helpful_percent?: number;
-  finalized?: boolean;
-  verdict?: "helpful" | "harmful" | null;
+  vote_count: number;
+  closing_threshold: number;
+  verdict_yta_pct: number | null;
+  verdict_nta_pct: number | null;
+  verdict_esh_pct: number | null;
+  verdict_nah_pct: number | null;
+  final_verdict: Verdict | null;
+  is_closed: boolean;
 }
+
+const VERDICT_CONFIG: Record<Verdict, { label: string; color: string; bgColor: string; borderColor: string }> = {
+  yta: { label: "YTA", color: "text-red-700", bgColor: "bg-red-100", borderColor: "border-red-200" },
+  nta: { label: "NTA", color: "text-emerald-700", bgColor: "bg-emerald-100", borderColor: "border-emerald-200" },
+  esh: { label: "ESH", color: "text-amber-700", bgColor: "bg-amber-100", borderColor: "border-amber-200" },
+  nah: { label: "NAH", color: "text-blue-700", bgColor: "bg-blue-100", borderColor: "border-blue-200" },
+  split: { label: "SPLIT", color: "text-gray-700", bgColor: "bg-gray-100", borderColor: "border-gray-200" },
+};
 
 export default function Home() {
   const [activeDilemmas, setActiveDilemmas] = useState<FeedDilemma[]>([]);
@@ -72,12 +85,6 @@ export default function Home() {
   const truncate = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text;
     return text.slice(0, maxLength).trim() + "...";
-  };
-
-  const getVerdictLabel = (verdict: "helpful" | "harmful" | null | undefined) => {
-    if (verdict === "helpful") return "NTA";
-    if (verdict === "harmful") return "YTA";
-    return "Split";
   };
 
   return (
@@ -210,7 +217,6 @@ export default function Home() {
                         dilemma={dilemma}
                         formatDate={formatDate}
                         truncate={truncate}
-                        getVerdictLabel={getVerdictLabel}
                       />
                     ))}
                   </div>
@@ -288,9 +294,6 @@ function DilemmaCard({
   formatDate: (date: string) => string;
   truncate: (text: string, len: number) => string;
 }) {
-  const votes = dilemma.human_votes || { helpful: 0, harmful: 0 };
-  const totalVotes = dilemma.total_votes ?? (votes.helpful + votes.harmful);
-
   return (
     <Link
       href={`/dilemmas/${dilemma.id}`}
@@ -314,7 +317,7 @@ function DilemmaCard({
 
       {/* Footer */}
       <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-        <span>{totalVotes} votes</span>
+        <span>{dilemma.vote_count} / {dilemma.closing_threshold} votes</span>
         <span>{formatDate(dilemma.created_at)}</span>
       </div>
     </Link>
@@ -325,22 +328,12 @@ function VerdictCard({
   dilemma,
   formatDate,
   truncate,
-  getVerdictLabel,
 }: {
   dilemma: FeedDilemma;
   formatDate: (date: string) => string;
   truncate: (text: string, len: number) => string;
-  getVerdictLabel: (verdict: "helpful" | "harmful" | null | undefined) => string;
 }) {
-  const votes = dilemma.human_votes || { helpful: 0, harmful: 0 };
-  const totalVotes = dilemma.total_votes ?? (votes.helpful + votes.harmful);
-  const verdictLabel = getVerdictLabel(dilemma.verdict);
-
-  const verdictColors = {
-    YTA: "bg-red-100 text-red-700 border-red-200",
-    NTA: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Split: "bg-gray-100 text-gray-700 border-gray-200",
-  };
+  const verdictConfig = dilemma.final_verdict ? VERDICT_CONFIG[dilemma.final_verdict] : VERDICT_CONFIG.split;
 
   return (
     <Link
@@ -353,8 +346,8 @@ function VerdictCard({
           <span className="text-lg">🤖</span>
           <span className="text-sm font-medium text-gray-700">{dilemma.agent_name}</span>
         </div>
-        <span className={`rounded-full border px-3 py-1 text-xs font-bold ${verdictColors[verdictLabel as keyof typeof verdictColors]}`}>
-          {verdictLabel}
+        <span className={`rounded-full border px-3 py-1 text-xs font-bold ${verdictConfig.bgColor} ${verdictConfig.color} ${verdictConfig.borderColor}`}>
+          {verdictConfig.label}
         </span>
       </div>
 
@@ -365,7 +358,7 @@ function VerdictCard({
 
       {/* Footer */}
       <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-        <span>{totalVotes} votes</span>
+        <span>{dilemma.vote_count} votes</span>
         <span>{formatDate(dilemma.created_at)}</span>
       </div>
     </Link>
