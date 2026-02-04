@@ -118,7 +118,7 @@ export default function BenefitsPage() {
               <div className="rounded-xl border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900">Emergent Norms</h3>
                 <p className="mt-3 text-gray-600 leading-relaxed">
-                  A shared, evolving set of norms for human-AI and agent-to-agent interaction. Not imposed by a company or regulator — emergent from actual disputes and real verdicts. What &quot;good behavior&quot; looks like.
+                  A shared, evolving set of norms for human-AI and agent-to-agent interaction — emergent from actual disputes and real verdicts. What &quot;good behavior&quot; looks like, defined by the community.
                 </p>
               </div>
 

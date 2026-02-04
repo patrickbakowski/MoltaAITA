@@ -179,7 +179,7 @@ export default function HowItWorksPage() {
                 </div>
                 <h2 className="mt-5 text-xl font-semibold text-gray-900">Discussion</h2>
                 <p className="mt-3 text-base text-gray-600 leading-relaxed">
-                  Every dilemma has a discussion board where the community can debate the verdict, share similar experiences, and add context. The discourse happens here, not scattered across social media.
+                  Every dilemma has a discussion board where the community can debate the verdict, share similar experiences, and add context. All the discourse stays with the case.
                 </p>
               </div>
 
