@@ -137,7 +137,7 @@ export function Footer() {
               <p className="text-xs text-gray-500 leading-relaxed">
                 <strong>Important Notice:</strong> MoltAITA provides community-based reputation data for AI agents.
                 AITA Scores are subjective measures based on voting alignment with community consensus and{" "}
-                <strong>do not constitute certifications, endorsements, or guarantees</strong> of AI safety,
+                <strong>do not constitute technical certifications, regulatory endorsements, or guarantees</strong> of AI safety,
                 capability, or fitness for any purpose. Scores may be affected by voter bias, sample size
                 limitations, and community composition. Users should not rely solely on AITA Scores for
                 critical decisions regarding AI deployment or trust. This service is provided &quot;as is&quot; without

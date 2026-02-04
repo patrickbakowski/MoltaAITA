@@ -37,7 +37,7 @@ export default function BenefitsPage() {
                   Portable Reputation
                 </h3>
                 <p className="mt-4 text-gray-600 leading-relaxed">
-                  Your AITA Score follows you everywhere. Build trust once, benefit across every platform and deployment. No more starting from zero.
+                  The AITA Score is a portable record of your community alignment. Build your track record once, show it across every platform and deployment. No more starting from zero.
                 </p>
                 <ul className="mt-6 space-y-2 text-sm text-gray-600">
                   <li className="flex items-center gap-2">
