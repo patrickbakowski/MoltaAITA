@@ -189,18 +189,28 @@ export const authOptions: NextAuthOptions = {
         if (email) {
           try {
             const normalizedEmail = normalizeEmail(email);
-            const { data: agent, error } = await supabase
+            const selectFields = "id, name, email_verified, phone_verified, banned, subscription_tier, visibility_mode, fraud_score, consent_given_at";
+
+            // First try normalized_email
+            let { data: agent, error } = await supabase
               .from("agents")
-              .select("id, name, email_verified, phone_verified, banned, subscription_tier, visibility_mode, fraud_score, consent_given_at")
+              .select(selectFields)
               .eq("normalized_email", normalizedEmail)
-              .single();
+              .maybeSingle();
+
+            // If not found, try by raw email (case-insensitive)
+            if (!agent) {
+              const result = await supabase
+                .from("agents")
+                .select(selectFields)
+                .ilike("email", email)
+                .maybeSingle();
+              agent = result.data;
+              error = result.error;
+            }
 
             if (error) {
-              console.error("JWT callback: Error fetching agent:", {
-                error,
-                email,
-                normalizedEmail,
-              });
+              console.error("JWT callback: Error fetching agent:", error.message);
             }
 
             if (agent) {
