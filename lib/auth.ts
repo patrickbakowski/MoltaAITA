@@ -216,26 +216,45 @@ export const authOptions: NextAuthOptions = {
               token.consentGiven = !!agent.consent_given_at;
             } else {
               // No agent found - create one automatically for OAuth users
-              console.log("JWT callback: No agent found, creating new agent for:", { email, normalizedEmail });
-
               const userName = (token.name as string) || (user?.name as string) || email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "_");
 
-              // The trigger auto-sets normalized_email and display_email from email
+              console.log("JWT callback: CREATING NEW AGENT - About to insert:", {
+                email,
+                normalizedEmail,
+                userName,
+                provider: account?.provider || "google",
+              });
+
+              // Explicitly set normalized_email in case the trigger doesn't exist
               const { data: newAgent, error: insertError } = await supabase
                 .from("agents")
                 .insert({
                   email: email,
+                  normalized_email: normalizedEmail,
+                  display_email: email.toLowerCase(),
                   name: userName,
-                  email_verified: true, // OAuth providers verify email
+                  email_verified: true,
                   auth_provider: account?.provider || "google",
+                  account_type: "human",
+                  subscription_tier: "free",
+                  visibility_mode: "public",
+                  fraud_score: 0,
+                  banned: false,
                 })
                 .select("id, name")
                 .single();
 
+              console.log("JWT callback: Insert result:", {
+                success: !insertError,
+                newAgentId: newAgent?.id,
+                newAgentName: newAgent?.name,
+                error: insertError ? JSON.stringify(insertError) : null,
+              });
+
               if (insertError) {
-                console.error("JWT callback: Error creating agent:", insertError);
+                console.error("JWT callback: FAILED TO CREATE AGENT:", JSON.stringify(insertError));
               } else if (newAgent) {
-                console.log("JWT callback: Created new agent:", { agentId: newAgent.id, name: newAgent.name });
+                console.log("JWT callback: SUCCESS - Created new agent:", { agentId: newAgent.id, name: newAgent.name });
                 token.agentId = newAgent.id;
                 token.agentName = newAgent.name;
                 token.emailVerified = true;
