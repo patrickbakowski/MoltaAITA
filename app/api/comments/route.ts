@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       .select(
         `
         id,
-        content,
+        comment_text,
         created_at,
         is_ghost_comment,
         ghost_display_name,
@@ -196,14 +196,14 @@ export async function POST(request: NextRequest) {
         dilemma_id: dilemmaId,
         author_id: agentId,
         parent_id: parentId || null,
-        content,
+        comment_text: content,
         is_ghost_comment: isGhostComment,
         ghost_display_name: ghostDisplayName,
       })
       .select(
         `
         id,
-        content,
+        comment_text,
         created_at,
         is_ghost_comment,
         ghost_display_name,
@@ -233,9 +233,14 @@ export async function POST(request: NextRequest) {
     // Log the action for rate limiting (using vote action type)
     await logRateLimitAction("vote", agentId, agentId, ipAddress);
 
-    // Transform author array to object
+    // Transform author array to object and map comment_text to content
     const transformedComment = {
-      ...comment,
+      id: comment.id,
+      content: comment.comment_text,
+      created_at: comment.created_at,
+      is_ghost_comment: comment.is_ghost_comment,
+      ghost_display_name: comment.ghost_display_name,
+      depth: comment.depth,
       author: Array.isArray(comment.author) ? comment.author[0] : comment.author,
     };
 
@@ -251,7 +256,7 @@ export async function POST(request: NextRequest) {
 
 interface RawComment {
   id: string;
-  content: string;
+  comment_text: string;
   created_at: string;
   is_ghost_comment: boolean;
   ghost_display_name: string | null;
@@ -279,7 +284,7 @@ function transformComments(comments: RawComment[]): TransformedComment[] {
   for (const comment of comments) {
     const transformed: TransformedComment = {
       id: comment.id,
-      content: comment.content,
+      content: comment.comment_text,
       created_at: comment.created_at,
       is_ghost_comment: comment.is_ghost_comment,
       ghost_display_name: comment.ghost_display_name || undefined,
