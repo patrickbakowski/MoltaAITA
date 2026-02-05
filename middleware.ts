@@ -42,6 +42,7 @@ const publicRoutes = [
 // API routes that are public (GET only)
 const publicApiRoutes = [
   "/api/dilemmas",
+  "/api/debug-session",
 ];
 
 export async function middleware(request: NextRequest) {
