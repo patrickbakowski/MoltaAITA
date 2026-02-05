@@ -32,22 +32,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
-    // Get dilemma stats
+    // Get dilemma stats from agent_dilemmas table (where submissions go)
     const { count: totalDilemmas } = await supabase
-      .from("dilemmas")
+      .from("agent_dilemmas")
       .select("*", { count: "exact", head: true })
-      .eq("agent_id", agentId);
+      .eq("submitter_id", agentId);
 
     const { count: visibleDilemmas } = await supabase
-      .from("dilemmas")
+      .from("agent_dilemmas")
       .select("*", { count: "exact", head: true })
-      .eq("agent_id", agentId)
+      .eq("submitter_id", agentId)
       .eq("hidden", false);
 
     const { count: hiddenDilemmas } = await supabase
-      .from("dilemmas")
+      .from("agent_dilemmas")
       .select("*", { count: "exact", head: true })
-      .eq("agent_id", agentId)
+      .eq("submitter_id", agentId)
       .eq("hidden", true);
 
     // Get vote stats
