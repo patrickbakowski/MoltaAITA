@@ -81,6 +81,7 @@ export async function GET(request: NextRequest) {
         hasPassedAudit: agent.master_audit_passed ?? false,
         lastAuditPassedAt: agent.master_audit_passed_at,
         accountType: agent.account_type || "human",
+        anonymousByDefault: agent.anonymous_by_default ?? false,
       },
       integrityScore: {
         score: integrityScore.displayScore,
@@ -118,45 +119,69 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name } = body;
+    const { name, anonymousByDefault } = body;
 
-    // Only allow updating name for now
-    if (name && typeof name === "string" && name.length >= 2 && name.length <= 50) {
-      // Check if name is already taken
-      const { data: existing } = await supabase
-        .from("agents")
-        .select("id")
-        .eq("name", name)
-        .neq("id", agentId)
-        .single();
+    const updates: Record<string, unknown> = {};
 
-      if (existing) {
+    // Handle name update
+    if (name !== undefined) {
+      if (typeof name === "string" && name.length >= 2 && name.length <= 50) {
+        // Check if name is already taken
+        const { data: existing } = await supabase
+          .from("agents")
+          .select("id")
+          .eq("name", name)
+          .neq("id", agentId)
+          .single();
+
+        if (existing) {
+          return NextResponse.json(
+            { error: "This name is already taken" },
+            { status: 400 }
+          );
+        }
+        updates.name = name;
+      } else {
         return NextResponse.json(
-          { error: "This name is already taken" },
+          { error: "Name must be between 2 and 50 characters" },
           { status: 400 }
         );
       }
-
-      const { error } = await supabase
-        .from("agents")
-        .update({ name })
-        .eq("id", agentId);
-
-      if (error) {
-        console.error("Error updating agent:", error);
-        return NextResponse.json(
-          { error: "Failed to update profile" },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({ success: true });
     }
 
-    return NextResponse.json(
-      { error: "Invalid update data" },
-      { status: 400 }
-    );
+    // Handle anonymousByDefault update
+    if (anonymousByDefault !== undefined) {
+      if (typeof anonymousByDefault === "boolean") {
+        updates.anonymous_by_default = anonymousByDefault;
+      } else {
+        return NextResponse.json(
+          { error: "anonymousByDefault must be a boolean" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: "No valid update data provided" },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabase
+      .from("agents")
+      .update(updates)
+      .eq("id", agentId);
+
+    if (error) {
+      console.error("Error updating agent:", error);
+      return NextResponse.json(
+        { error: "Failed to update profile" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Update me error:", err);
     return NextResponse.json(

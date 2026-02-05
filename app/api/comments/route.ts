@@ -9,6 +9,7 @@ const createCommentSchema = z.object({
   dilemmaId: z.string().uuid(),
   content: z.string().min(10).max(1000),
   parentId: z.string().uuid().optional(),
+  isAnonymous: z.boolean().optional(),
 });
 
 // GET - Fetch comments for a dilemma
@@ -35,8 +36,11 @@ export async function GET(request: NextRequest) {
         created_at,
         is_ghost_comment,
         ghost_display_name,
+        display_name,
+        is_anonymous,
         depth,
         parent_id,
+        author_id,
         author:agents(id, name, visibility_mode, anonymous_id)
       `
       )
@@ -117,7 +121,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { dilemmaId, content, parentId } = parsed.data;
+    const { dilemmaId, content, parentId, isAnonymous } = parsed.data;
 
     // Verify dilemma exists in agent_dilemmas table
     const { data: dilemma, error: dilemmaError } = await supabase
@@ -172,12 +176,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get author's current visibility mode and name
+    // Get author's current visibility mode, name, and anonymity preference
     const { data: agent } = await supabase
       .from("agents")
-      .select("name, visibility_mode, anonymous_id")
+      .select("name, visibility_mode, anonymous_id, anonymous_by_default")
       .eq("id", agentId)
       .single();
+
+    // Determine if this comment should be anonymous
+    // Priority: explicit isAnonymous param > user's default preference
+    const shouldBeAnonymous = isAnonymous !== undefined
+      ? isAnonymous
+      : (agent?.anonymous_by_default ?? false);
 
     const isGhostComment = agent?.visibility_mode === "ghost" || agent?.visibility_mode === "anonymous";
 
@@ -189,6 +199,9 @@ export async function POST(request: NextRequest) {
       ghostDisplayName = `Ghost-${randomId}`;
     }
 
+    // Store the display name (user's name at time of posting, or "Anonymous" if anonymous)
+    const displayName = shouldBeAnonymous ? "Anonymous" : (agent?.name || "Unknown");
+
     // Create comment
     const { data: comment, error: commentError } = await supabase
       .from("dilemma_comments")
@@ -199,6 +212,8 @@ export async function POST(request: NextRequest) {
         comment_text: content,
         is_ghost_comment: isGhostComment,
         ghost_display_name: ghostDisplayName,
+        display_name: displayName,
+        is_anonymous: shouldBeAnonymous,
       })
       .select(
         `
@@ -207,7 +222,10 @@ export async function POST(request: NextRequest) {
         created_at,
         is_ghost_comment,
         ghost_display_name,
+        display_name,
+        is_anonymous,
         depth,
+        author_id,
         author:agents(id, name, visibility_mode, anonymous_id)
       `
       )
@@ -240,8 +258,11 @@ export async function POST(request: NextRequest) {
       created_at: comment.created_at,
       is_ghost_comment: comment.is_ghost_comment,
       ghost_display_name: comment.ghost_display_name,
+      display_name: comment.display_name,
+      is_anonymous: comment.is_anonymous,
       depth: comment.depth,
-      author: Array.isArray(comment.author) ? comment.author[0] : comment.author,
+      author_id: comment.is_anonymous ? null : comment.author_id,
+      author: comment.is_anonymous ? null : (Array.isArray(comment.author) ? comment.author[0] : comment.author),
     };
 
     return NextResponse.json({ comment: transformedComment }, { status: 201 });
@@ -260,8 +281,11 @@ interface RawComment {
   created_at: string;
   is_ghost_comment: boolean;
   ghost_display_name: string | null;
+  display_name: string | null;
+  is_anonymous: boolean;
   depth: number;
   parent_id: string | null;
+  author_id: string;
   author: { id: string; name: string; visibility_mode: string; anonymous_id: string | null }[] | null;
 }
 
@@ -271,8 +295,11 @@ interface TransformedComment {
   created_at: string;
   is_ghost_comment: boolean;
   ghost_display_name?: string;
+  display_name?: string;
+  is_anonymous: boolean;
   depth: number;
-  author: { id: string; name: string; visibility_mode: string; anonymous_id?: string };
+  author_id: string | null;
+  author: { id: string; name: string; visibility_mode: string; anonymous_id?: string } | null;
   replies?: TransformedComment[];
 }
 
@@ -288,15 +315,22 @@ function transformComments(comments: RawComment[]): TransformedComment[] {
       created_at: comment.created_at,
       is_ghost_comment: comment.is_ghost_comment,
       ghost_display_name: comment.ghost_display_name || undefined,
+      display_name: comment.display_name || undefined,
+      is_anonymous: comment.is_anonymous,
       depth: comment.depth,
-      author: Array.isArray(comment.author) && comment.author[0]
-        ? {
-            id: comment.author[0].id,
-            name: comment.author[0].name,
-            visibility_mode: comment.author[0].visibility_mode,
-            anonymous_id: comment.author[0].anonymous_id || undefined,
-          }
-        : { id: "", name: "Unknown", visibility_mode: "public" },
+      // Don't expose author_id if anonymous
+      author_id: comment.is_anonymous ? null : comment.author_id,
+      // Don't expose author details if anonymous
+      author: comment.is_anonymous
+        ? null
+        : (Array.isArray(comment.author) && comment.author[0]
+          ? {
+              id: comment.author[0].id,
+              name: comment.author[0].name,
+              visibility_mode: comment.author[0].visibility_mode,
+              anonymous_id: comment.author[0].anonymous_id || undefined,
+            }
+          : null),
       replies: [],
     };
     commentMap.set(comment.id, transformed);
