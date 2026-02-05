@@ -1,0 +1,198 @@
+"use client";
+
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+const ADMIN_EMAIL = "patrickbakowski@gmail.com";
+
+interface Dilemma {
+  id: string;
+  dilemma_text: string;
+  status: string;
+  hidden: boolean;
+  is_anonymous: boolean;
+  vote_count: number;
+  final_verdict: string | null;
+  moderation_status: string;
+  created_at: string;
+  submitter: { id: string; name: string; email: string } | null;
+}
+
+export default function AdminDilemmas() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [dilemmas, setDilemmas] = useState<Dilemma[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!session?.user?.email || session.user.email.toLowerCase() !== ADMIN_EMAIL) {
+      router.push("/");
+      return;
+    }
+    fetchDilemmas();
+  }, [session, status, router, filter]);
+
+  const fetchDilemmas = async () => {
+    try {
+      const url = filter === "all" ? "/api/admin/dilemmas" : `/api/admin/dilemmas?status=${filter}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setDilemmas(data.dilemmas || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch dilemmas:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAction = async (id: string, action: string, extra?: Record<string, unknown>) => {
+    try {
+      const res = await fetch("/api/admin/dilemmas", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action, ...extra }),
+      });
+      if (res.ok) {
+        fetchDilemmas();
+      }
+    } catch (err) {
+      console.error("Action failed:", err);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this dilemma permanently?")) return;
+    try {
+      const res = await fetch(`/api/admin/dilemmas?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchDilemmas();
+      }
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
+
+  const handleCloseVoting = async (id: string) => {
+    const verdict = prompt("Set verdict (YTA, NTA, ESH, NAH):");
+    if (!verdict) return;
+    await handleAction(id, "close", { verdict: verdict.toUpperCase() });
+  };
+
+  if (status === "loading" || loading) {
+    return <div className="p-8">Loading...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <h1 className="text-2xl font-bold">Dilemmas Management</h1>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <nav className="flex gap-2 mb-6 flex-wrap">
+          <Link href="/admin" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">Overview</Link>
+          <Link href="/admin/dilemmas" className="px-4 py-2 bg-black text-white rounded">Dilemmas</Link>
+          <Link href="/admin/users" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">Users</Link>
+          <Link href="/admin/votes" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">Votes</Link>
+          <Link href="/admin/appeals" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">Appeals</Link>
+          <Link href="/admin/gdpr" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">GDPR</Link>
+          <Link href="/admin/comments" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">Comments</Link>
+        </nav>
+
+        <div className="mb-4 flex gap-2">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="closed">Closed</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+
+        <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left">Dilemma</th>
+                <th className="px-4 py-3 text-left">Submitter</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Votes</th>
+                <th className="px-4 py-3 text-left">Verdict</th>
+                <th className="px-4 py-3 text-left">Created</th>
+                <th className="px-4 py-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dilemmas.map((d) => (
+                <tr key={d.id} className={`border-t ${d.hidden ? "bg-red-50" : ""}`}>
+                  <td className="px-4 py-3 max-w-xs truncate">
+                    <Link href={`/dilemmas/${d.id}`} className="hover:underline">
+                      {d.dilemma_text.substring(0, 80)}...
+                    </Link>
+                    {d.is_anonymous && <span className="ml-2 text-xs bg-gray-200 px-1 rounded">anon</span>}
+                    {d.hidden && <span className="ml-2 text-xs bg-red-200 px-1 rounded">hidden</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {d.submitter ? (
+                      <div>
+                        <div>{d.submitter.name}</div>
+                        <div className="text-xs text-gray-500">{d.submitter.email}</div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">Unknown</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      d.status === "active" ? "bg-green-100" :
+                      d.status === "closed" ? "bg-gray-100" : "bg-yellow-100"
+                    }`}>
+                      {d.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">{d.vote_count}</td>
+                  <td className="px-4 py-3">{d.final_verdict || "-"}</td>
+                  <td className="px-4 py-3 text-xs">{new Date(d.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1 flex-wrap">
+                      {d.hidden ? (
+                        <button onClick={() => handleAction(d.id, "unhide")} className="px-2 py-1 bg-green-100 hover:bg-green-200 rounded text-xs">Unhide</button>
+                      ) : (
+                        <button onClick={() => handleAction(d.id, "hide")} className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 rounded text-xs">Hide</button>
+                      )}
+                      {d.status === "active" && (
+                        <button onClick={() => handleCloseVoting(d.id)} className="px-2 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs">Close</button>
+                      )}
+                      {d.moderation_status === "flagged" ? (
+                        <button onClick={() => handleAction(d.id, "unflag")} className="px-2 py-1 bg-green-100 hover:bg-green-200 rounded text-xs">Unflag</button>
+                      ) : (
+                        <button onClick={() => handleAction(d.id, "flag")} className="px-2 py-1 bg-orange-100 hover:bg-orange-200 rounded text-xs">Flag</button>
+                      )}
+                      <button onClick={() => handleDelete(d.id)} className="px-2 py-1 bg-red-100 hover:bg-red-200 rounded text-xs">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {dilemmas.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">No dilemmas found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
