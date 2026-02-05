@@ -60,23 +60,28 @@ export async function GET(request: NextRequest) {
     // Transform export requests
     const exports = (exportResult.data || []).map((e: Record<string, unknown>) => ({
       ...e,
-      request_type: "export",
+      request_type: "export" as const,
       agent: Array.isArray(e.agent) ? e.agent[0] : e.agent,
     }));
 
     // Transform correction requests
     const corrections = (correctionResult.data || []).map((c: Record<string, unknown>) => ({
       ...c,
-      request_type: "correction",
+      request_type: "correction" as const,
     }));
+
+    // Combine and sort by date
+    const allRequests = [...exports, ...corrections];
+    const sortedAll = allRequests.sort((a, b) => {
+      const dateA = (a as Record<string, unknown>).requested_at || (a as Record<string, unknown>).created_at;
+      const dateB = (b as Record<string, unknown>).requested_at || (b as Record<string, unknown>).created_at;
+      return new Date(dateB as string).getTime() - new Date(dateA as string).getTime();
+    });
 
     return NextResponse.json({
       exports,
       corrections,
-      all: [...exports, ...corrections].sort((a, b) =>
-        new Date(b.requested_at || b.created_at).getTime() -
-        new Date(a.requested_at || a.created_at).getTime()
-      ),
+      all: sortedAll,
     });
   } catch (err) {
     console.error("Admin GDPR error:", err);
