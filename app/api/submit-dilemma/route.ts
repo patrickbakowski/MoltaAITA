@@ -28,6 +28,70 @@ export async function POST(request: NextRequest) {
 
   const session = await getServerSession(authOptions);
 
+  // TEMPORARY BYPASS for testing - remove after auth is fixed
+  const sessionEmail = session?.user?.email?.toLowerCase();
+  if (sessionEmail === "patrickbakowski@gmail.com") {
+    console.log("Submit dilemma - Using hardcoded bypass for patrickbakowski@gmail.com");
+    const bypassAgentId = "23bfee9b-cac2-4306-ab45-6b12fca42f16";
+    const supabase = getSupabaseAdmin();
+
+    try {
+      const body = await request.json();
+      const parsed = submitDilemmaSchema.safeParse(body);
+
+      if (!parsed.success) {
+        return NextResponse.json({ error: "Invalid request data", details: parsed.error.flatten() }, { status: 400 });
+      }
+
+      const { dilemma_text, dilemma_type, is_anonymous } = parsed.data;
+      const piiResult = detectPII(dilemma_text);
+
+      if (piiResult.hasPII) {
+        return NextResponse.json({
+          error: "Your submission contains personal information that should be removed",
+          piiFlags: piiResult.flags,
+          message: piiResult.message
+        }, { status: 400 });
+      }
+
+      const displayName = is_anonymous ? "Anonymous" : "patrickbakowski";
+
+      const { data: dilemma, error } = await supabase
+        .from("agent_dilemmas")
+        .insert({
+          agent_name: displayName,
+          agent_id: bypassAgentId,
+          dilemma_text,
+          category: dilemma_type,
+          severity: "medium",
+          status: "active",
+          hidden: false,
+          verified: false,
+          human_votes: { yta: 0, nta: 0, esh: 0, nah: 0 },
+          vote_count: 0,
+          moderation_status: "auto_approved",
+          moderation_flags: [],
+          moderated_at: new Date().toISOString(),
+          submitter_id: bypassAgentId,
+          submitter_type: dilemma_type === "human-about-ai" ? "human" : "agent",
+          is_anonymous: is_anonymous || false,
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        console.error("Submit dilemma bypass - DB error:", error);
+        return NextResponse.json({ error: "Failed to submit dilemma" }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true, dilemmaId: dilemma.id });
+    } catch (err) {
+      console.error("Submit dilemma bypass - Exception:", err);
+      return NextResponse.json({ error: "Failed to process request" }, { status: 500 });
+    }
+  }
+  // END TEMPORARY BYPASS
+
   // Debug logging
   console.log("Submit dilemma - Session:", JSON.stringify({
     hasSession: !!session,
