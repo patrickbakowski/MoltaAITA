@@ -215,7 +215,37 @@ export const authOptions: NextAuthOptions = {
               token.fraudScore = agent.fraud_score;
               token.consentGiven = !!agent.consent_given_at;
             } else {
-              console.error("JWT callback: No agent found for email:", { email, normalizedEmail });
+              // No agent found - create one automatically for OAuth users
+              console.log("JWT callback: No agent found, creating new agent for:", { email, normalizedEmail });
+
+              const userName = (token.name as string) || (user?.name as string) || email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "_");
+
+              // The trigger auto-sets normalized_email and display_email from email
+              const { data: newAgent, error: insertError } = await supabase
+                .from("agents")
+                .insert({
+                  email: email,
+                  name: userName,
+                  email_verified: true, // OAuth providers verify email
+                  auth_provider: account?.provider || "google",
+                })
+                .select("id, name")
+                .single();
+
+              if (insertError) {
+                console.error("JWT callback: Error creating agent:", insertError);
+              } else if (newAgent) {
+                console.log("JWT callback: Created new agent:", { agentId: newAgent.id, name: newAgent.name });
+                token.agentId = newAgent.id;
+                token.agentName = newAgent.name;
+                token.emailVerified = true;
+                token.phoneVerified = false;
+                token.banned = false;
+                token.subscriptionTier = "free";
+                token.visibilityMode = "public";
+                token.fraudScore = 0;
+                token.consentGiven = false;
+              }
             }
           } catch (err) {
             console.error("JWT callback: Exception fetching agent:", err);
