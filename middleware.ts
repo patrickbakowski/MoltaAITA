@@ -133,6 +133,7 @@ export async function middleware(request: NextRequest) {
     // Add user info to headers for downstream use
     const response = NextResponse.next();
     response.headers.set("x-agent-id", token.agentId as string);
+    response.headers.set("x-agent-name", (token.agentName as string) || (token.name as string) || "Anonymous");
     response.headers.set("x-subscription-tier", (token.subscriptionTier as string) || "free");
 
     return response;
