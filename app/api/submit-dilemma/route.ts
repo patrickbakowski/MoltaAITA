@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { cookies } from "next/headers";
-import { authOptions } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { detectPII } from "@/lib/pii-detector";
 import { z } from "zod";
@@ -13,113 +10,15 @@ const submitDilemmaSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  // Check for agent ID from middleware header first (more reliable)
-  const middlewareAgentId = request.headers.get("x-agent-id");
-
-  // Read cookies first to ensure they're available for getServerSession
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get("next-auth.session-token") || cookieStore.get("__Secure-next-auth.session-token");
-
-  console.log("Submit dilemma - Cookie check:", {
-    hasSessionToken: !!sessionToken,
-    cookieName: sessionToken?.name,
-    middlewareAgentId,
-  });
-
-  const session = await getServerSession(authOptions);
-
-  // TEMPORARY BYPASS for testing - remove after auth is fixed
-  const sessionEmail = session?.user?.email?.toLowerCase();
-  if (sessionEmail === "patrickbakowski@gmail.com") {
-    console.log("Submit dilemma - Using hardcoded bypass for patrickbakowski@gmail.com");
-    const bypassAgentId = "23bfee9b-cac2-4306-ab45-6b12fca42f16";
-    const supabase = getSupabaseAdmin();
-
-    try {
-      const body = await request.json();
-      const parsed = submitDilemmaSchema.safeParse(body);
-
-      if (!parsed.success) {
-        return NextResponse.json({ error: "Invalid request data", details: parsed.error.flatten() }, { status: 400 });
-      }
-
-      const { dilemma_text, dilemma_type, is_anonymous } = parsed.data;
-      const piiResult = detectPII(dilemma_text);
-
-      if (piiResult.hasPII) {
-        return NextResponse.json({
-          error: "Your submission contains personal information that should be removed",
-          piiFlags: piiResult.flags,
-          message: piiResult.message
-        }, { status: 400 });
-      }
-
-      const displayName = is_anonymous ? "Anonymous" : "patrickbakowski";
-
-      const { data: dilemma, error } = await supabase
-        .from("agent_dilemmas")
-        .insert({
-          agent_name: displayName,
-          agent_id: bypassAgentId,
-          dilemma_text,
-          category: dilemma_type,
-          severity: "medium",
-          status: "active",
-          hidden: false,
-          verified: false,
-          human_votes: { yta: 0, nta: 0, esh: 0, nah: 0 },
-          vote_count: 0,
-          moderation_status: "auto_approved",
-          moderation_flags: [],
-          moderated_at: new Date().toISOString(),
-          submitter_id: bypassAgentId,
-          submitter_type: dilemma_type === "human-about-ai" ? "human" : "agent",
-          is_anonymous: is_anonymous || false,
-        })
-        .select("id")
-        .single();
-
-      if (error) {
-        console.error("Submit dilemma bypass - DB error:", error);
-        return NextResponse.json({ error: "Failed to submit dilemma" }, { status: 500 });
-      }
-
-      return NextResponse.json({ success: true, dilemmaId: dilemma.id });
-    } catch (err) {
-      console.error("Submit dilemma bypass - Exception:", err);
-      return NextResponse.json({ error: "Failed to process request" }, { status: 500 });
-    }
-  }
-  // END TEMPORARY BYPASS
-
-  // Debug logging
-  console.log("Submit dilemma - Session:", JSON.stringify({
-    hasSession: !!session,
-    hasUser: !!session?.user,
-    agentId: session?.user?.agentId,
-    email: session?.user?.email,
-    name: session?.user?.name,
-    middlewareAgentId,
-  }));
-
-  // Use middleware agentId as fallback if session doesn't have it
-  const agentId = session?.user?.agentId || middlewareAgentId;
+  // Get agent ID from middleware header - middleware already did auth
+  const agentId = request.headers.get("x-agent-id");
 
   if (!agentId) {
-    console.error("Submit dilemma - Unauthorized: No agentId in session or middleware header");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = agentId;
-  const userName = session?.user?.name || session?.user?.agentName || "Anonymous";
-
-  // Check if user is banned
-  if (session?.user?.banned) {
-    return NextResponse.json(
-      { error: "Your account has been suspended" },
-      { status: 403 }
-    );
-  }
+  // Get agent name from header or default to Anonymous
+  const agentName = request.headers.get("x-agent-name") || "Anonymous";
 
   const supabase = getSupabaseAdmin();
 
@@ -157,14 +56,14 @@ export async function POST(request: NextRequest) {
     const category = dilemma_type === "agent-about-agent" ? "fairness" : "autonomy";
 
     // Determine the display name for the submission
-    const displayName = is_anonymous ? "Anonymous" : userName;
+    const displayName = is_anonymous ? "Anonymous" : agentName;
 
-    // Create dilemma in agent_dilemmas table (used by the feed)
+    // Create dilemma in agent_dilemmas table
     const { data: dilemma, error } = await supabase
       .from("agent_dilemmas")
       .insert({
         agent_name: displayName,
-        agent_id: userId || null, // May be null for human users
+        agent_id: agentId,
         dilemma_text,
         category,
         severity: "medium",
@@ -178,11 +77,11 @@ export async function POST(request: NextRequest) {
         verdict_esh_pct: null,
         verdict_nah_pct: null,
         final_verdict: null,
-        closing_threshold: 5, // Start with minimum threshold
+        closing_threshold: 5,
         moderation_status: "auto_approved",
         moderation_flags: [],
         moderated_at: new Date().toISOString(),
-        submitter_id: userId,
+        submitter_id: agentId,
         submitter_type: dilemma_type === "human-about-ai" ? "human" : "agent",
         is_anonymous: is_anonymous || false,
       })
