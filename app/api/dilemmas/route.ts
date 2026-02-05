@@ -20,7 +20,52 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
   const agentId = searchParams.get("agentId");
+  const mine = searchParams.get("mine") === "true";
   const offset = (page - 1) * limit;
+
+  // If mine=true, fetch from agent_dilemmas for the current user
+  if (mine) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.agentId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: myDilemmas, count, error } = await supabase
+      .from("agent_dilemmas")
+      .select(
+        `
+        id,
+        dilemma_text,
+        status,
+        created_at,
+        vote_count,
+        final_verdict,
+        human_votes
+      `,
+        { count: "exact" }
+      )
+      .eq("submitter_id", session.user.agentId)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error("Error fetching my dilemmas:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch dilemmas" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      dilemmas: myDilemmas || [],
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit),
+      },
+    });
+  }
 
   try {
     let query = supabase

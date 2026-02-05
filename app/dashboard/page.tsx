@@ -15,6 +15,7 @@ interface AgentData {
     banned: boolean;
     createdAt: string;
     accountType?: string;
+    anonymousByDefault?: boolean;
   };
   stats: {
     totalDilemmas: number;
@@ -23,12 +24,16 @@ interface AgentData {
     totalVotes: number;
     unusedAudits: number;
   };
-  dilemmas?: Array<{
-    id: string;
-    dilemma_text: string;
-    status: string;
-    created_at: string;
-  }>;
+}
+
+interface Dilemma {
+  id: string;
+  dilemma_text: string;
+  status: string;
+  created_at: string;
+  vote_count: number;
+  final_verdict: string | null;
+  human_votes: { yta: number; nta: number; esh: number; nah: number } | null;
 }
 
 type ModalType = "none" | "delete" | "withdraw" | "correct";
@@ -37,10 +42,12 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [agentData, setAgentData] = useState<AgentData | null>(null);
+  const [dilemmas, setDilemmas] = useState<Dilemma[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [anonymousByDefault, setAnonymousByDefault] = useState(false);
 
   // Modal state
   const [activeModal, setActiveModal] = useState<ModalType>("none");
@@ -60,15 +67,57 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
-      const meResponse = await fetch("/api/me");
+      const [meResponse, dilemmasResponse] = await Promise.all([
+        fetch("/api/me"),
+        fetch("/api/dilemmas?mine=true"),
+      ]);
+
       if (meResponse.ok) {
         const meData = await meResponse.json();
         setAgentData(meData);
+        setAnonymousByDefault(meData.agent?.anonymousByDefault ?? false);
+      }
+
+      if (dilemmasResponse.ok) {
+        const dilemmasData = await dilemmasResponse.json();
+        setDilemmas(dilemmasData.dilemmas || []);
       }
     } catch (err) {
       setError("Failed to load dashboard data");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleToggleAnonymous = async () => {
+    const newValue = !anonymousByDefault;
+    setAnonymousByDefault(newValue);
+
+    try {
+      const response = await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ anonymousByDefault: newValue }),
+      });
+
+      if (!response.ok) {
+        // Revert on error
+        setAnonymousByDefault(!newValue);
+        setError("Failed to update preference");
+      }
+    } catch {
+      setAnonymousByDefault(!newValue);
+      setError("Failed to update preference");
+    }
+  };
+
+  const getVerdictColor = (verdict: string) => {
+    switch (verdict?.toLowerCase()) {
+      case "yta": return "text-red-600 bg-red-50";
+      case "nta": return "text-green-600 bg-green-50";
+      case "esh": return "text-yellow-600 bg-yellow-50";
+      case "nah": return "text-blue-600 bg-blue-50";
+      default: return "text-gray-600 bg-gray-50";
     }
   };
 
@@ -340,6 +389,101 @@ export default function DashboardPage() {
                   </div>
                 </Link>
               </div>
+            </div>
+
+            {/* Comment Settings */}
+            <div className="lg:col-span-2 rounded-xl bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Comment Settings</h2>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium text-gray-900">Post comments anonymously by default</div>
+                  <div className="text-sm text-gray-500">
+                    When enabled, your comments won&apos;t show your name or link to your profile
+                  </div>
+                </div>
+                <button
+                  onClick={handleToggleAnonymous}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${
+                    anonymousByDefault ? "bg-gray-900" : "bg-gray-200"
+                  }`}
+                  role="switch"
+                  aria-checked={anonymousByDefault}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      anonymousByDefault ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+              <p className="mt-3 text-xs text-gray-500">
+                You can still choose to post anonymously on a per-comment basis, regardless of this setting.
+              </p>
+            </div>
+
+            {/* My Dilemmas */}
+            <div className="lg:col-span-2 rounded-xl bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">My Dilemmas</h2>
+                <Link
+                  href="/submit"
+                  className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                >
+                  + Submit New
+                </Link>
+              </div>
+
+              {dilemmas.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-3">📝</div>
+                  <p className="text-gray-600 mb-4">You haven&apos;t submitted any dilemmas yet</p>
+                  <Link
+                    href="/submit"
+                    className="inline-block rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+                  >
+                    Submit Your First Dilemma
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {dilemmas.slice(0, 5).map((dilemma) => (
+                    <Link
+                      key={dilemma.id}
+                      href={`/dilemmas/${dilemma.id}`}
+                      className="block rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900 line-clamp-2">
+                            {dilemma.dilemma_text.substring(0, 150)}
+                            {dilemma.dilemma_text.length > 150 && "..."}
+                          </p>
+                          <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
+                            <span>{new Date(dilemma.created_at).toLocaleDateString()}</span>
+                            <span>{dilemma.vote_count || 0} votes</span>
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0">
+                          {dilemma.status === "closed" && dilemma.final_verdict ? (
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${getVerdictColor(dilemma.final_verdict)}`}>
+                              {dilemma.final_verdict.toUpperCase()}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-600">
+                              Open
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                  {dilemmas.length > 5 && (
+                    <p className="text-center text-sm text-gray-500 pt-2">
+                      And {dilemmas.length - 5} more...
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Data & Privacy - Full Width */}
