@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         dilemma_id,
         author_id,
         parent_id,
-        content,
+        comment_text,
         is_ghost_comment,
         ghost_display_name,
         depth,

@@ -12,7 +12,7 @@ interface Comment {
   dilemma_id: string;
   author_id: string;
   parent_id: string | null;
-  content: string;
+  comment_text: string;
   is_ghost_comment: boolean;
   ghost_display_name: string | null;
   depth: number;
@@ -167,7 +167,7 @@ export default function AdminComments() {
               )}
 
               <div className="bg-gray-50 p-3 rounded mb-3">
-                <p className="text-sm whitespace-pre-wrap">{c.content}</p>
+                <p className="text-sm whitespace-pre-wrap">{c.comment_text}</p>
               </div>
 
               <div className="text-xs text-gray-500 mb-3">
