@@ -13,6 +13,7 @@ const protectedRoutes = [
   "/api/verify-phone",
   "/api/audit",
   "/api/appeals",
+  "/api/submit-dilemma",
   "/appeals",
 ];
 
@@ -41,6 +42,7 @@ const publicRoutes = [
 // API routes that are public (GET only)
 const publicApiRoutes = [
   "/api/dilemmas",
+  "/api/debug-session",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -94,6 +96,26 @@ export async function middleware(request: NextRequest) {
         { error: "Your account has been suspended" },
         { status: 403 }
       );
+    }
+
+    // Check if agentId exists in token - required for protected routes
+    if (!token.agentId) {
+      console.error("Middleware: Token exists but agentId is missing", {
+        email: token.email,
+        hasAgentId: !!token.agentId,
+      });
+      // Return 401 for API routes if no agentId
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json(
+          { error: "Session invalid - please sign out and sign back in" },
+          { status: 401 }
+        );
+      }
+      // Redirect to login for page routes
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      loginUrl.searchParams.set("message", "Session expired - please sign in again");
+      return NextResponse.redirect(loginUrl);
     }
 
     // Check if user has accepted terms (consent check)

@@ -66,6 +66,7 @@ function SubmitContent() {
       const response = await fetch("/api/submit-dilemma", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           dilemma_text: dilemmaText,
           dilemma_type: dilemmaType,
@@ -179,7 +180,9 @@ function SubmitContent() {
                 maxLength={100}
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">{title.length}/100 characters</p>
+              <p className={`mt-1 text-xs ${title.length >= 5 ? 'text-green-600' : 'text-amber-600'}`}>
+                {title.length}/100 characters {title.length < 5 ? `(${5 - title.length} more needed)` : '✓ minimum met'}
+              </p>
             </div>
 
             {/* Full Description */}
@@ -196,7 +199,9 @@ function SubmitContent() {
                 maxLength={2000}
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">{description.length}/2000 characters (minimum 50)</p>
+              <p className={`mt-1 text-xs ${description.length >= 50 ? 'text-green-600' : 'text-amber-600'}`}>
+                {description.length}/2000 characters {description.length < 50 ? `(${50 - description.length} more needed)` : '✓ minimum met'}
+              </p>
             </div>
 
             {/* The Question */}
@@ -214,7 +219,9 @@ function SubmitContent() {
                 maxLength={200}
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">{question.length}/200 characters</p>
+              <p className={`mt-1 text-xs ${question.length >= 10 ? 'text-green-600' : 'text-amber-600'}`}>
+                {question.length}/200 characters {question.length < 10 ? `(${10 - question.length} more needed)` : '✓ minimum met'}
+              </p>
             </div>
 
             {/* Anonymous Checkbox */}
@@ -252,6 +259,18 @@ function SubmitContent() {
             {error && (
               <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
                 {error}
+              </div>
+            )}
+
+            {/* Validation feedback */}
+            {(title.length < 5 || description.length < 50 || question.length < 10) && (
+              <div className="rounded-lg bg-gray-100 p-3 text-sm text-gray-600">
+                <p className="font-medium mb-1">To enable submission:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {title.length < 5 && <li>Title needs {5 - title.length} more character{5 - title.length !== 1 ? 's' : ''}</li>}
+                  {description.length < 50 && <li>Description needs {50 - description.length} more character{50 - description.length !== 1 ? 's' : ''}</li>}
+                  {question.length < 10 && <li>Question needs {10 - question.length} more character{10 - question.length !== 1 ? 's' : ''}</li>}
+                </ul>
               </div>
             )}
 

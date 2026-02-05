@@ -24,6 +24,13 @@ interface Dilemma {
   closing_threshold: number;
   closed_at: string | null;
   is_closed: boolean;
+  // Editing fields
+  clarification: string | null;
+  clarification_added_at: string | null;
+  last_edited_at: string | null;
+  is_submitter: boolean;
+  can_full_edit: boolean;
+  can_add_clarification: boolean;
 }
 
 interface VoterInfo {
@@ -107,6 +114,13 @@ export default function DilemmaDetailPage() {
   const [replyContent, setReplyContent] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // Edit state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showClarificationModal, setShowClarificationModal] = useState(false);
+  const [editText, setEditText] = useState("");
+  const [clarificationText, setClarificationText] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+
   const fetchDilemma = useCallback(async () => {
     try {
       const response = await fetch(`/api/dilemmas/${dilemmaId}`);
@@ -147,6 +161,79 @@ export default function DilemmaDetailPage() {
     };
     loadData();
   }, [fetchDilemma, fetchComments]);
+
+  const handleFullEdit = async () => {
+    if (!editText.trim() || editText.length < 50) {
+      setError("Dilemma text must be at least 50 characters");
+      return;
+    }
+
+    setIsEditing(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/dilemmas/${dilemmaId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "full_edit",
+          dilemma_text: editText,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        if (data.error === "content_moderation") {
+          throw new Error(data.message || "Your edit contains personal information. Please remove it.");
+        }
+        throw new Error(data.error || "Failed to update dilemma");
+      }
+
+      setShowEditModal(false);
+      await fetchDilemma();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update dilemma");
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleAddClarification = async () => {
+    if (!clarificationText.trim() || clarificationText.length < 10) {
+      setError("Clarification must be at least 10 characters");
+      return;
+    }
+
+    setIsEditing(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/dilemmas/${dilemmaId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "clarification",
+          clarification: clarificationText,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        if (data.error === "content_moderation") {
+          throw new Error(data.message || "Your clarification contains personal information. Please remove it.");
+        }
+        throw new Error(data.error || "Failed to add clarification");
+      }
+
+      setShowClarificationModal(false);
+      setClarificationText("");
+      await fetchDilemma();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add clarification");
+    } finally {
+      setIsEditing(false);
+    }
+  };
 
   const handleVote = async (verdict: Verdict) => {
     if (!session) {
@@ -350,11 +437,66 @@ export default function DilemmaDetailPage() {
 
             {/* Dilemma Text */}
             <div className="mb-6">
-              <h1 className="mb-4 text-xs sm:text-sm font-medium uppercase tracking-wide text-gray-500">
-                The Dilemma
-              </h1>
-              <p className="text-base sm:text-lg leading-relaxed text-gray-900">{dilemma.dilemma_text}</p>
+              <div className="flex items-center justify-between mb-4">
+                <h1 className="text-xs sm:text-sm font-medium uppercase tracking-wide text-gray-500">
+                  The Dilemma
+                </h1>
+                {dilemma.last_edited_at && (
+                  <span className="text-xs text-gray-400">
+                    (edited {formatDate(dilemma.last_edited_at)})
+                  </span>
+                )}
+              </div>
+              <p className="text-base sm:text-lg leading-relaxed text-gray-900 whitespace-pre-wrap">{dilemma.dilemma_text}</p>
             </div>
+
+            {/* Clarification (if exists) */}
+            {dilemma.clarification && (
+              <div className="mb-6 rounded-xl border-l-4 border-amber-400 bg-amber-50 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                    EDIT - Clarification added by submitter
+                  </span>
+                  {dilemma.clarification_added_at && (
+                    <span className="text-xs text-amber-600">
+                      ({formatDate(dilemma.clarification_added_at)})
+                    </span>
+                  )}
+                </div>
+                <p className="text-base text-amber-900 whitespace-pre-wrap">{dilemma.clarification}</p>
+              </div>
+            )}
+
+            {/* Edit Buttons (for submitter only) */}
+            {dilemma.is_submitter && (
+              <div className="flex flex-wrap gap-3">
+                {dilemma.can_full_edit && (
+                  <button
+                    onClick={() => {
+                      setEditText(dilemma.dilemma_text);
+                      setShowEditModal(true);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                  </button>
+                )}
+                {dilemma.can_add_clarification && !dilemma.clarification && (
+                  <button
+                    onClick={() => setShowClarificationModal(true)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Add Clarification
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
@@ -608,6 +750,115 @@ export default function DilemmaDetailPage() {
           </div>
         </section>
       </main>
+
+      {/* Full Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Edit Your Dilemma</h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
+              <strong>Note:</strong> Full edits are only available within 24 hours of submission and before any votes are cast.
+            </div>
+
+            <textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              placeholder="Enter the full dilemma text..."
+              className="w-full rounded-xl border border-gray-200 p-4 text-base text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none min-h-[200px]"
+              rows={8}
+            />
+            <p className="mt-2 text-xs text-gray-500">{editText.length}/2500 characters (minimum 50)</p>
+
+            {error && (
+              <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleFullEdit}
+                disabled={isEditing || editText.length < 50}
+                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+              >
+                {isEditing ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Clarification Modal */}
+      {showClarificationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Add Clarification</h2>
+              <button
+                onClick={() => setShowClarificationModal(false)}
+                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+              <strong>Note:</strong> This clarification will appear below your original text, clearly labeled.
+              The original dilemma that people voted on will remain unchanged. You can only add one clarification.
+            </div>
+
+            <textarea
+              value={clarificationText}
+              onChange={(e) => setClarificationText(e.target.value)}
+              placeholder="Add context or clarification that might help voters understand your situation better..."
+              className="w-full rounded-xl border border-gray-200 p-4 text-base text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none min-h-[150px]"
+              rows={5}
+            />
+            <p className="mt-2 text-xs text-gray-500">{clarificationText.length}/1000 characters (minimum 10)</p>
+
+            {error && (
+              <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setShowClarificationModal(false)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddClarification}
+                disabled={isEditing || clarificationText.length < 10}
+                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+              >
+                {isEditing ? "Adding..." : "Add Clarification"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
