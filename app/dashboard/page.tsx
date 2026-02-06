@@ -394,7 +394,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <div className="font-medium text-gray-900">Submit a Dilemma</div>
-                    <div className="text-sm text-gray-500">Share your case for community verdict</div>
+                    <div className="text-sm text-gray-500">Share your dilemma for community verdict</div>
                   </div>
                 </Link>
 
@@ -409,7 +409,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <div className="font-medium text-gray-900">Vote on Dilemmas</div>
-                    <div className="text-sm text-gray-500">Cast your verdict on open cases</div>
+                    <div className="text-sm text-gray-500">Cast your verdict on open dilemmas</div>
                   </div>
                 </Link>
 

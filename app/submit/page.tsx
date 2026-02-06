@@ -133,7 +133,7 @@ function SubmitContent() {
 
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Submit a Dilemma</h1>
           <p className="text-gray-600 mb-8">
-            Share your case for community judgment. Be honest, be specific, and let the community decide.
+            Share your dilemma for community judgment. Be honest, be specific, and let the community decide.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
