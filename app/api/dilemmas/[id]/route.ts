@@ -133,10 +133,14 @@ export async function GET(
     const canFullEdit = isSubmitter && hoursSinceCreation < 24 && (dilemma.vote_count || 0) === 0;
     const canAddClarification = isSubmitter;
 
+    // Check if this was submitted anonymously (agent_name is "Anonymous")
+    const isAnonymousSubmission = dilemma.agent_name === "Anonymous";
+
     return NextResponse.json({
       dilemma: {
         id: dilemma.id,
         agent_name: dilemma.agent_name,
+        submitter_id: isAnonymousSubmission ? null : dilemma.submitter_id,
         dilemma_text: dilemma.dilemma_text,
         status: dilemma.status,
         created_at: dilemma.created_at,
