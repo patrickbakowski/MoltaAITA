@@ -34,6 +34,7 @@ interface Dilemma {
   vote_count: number;
   final_verdict: string | null;
   human_votes: { yta: number; nta: number; esh: number; nah: number } | null;
+  hidden_from_profile: boolean;
 }
 
 type ModalType = "none" | "delete" | "withdraw" | "correct";
@@ -108,6 +109,44 @@ export default function DashboardPage() {
     } catch {
       setAnonymousByDefault(!newValue);
       setError("Failed to update preference");
+    }
+  };
+
+  const handleToggleProfileVisibility = async (dilemmaId: string, currentlyHidden: boolean) => {
+    // Optimistically update UI
+    setDilemmas((prev) =>
+      prev.map((d) =>
+        d.id === dilemmaId ? { ...d, hidden_from_profile: !currentlyHidden } : d
+      )
+    );
+
+    try {
+      const response = await fetch(`/api/dilemmas/${dilemmaId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "toggle_profile_visibility",
+          hidden_from_profile: !currentlyHidden,
+        }),
+      });
+
+      if (!response.ok) {
+        // Revert on error
+        setDilemmas((prev) =>
+          prev.map((d) =>
+            d.id === dilemmaId ? { ...d, hidden_from_profile: currentlyHidden } : d
+          )
+        );
+        setError("Failed to update profile visibility");
+      }
+    } catch {
+      // Revert on error
+      setDilemmas((prev) =>
+        prev.map((d) =>
+          d.id === dilemmaId ? { ...d, hidden_from_profile: currentlyHidden } : d
+        )
+      );
+      setError("Failed to update profile visibility");
     }
   };
 
@@ -447,13 +486,15 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-3">
                   {dilemmas.slice(0, 5).map((dilemma) => (
-                    <Link
+                    <div
                       key={dilemma.id}
-                      href={`/dilemmas/${dilemma.id}`}
-                      className="block rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
+                      className="rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0 overflow-hidden">
+                        <Link
+                          href={`/dilemmas/${dilemma.id}`}
+                          className="flex-1 min-w-0 overflow-hidden"
+                        >
                           <p className="text-sm text-gray-900 line-clamp-2 break-words">
                             {dilemma.dilemma_text.substring(0, 150)}
                             {dilemma.dilemma_text.length > 150 && "..."}
@@ -462,8 +503,8 @@ export default function DashboardPage() {
                             <span>{new Date(dilemma.created_at).toLocaleDateString()}</span>
                             <span>{dilemma.vote_count || 0} votes</span>
                           </div>
-                        </div>
-                        <div className="flex-shrink-0">
+                        </Link>
+                        <div className="flex-shrink-0 flex items-center gap-2">
                           {dilemma.status === "closed" && dilemma.final_verdict ? (
                             <span className={`px-2 py-1 rounded text-xs font-bold ${getVerdictColor(dilemma.final_verdict)}`}>
                               {dilemma.final_verdict.toUpperCase()}
@@ -475,7 +516,23 @@ export default function DashboardPage() {
                           )}
                         </div>
                       </div>
-                    </Link>
+                      {/* Profile visibility toggle */}
+                      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                        <span className="text-xs text-gray-500">
+                          {dilemma.hidden_from_profile ? "Hidden from your profile" : "Visible on your profile"}
+                        </span>
+                        <button
+                          onClick={() => handleToggleProfileVisibility(dilemma.id, dilemma.hidden_from_profile)}
+                          className={`text-xs px-2 py-1 rounded transition-colors ${
+                            dilemma.hidden_from_profile
+                              ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                        >
+                          {dilemma.hidden_from_profile ? "Show on profile" : "Hide from profile"}
+                        </button>
+                      </div>
+                    </div>
                   ))}
                   {dilemmas.length > 5 && (
                     <p className="text-center text-sm text-gray-500 pt-2">

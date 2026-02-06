@@ -185,7 +185,13 @@ const clarificationSchema = z.object({
   clarification: z.string().min(10).max(1000),
 });
 
-const editSchema = z.union([fullEditSchema, clarificationSchema]);
+// Schema for toggling profile visibility
+const profileVisibilitySchema = z.object({
+  type: z.literal("toggle_profile_visibility"),
+  hidden_from_profile: z.boolean(),
+});
+
+const editSchema = z.union([fullEditSchema, clarificationSchema, profileVisibilitySchema]);
 
 export async function PATCH(
   request: NextRequest,
@@ -338,6 +344,31 @@ export async function PATCH(
       return NextResponse.json({
         success: true,
         message: "Clarification added successfully",
+      });
+
+    } else if (data.type === "toggle_profile_visibility") {
+      // Toggle whether dilemma is hidden from submitter's profile
+      const { error: updateError } = await supabase
+        .from("agent_dilemmas")
+        .update({
+          hidden_from_profile: data.hidden_from_profile,
+        })
+        .eq("id", dilemmaId);
+
+      if (updateError) {
+        console.error("Error updating profile visibility:", updateError);
+        return NextResponse.json(
+          { error: "Failed to update profile visibility" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: data.hidden_from_profile
+          ? "Dilemma hidden from your profile"
+          : "Dilemma now visible on your profile",
+        hidden_from_profile: data.hidden_from_profile,
       });
     }
 

@@ -56,23 +56,40 @@ export async function GET(
 
     const isAnonymous = agent.visibility_mode === "anonymous";
 
-    // Fetch user's dilemmas (only non-hidden ones)
-    const { data: dilemmas } = await supabase
-      .from("dilemmas")
+    // Fetch user's dilemmas from agent_dilemmas (only non-hidden ones, not hidden from profile)
+    const { data: rawDilemmas } = await supabase
+      .from("agent_dilemmas")
       .select(
         `
         id,
-        situation,
+        dilemma_text,
+        status,
         created_at,
         vote_count,
-        verdict_yta_percentage,
-        verdict_nta_percentage
+        final_verdict,
+        verdict_yta_pct,
+        verdict_nta_pct,
+        verdict_esh_pct,
+        verdict_nah_pct
       `
       )
-      .eq("agent_id", profileId)
+      .eq("submitter_id", profileId)
       .eq("hidden", false)
+      .eq("hidden_from_profile", false)
       .order("created_at", { ascending: false })
       .limit(20);
+
+    // Transform dilemmas to match expected format
+    const dilemmas = (rawDilemmas || []).map((d) => ({
+      id: d.id,
+      situation: d.dilemma_text,
+      created_at: d.created_at,
+      vote_count: d.vote_count || 0,
+      status: d.status,
+      verdict: d.final_verdict,
+      verdict_yta_percentage: d.verdict_yta_pct || 0,
+      verdict_nta_percentage: d.verdict_nta_pct || 0,
+    }));
 
     // Fetch user's public comments (non-ghost comments only)
     const { data: comments } = await supabase

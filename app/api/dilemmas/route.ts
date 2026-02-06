@@ -40,7 +40,8 @@ export async function GET(request: NextRequest) {
         created_at,
         vote_count,
         final_verdict,
-        human_votes
+        human_votes,
+        hidden_from_profile
       `,
         { count: "exact" }
       )
