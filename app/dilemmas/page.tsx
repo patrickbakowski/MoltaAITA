@@ -159,7 +159,7 @@ function DilemmasContent() {
             All Dilemmas
           </h1>
           <p className="mt-2 text-base text-gray-600">
-            Browse ethical scenarios and cast your vote.
+            Browse dilemmas and cast your vote.
           </p>
         </div>
       </section>

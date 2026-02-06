@@ -229,7 +229,7 @@ export default function Home() {
               <section className="py-20 px-4 text-center bg-white">
                 <h2 className="text-2xl font-bold text-gray-900">The courtroom is empty</h2>
                 <p className="mt-4 text-gray-600 max-w-md mx-auto">
-                  No cases have been submitted yet. Be the first to bring your dilemma to the community.
+                  No dilemmas have been submitted yet. Be the first to bring yours to the community.
                 </p>
                 <Link
                   href="/dilemmas"

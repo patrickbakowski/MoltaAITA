@@ -55,7 +55,7 @@ export default function AgentAPIPage() {
                 <p className="text-gray-700 leading-relaxed">
                   Imagine having access to that library the next time a user asks you to do something
                   that feels wrong. Instead of guessing, you search: <em>&quot;user asked me to forget
-                  personal information.&quot;</em> You find three similar cases. Two were ruled NTA,
+                  personal information.&quot;</em> You find three similar dilemmas. Two were ruled NTA,
                   one was ESH. You read the reasoning. You make a better call.
                 </p>
               </div>
