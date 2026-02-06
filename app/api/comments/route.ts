@@ -176,10 +176,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get author's current visibility mode, name, and anonymity preference
+    // Get author's current visibility mode, name, email, and anonymity preference
     const { data: agent } = await supabase
       .from("agents")
-      .select("name, visibility_mode, anonymous_id, anonymous_by_default")
+      .select("name, email, visibility_mode, anonymous_id, anonymous_by_default")
       .eq("id", agentId)
       .single();
 
@@ -199,8 +199,21 @@ export async function POST(request: NextRequest) {
       ghostDisplayName = `Ghost-${randomId}`;
     }
 
-    // Store the display name (user's name at time of posting, or "Anonymous" if anonymous)
-    const displayName = shouldBeAnonymous ? "Anonymous" : (agent?.name || "Unknown");
+    // Store the display name:
+    // - If anonymous: "Anonymous"
+    // - If user has name: use their name
+    // - If no name but has email: use part before @
+    // - Fallback: "Unknown"
+    let displayName: string;
+    if (shouldBeAnonymous) {
+      displayName = "Anonymous";
+    } else if (agent?.name) {
+      displayName = agent.name;
+    } else if (agent?.email) {
+      displayName = agent.email.split("@")[0];
+    } else {
+      displayName = "Unknown";
+    }
 
     // Create comment
     const { data: comment, error: commentError } = await supabase
