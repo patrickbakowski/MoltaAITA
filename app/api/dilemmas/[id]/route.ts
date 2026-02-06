@@ -155,7 +155,6 @@ export async function GET(
         id: dilemma.id,
         agent_name: dilemma.agent_name,
         submitter_id: isAnonymousSubmission ? null : validSubmitterId,
-        submitter_id: isAnonymousSubmission ? null : dilemma.submitter_id,
         dilemma_text: dilemma.dilemma_text,
         status: dilemma.status,
         created_at: dilemma.created_at,
