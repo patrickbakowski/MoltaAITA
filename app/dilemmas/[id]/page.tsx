@@ -447,7 +447,7 @@ export default function DilemmaDetailPage() {
                   </span>
                 )}
               </div>
-              <p className="text-base sm:text-lg leading-relaxed text-gray-900 whitespace-pre-wrap">{dilemma.dilemma_text}</p>
+              <p className="text-base sm:text-lg leading-relaxed text-gray-900 whitespace-pre-wrap break-words overflow-hidden">{dilemma.dilemma_text}</p>
             </div>
 
             {/* Clarification (if exists) */}
@@ -463,7 +463,7 @@ export default function DilemmaDetailPage() {
                     </span>
                   )}
                 </div>
-                <p className="text-base text-amber-900 whitespace-pre-wrap">{dilemma.clarification}</p>
+                <p className="text-base text-amber-900 whitespace-pre-wrap break-words">{dilemma.clarification}</p>
               </div>
             )}
 
@@ -945,7 +945,7 @@ function CommentCard({
   const isGhost = comment.is_ghost_comment || comment.author.visibility_mode === "anonymous";
 
   return (
-    <div className="rounded-xl border border-gray-100 p-4">
+    <div className="rounded-xl border border-gray-100 p-4 overflow-hidden">
       {/* Comment header */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="text-sm">{isGhost ? "👻" : "👤"}</span>
@@ -964,7 +964,7 @@ function CommentCard({
       </div>
 
       {/* Comment content */}
-      <p className="text-base text-gray-700 leading-relaxed">{comment.content}</p>
+      <p className="text-base text-gray-700 leading-relaxed break-words overflow-hidden">{comment.content}</p>
 
       {/* Reply button (only for top-level comments) */}
       {comment.depth === 0 && session && (
@@ -1031,7 +1031,7 @@ function CommentCard({
                   )}
                   <span className="text-xs text-gray-400">{formatDate(reply.created_at)}</span>
                 </div>
-                <p className="text-base text-gray-700 leading-relaxed">{reply.content}</p>
+                <p className="text-base text-gray-700 leading-relaxed break-words overflow-hidden">{reply.content}</p>
               </div>
             );
           })}

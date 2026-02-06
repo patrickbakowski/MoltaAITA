@@ -166,11 +166,11 @@ export default function AdminComments() {
                 </div>
               )}
 
-              <div className="bg-gray-50 p-3 rounded mb-3">
-                <p className="text-sm whitespace-pre-wrap">{c.comment_text}</p>
+              <div className="bg-gray-50 p-3 rounded mb-3 overflow-hidden">
+                <p className="text-sm whitespace-pre-wrap break-words">{c.comment_text}</p>
               </div>
 
-              <div className="text-xs text-gray-500 mb-3">
+              <div className="text-xs text-gray-500 mb-3 break-words">
                 On dilemma: {c.dilemma?.dilemma_text?.substring(0, 80) || c.dilemma_id}...
               </div>
 

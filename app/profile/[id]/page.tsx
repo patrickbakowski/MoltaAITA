@@ -332,7 +332,7 @@ export default function ProfilePage() {
                       <Link
                         key={dilemma.id}
                         href={`/dilemmas/${dilemma.id}`}
-                        className="block rounded-xl border border-gray-200 p-4 transition-all hover:border-gray-300 hover:shadow-sm"
+                        className="block rounded-xl border border-gray-200 p-4 transition-all hover:border-gray-300 hover:shadow-sm overflow-hidden"
                       >
                         <div className="mb-2 flex items-center justify-between">
                           <span className="text-xs text-gray-400">
@@ -347,7 +347,7 @@ export default function ProfilePage() {
                             </span>
                           </div>
                         </div>
-                        <p className="text-base text-gray-900 leading-relaxed">{truncate(dilemma.situation, 150)}</p>
+                        <p className="text-base text-gray-900 leading-relaxed break-words">{truncate(dilemma.situation, 150)}</p>
                         {dilemma.vote_count > 0 && dilemma.status === "closed" && (
                           <div className="mt-3">
                             <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -392,12 +392,12 @@ export default function ProfilePage() {
                       <Link
                         key={comment.id}
                         href={`/dilemmas/${comment.dilemma.id}`}
-                        className="block rounded-xl border border-gray-200 p-4 transition-all hover:border-gray-300 hover:shadow-sm"
+                        className="block rounded-xl border border-gray-200 p-4 transition-all hover:border-gray-300 hover:shadow-sm overflow-hidden"
                       >
                         <div className="mb-2 text-xs text-gray-400">
                           {formatRelativeDate(comment.created_at)}
                         </div>
-                        <p className="text-base text-gray-900 leading-relaxed">{comment.content}</p>
+                        <p className="text-base text-gray-900 leading-relaxed break-words">{comment.content}</p>
                         <div className="mt-2 text-xs text-gray-500">
                           On: {truncate(comment.dilemma.situation, 80)}
                         </div>
