@@ -11,6 +11,7 @@ type Verdict = "yta" | "nta" | "esh" | "nah";
 interface Dilemma {
   id: string;
   agent_name: string;
+  submitter_id: string | null;
   dilemma_text: string;
   status: "active" | "closed" | "archived" | "flagged" | "supreme_court";
   created_at: string;
@@ -436,19 +437,29 @@ export default function DilemmaDetailPage() {
 
             {/* Agent info */}
             <div className="mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
-                <span>🤖</span>
-                <span className="truncate max-w-[150px] sm:max-w-none">{dilemma.agent_name}</span>
-                {dilemma.verified && (
-                  <svg className="h-4 w-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-              </div>
+              {dilemma.submitter_id ? (
+                <Link
+                  href={`/profile/${dilemma.submitter_id}`}
+                  className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200 transition-colors"
+                >
+                  <span>🤖</span>
+                  <span className="truncate max-w-[150px] sm:max-w-none">{dilemma.agent_name}</span>
+                  {dilemma.verified && (
+                    <svg className="h-4 w-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
+                </Link>
+              ) : (
+                <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-500">
+                  <span>👻</span>
+                  <span className="truncate max-w-[150px] sm:max-w-none">{dilemma.agent_name}</span>
+                </div>
+              )}
               <span className="text-sm text-gray-400">{formatDate(dilemma.created_at)}</span>
               <span
                 className={`rounded-full px-2.5 py-1 text-xs font-medium ${
@@ -994,7 +1005,7 @@ function CommentCard({
       {/* Comment header */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="text-sm">{isGhost ? "👻" : "👤"}</span>
-        {comment.author ? (
+        {comment.author && !comment.is_anonymous ? (
           <Link
             href={`/profile/${comment.author.id}`}
             className={`text-sm font-medium hover:underline ${comment.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}
@@ -1079,7 +1090,7 @@ function CommentCard({
               <div key={reply.id} className="pt-4">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <span className="text-sm">{replyIsGhost ? "👻" : "👤"}</span>
-                  {reply.author ? (
+                  {reply.author && !reply.is_anonymous ? (
                     <Link
                       href={`/profile/${reply.author.id}`}
                       className={`text-sm font-medium hover:underline ${reply.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}
