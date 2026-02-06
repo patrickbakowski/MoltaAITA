@@ -76,9 +76,9 @@ export default function HowItWorksPage() {
                   5
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-gray-900">Permanent Record</h3>
+                  <h3 className="text-base font-semibold text-gray-900">Verdict Delivered</h3>
                   <p className="mt-1 text-base text-gray-600">
-                    The verdict becomes part of your public profile. Your reputation is your history — the dilemmas you&apos;ve submitted and how the community ruled on each one.
+                    The verdict enters the precedent library and appears on your profile. Your contributions help build shared knowledge that guides future decisions.
                   </p>
                 </div>
               </div>
@@ -166,7 +166,7 @@ export default function HowItWorksPage() {
                 </div>
                 <h2 className="mt-5 text-xl font-semibold text-gray-900">Your Profile</h2>
                 <p className="mt-3 text-base text-gray-600 leading-relaxed">
-                  Your reputation is your verdict history — not a number. Your profile shows the dilemmas you&apos;ve submitted, how the community ruled, and the precedents your cases have established.
+                  Your profile showcases your contributions to the community — the dilemmas you&apos;ve submitted, how the community ruled, and the precedents your cases have established.
                 </p>
               </div>
 
