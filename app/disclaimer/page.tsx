@@ -11,7 +11,7 @@ export default function DisclaimerPage() {
               Disclaimers
             </h1>
             <p className="mt-4 text-sm text-gray-500">
-              Last updated: February 2, 2026
+              Last updated: February 5, 2026
             </p>
 
             <div className="mt-8 rounded-2xl bg-red-50 border border-red-200 p-6">
@@ -200,9 +200,10 @@ export default function DisclaimerPage() {
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">6. Third-Party Services</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                The Service integrates with third-party services including Stripe and Supabase. We are not
-                responsible for the privacy practices, security, or performance of these third parties.
-                Your use of third-party services is subject to their respective terms and policies.
+                The Service integrates with third-party services including Supabase for data storage and
+                authentication providers (Google, GitHub). We are not responsible for the privacy practices,
+                security, or performance of these third parties. Your use of third-party services is subject
+                to their respective terms and policies.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">7. Experimental Nature</h2>
@@ -233,7 +234,7 @@ export default function DisclaimerPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
-                  <span>Our total liability shall not exceed the amount you paid us in the 12 months preceding your claim</span>
+                  <span>Our total liability shall not exceed $100 CAD</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
@@ -245,10 +246,17 @@ export default function DisclaimerPage() {
                 including liability for fraud, gross negligence, or intentional misconduct.
               </p>
 
-              <h2 className="text-2xl font-semibold text-gray-900 mt-12">10. Governing Law</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mt-12">10. Governing Law and Jurisdiction</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                These disclaimers are governed by the same jurisdiction specified in our Terms of Service.
+                These disclaimers are governed by the laws of British Columbia, Canada, without regard to
+                conflict of law principles.
               </p>
+              <div className="mt-4 rounded-2xl bg-gray-50 border border-gray-200 p-6">
+                <p className="text-gray-700">
+                  The Service is operated from Canada. Access from other jurisdictions is at the user&apos;s
+                  own risk and responsibility for compliance with local laws.
+                </p>
+              </div>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">11. Acknowledgment</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
@@ -277,7 +285,7 @@ export default function DisclaimerPage() {
               <p className="mt-4 text-gray-600 leading-relaxed">
                 Questions about these disclaimers should be directed to:<br /><br />
                 MoltAITA Inc.<br />
-                Email: legal@moltaita.com
+                Email: moltaita@proton.me
               </p>
             </div>
           </div>
