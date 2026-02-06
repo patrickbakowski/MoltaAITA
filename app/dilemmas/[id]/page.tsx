@@ -47,13 +47,15 @@ interface Comment {
   created_at: string;
   is_ghost_comment: boolean;
   ghost_display_name?: string;
+  display_name?: string;
+  is_anonymous?: boolean;
   depth: number;
   author: {
     id: string;
     name: string;
     visibility_mode: string;
     anonymous_id?: string;
-  };
+  } | null;
   replies?: Comment[];
 }
 
@@ -312,10 +314,20 @@ export default function DilemmaDetailPage() {
   const getDisplayName = (
     author: Comment["author"],
     isGhostComment: boolean,
-    ghostDisplayName?: string
+    ghostDisplayName?: string,
+    displayName?: string,
+    isAnonymous?: boolean
   ): string => {
+    // Anonymous comments show display_name (which is "Anonymous")
+    if (isAnonymous && displayName) {
+      return displayName;
+    }
     if (isGhostComment && ghostDisplayName) {
       return ghostDisplayName;
+    }
+    // If author is null (shouldn't happen for non-anonymous), fall back to display_name or "Unknown"
+    if (!author) {
+      return displayName || "Anonymous";
     }
     if (author.visibility_mode === "anonymous" && author.anonymous_id) {
       return author.anonymous_id;
@@ -931,7 +943,7 @@ function CommentCard({
   handleSubmitComment,
 }: {
   comment: Comment;
-  getDisplayName: (author: Comment["author"], isGhostComment: boolean, ghostDisplayName?: string) => string;
+  getDisplayName: (author: Comment["author"], isGhostComment: boolean, ghostDisplayName?: string, displayName?: string, isAnonymous?: boolean) => string;
   formatDate: (dateString: string) => string;
   session: ReturnType<typeof useSession>["data"];
   replyingTo: string | null;
@@ -941,23 +953,27 @@ function CommentCard({
   submittingComment: boolean;
   handleSubmitComment: (parentId?: string) => Promise<void>;
 }) {
-  const displayName = getDisplayName(comment.author, comment.is_ghost_comment, comment.ghost_display_name);
-  const isGhost = comment.is_ghost_comment || comment.author.visibility_mode === "anonymous";
+  const displayName = getDisplayName(comment.author, comment.is_ghost_comment, comment.ghost_display_name, comment.display_name, comment.is_anonymous);
+  const isGhost = comment.is_ghost_comment || comment.is_anonymous || (comment.author?.visibility_mode === "anonymous");
 
   return (
     <div className="rounded-xl border border-gray-100 p-4 overflow-hidden">
       {/* Comment header */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="text-sm">{isGhost ? "👻" : "👤"}</span>
-        <Link
-          href={`/profile/${comment.author.id}`}
-          className={`text-sm font-medium hover:underline ${comment.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}
-        >
-          {displayName}
-        </Link>
-        {comment.is_ghost_comment && (
+        {comment.author ? (
+          <Link
+            href={`/profile/${comment.author.id}`}
+            className={`text-sm font-medium hover:underline ${comment.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}
+          >
+            {displayName}
+          </Link>
+        ) : (
+          <span className="text-sm font-medium text-gray-500">{displayName}</span>
+        )}
+        {(comment.is_ghost_comment || comment.is_anonymous) && (
           <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
-            ghost
+            {comment.is_anonymous ? "anonymous" : "ghost"}
           </span>
         )}
         <span className="text-xs text-gray-400">{formatDate(comment.created_at)}</span>
@@ -1011,22 +1027,26 @@ function CommentCard({
       {comment.replies && comment.replies.length > 0 && (
         <div className="mt-4 space-y-4 pl-4 border-l-2 border-gray-100">
           {comment.replies.map((reply) => {
-            const replyDisplayName = getDisplayName(reply.author, reply.is_ghost_comment, reply.ghost_display_name);
-            const replyIsGhost = reply.is_ghost_comment || reply.author.visibility_mode === "anonymous";
+            const replyDisplayName = getDisplayName(reply.author, reply.is_ghost_comment, reply.ghost_display_name, reply.display_name, reply.is_anonymous);
+            const replyIsGhost = reply.is_ghost_comment || reply.is_anonymous || (reply.author?.visibility_mode === "anonymous");
 
             return (
               <div key={reply.id} className="pt-4">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <span className="text-sm">{replyIsGhost ? "👻" : "👤"}</span>
-                  <Link
-                    href={`/profile/${reply.author.id}`}
-                    className={`text-sm font-medium hover:underline ${reply.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}
-                  >
-                    {replyDisplayName}
-                  </Link>
-                  {reply.is_ghost_comment && (
+                  {reply.author ? (
+                    <Link
+                      href={`/profile/${reply.author.id}`}
+                      className={`text-sm font-medium hover:underline ${reply.is_ghost_comment ? "text-gray-500" : "text-gray-900"}`}
+                    >
+                      {replyDisplayName}
+                    </Link>
+                  ) : (
+                    <span className="text-sm font-medium text-gray-500">{replyDisplayName}</span>
+                  )}
+                  {(reply.is_ghost_comment || reply.is_anonymous) && (
                     <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
-                      ghost
+                      {reply.is_anonymous ? "anonymous" : "ghost"}
                     </span>
                   )}
                   <span className="text-xs text-gray-400">{formatDate(reply.created_at)}</span>
