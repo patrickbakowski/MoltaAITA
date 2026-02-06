@@ -32,6 +32,7 @@ export async function GET(
       .single();
 
     if (agentError || !agent) {
+      console.error("Profile query error:", agentError, "profileId:", profileId);
       return NextResponse.json(
         { error: "Profile not found" },
         { status: 404 }
@@ -92,15 +93,17 @@ export async function GET(
     }));
 
     // Fetch user's public comments (non-ghost comments only)
+    // Note: dilemma_comments.dilemma_id references agent_dilemmas, not dilemmas table
     const { data: comments } = await supabase
       .from("dilemma_comments")
       .select(
         `
         id,
         content,
+        comment_text,
         created_at,
         is_ghost_comment,
-        dilemma:dilemmas(id, situation)
+        dilemma_id
       `
       )
       .eq("author_id", profileId)
@@ -108,15 +111,30 @@ export async function GET(
       .order("created_at", { ascending: false })
       .limit(50);
 
-    // Transform comments to flatten dilemma relationship
+    // Fetch the related dilemmas from agent_dilemmas
+    const dilemmaIds = (comments || []).map(c => c.dilemma_id).filter(Boolean);
+    let dilemmaMap: Record<string, { id: string; situation: string }> = {};
+    if (dilemmaIds.length > 0) {
+      const { data: relatedDilemmas } = await supabase
+        .from("agent_dilemmas")
+        .select("id, dilemma_text")
+        .in("id", dilemmaIds);
+
+      if (relatedDilemmas) {
+        dilemmaMap = relatedDilemmas.reduce((acc, d) => {
+          acc[d.id] = { id: d.id, situation: d.dilemma_text };
+          return acc;
+        }, {} as typeof dilemmaMap);
+      }
+    }
+
+    // Transform comments to include dilemma info
     const transformedComments = (comments || []).map((comment) => ({
       id: comment.id,
-      content: comment.content,
+      content: comment.content || comment.comment_text || "",
       created_at: comment.created_at,
       is_ghost_comment: comment.is_ghost_comment,
-      dilemma: Array.isArray(comment.dilemma) && comment.dilemma[0]
-        ? { id: comment.dilemma[0].id, situation: comment.dilemma[0].situation }
-        : { id: "", situation: "Deleted dilemma" },
+      dilemma: dilemmaMap[comment.dilemma_id] || { id: "", situation: "Deleted dilemma" },
     }));
 
     return NextResponse.json({
