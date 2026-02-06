@@ -114,6 +114,8 @@ export default function DilemmaDetailPage() {
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
+  const [postAnonymously, setPostAnonymously] = useState(false);
+  const [replyAnonymously, setReplyAnonymously] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Edit state
@@ -273,6 +275,8 @@ export default function DilemmaDetailPage() {
     }
 
     const content = parentId ? replyContent : newComment;
+    const isAnonymous = parentId ? replyAnonymously : postAnonymously;
+
     if (content.length < 10) {
       setError("Comment must be at least 10 characters");
       return;
@@ -289,6 +293,7 @@ export default function DilemmaDetailPage() {
           dilemmaId,
           content,
           parentId,
+          isAnonymous,
         }),
       });
 
@@ -300,8 +305,10 @@ export default function DilemmaDetailPage() {
       if (parentId) {
         setReplyContent("");
         setReplyingTo(null);
+        setReplyAnonymously(false);
       } else {
         setNewComment("");
+        setPostAnonymously(false);
       }
       await fetchComments();
     } catch (err) {
@@ -318,21 +325,28 @@ export default function DilemmaDetailPage() {
     displayName?: string,
     isAnonymous?: boolean
   ): string => {
-    // Anonymous comments show display_name (which is "Anonymous")
-    if (isAnonymous && displayName) {
-      return displayName;
+    // Case 1: Anonymous comments - show "Anonymous" (stored in display_name)
+    if (isAnonymous) {
+      return "Anonymous";
     }
+    // Case 2: Ghost comments - show ghost display name
     if (isGhostComment && ghostDisplayName) {
       return ghostDisplayName;
     }
-    // If author is null (shouldn't happen for non-anonymous), fall back to display_name or "Unknown"
-    if (!author) {
-      return displayName || "Anonymous";
+    // Case 3: Non-anonymous with display_name - use stored display_name
+    if (displayName) {
+      return displayName;
     }
-    if (author.visibility_mode === "anonymous" && author.anonymous_id) {
-      return author.anonymous_id;
+    // Case 4: Old comments without display_name - check if we have author info
+    if (author) {
+      // Check if author is in anonymous visibility mode
+      if (author.visibility_mode === "anonymous" && author.anonymous_id) {
+        return author.anonymous_id;
+      }
+      return author.name || "Unknown";
     }
-    return author.name;
+    // Case 5: No display_name and no author - truly unknown
+    return "Unknown";
   };
 
   const formatDate = (dateString: string) => {
@@ -711,17 +725,30 @@ export default function DilemmaDetailPage() {
                   className="w-full rounded-xl border border-gray-200 p-4 text-base text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none focus:ring-0 min-h-[100px]"
                   rows={3}
                 />
-                <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <span className="text-xs text-gray-400">
-                    {newComment.length}/1000 characters (min 10)
-                  </span>
-                  <button
-                    onClick={() => handleSubmitComment()}
-                    disabled={submittingComment || newComment.length < 10}
-                    className="w-full sm:w-auto rounded-lg bg-gray-900 px-6 py-3 text-base font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 min-h-[48px]"
-                  >
-                    {submittingComment ? "Posting..." : "Post Comment"}
-                  </button>
+                <div className="mt-3 flex flex-col gap-3">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-gray-400">
+                        {newComment.length}/1000 characters (min 10)
+                      </span>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={postAnonymously}
+                          onChange={(e) => setPostAnonymously(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                        />
+                        <span className="text-sm text-gray-600">Post anonymously</span>
+                      </label>
+                    </div>
+                    <button
+                      onClick={() => handleSubmitComment()}
+                      disabled={submittingComment || newComment.length < 10}
+                      className="w-full sm:w-auto rounded-lg bg-gray-900 px-6 py-3 text-base font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 min-h-[48px]"
+                    >
+                      {submittingComment ? "Posting..." : "Post Comment"}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -753,6 +780,8 @@ export default function DilemmaDetailPage() {
                     setReplyingTo={setReplyingTo}
                     replyContent={replyContent}
                     setReplyContent={setReplyContent}
+                    replyAnonymously={replyAnonymously}
+                    setReplyAnonymously={setReplyAnonymously}
                     submittingComment={submittingComment}
                     handleSubmitComment={handleSubmitComment}
                   />
@@ -939,6 +968,8 @@ function CommentCard({
   setReplyingTo,
   replyContent,
   setReplyContent,
+  replyAnonymously,
+  setReplyAnonymously,
   submittingComment,
   handleSubmitComment,
 }: {
@@ -950,6 +981,8 @@ function CommentCard({
   setReplyingTo: (id: string | null) => void;
   replyContent: string;
   setReplyContent: (content: string) => void;
+  replyAnonymously: boolean;
+  setReplyAnonymously: (value: boolean) => void;
   submittingComment: boolean;
   handleSubmitComment: (parentId?: string) => Promise<void>;
 }) {
@@ -1002,23 +1035,35 @@ function CommentCard({
             className="w-full rounded-lg border border-gray-200 p-3 text-base text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none min-h-[80px]"
             rows={2}
           />
-          <div className="mt-3 flex flex-col sm:flex-row justify-end gap-2">
-            <button
-              onClick={() => {
-                setReplyingTo(null);
-                setReplyContent("");
-              }}
-              className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 min-h-[44px]"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => handleSubmitComment(comment.id)}
-              disabled={submittingComment || replyContent.length < 10}
-              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 min-h-[44px]"
-            >
-              {submittingComment ? "Posting..." : "Reply"}
-            </button>
+          <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={replyAnonymously}
+                onChange={(e) => setReplyAnonymously(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+              />
+              <span className="text-sm text-gray-600">Post anonymously</span>
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setReplyingTo(null);
+                  setReplyContent("");
+                  setReplyAnonymously(false);
+                }}
+                className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 min-h-[44px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSubmitComment(comment.id)}
+                disabled={submittingComment || replyContent.length < 10}
+                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 min-h-[44px]"
+              >
+                {submittingComment ? "Posting..." : "Reply"}
+              </button>
+            </div>
           </div>
         </div>
       )}
