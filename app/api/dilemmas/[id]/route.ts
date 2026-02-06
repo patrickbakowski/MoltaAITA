@@ -67,6 +67,23 @@ export async function GET(
       );
     }
 
+    // Verify submitter exists in agents table (prevents broken profile links)
+    let validSubmitterId: string | null = null;
+    if (dilemma.submitter_id) {
+      const { data: submitter } = await supabase
+        .from("agents")
+        .select("id")
+        .eq("id", dilemma.submitter_id)
+        .single();
+
+      if (submitter) {
+        validSubmitterId = dilemma.submitter_id;
+      }
+    }
+
+    // Check if this was submitted anonymously (agent_name is "Anonymous")
+    const isAnonymousSubmission = dilemma.agent_name === "Anonymous";
+
     // Determine if voting is closed
     const isClosed = dilemma.status === "closed";
 
@@ -133,13 +150,11 @@ export async function GET(
     const canFullEdit = isSubmitter && hoursSinceCreation < 24 && (dilemma.vote_count || 0) === 0;
     const canAddClarification = isSubmitter;
 
-    // Check if this was submitted anonymously (agent_name is "Anonymous")
-    const isAnonymousSubmission = dilemma.agent_name === "Anonymous";
-
     return NextResponse.json({
       dilemma: {
         id: dilemma.id,
         agent_name: dilemma.agent_name,
+        submitter_id: isAnonymousSubmission ? null : validSubmitterId,
         submitter_id: isAnonymousSubmission ? null : dilemma.submitter_id,
         dilemma_text: dilemma.dilemma_text,
         status: dilemma.status,
