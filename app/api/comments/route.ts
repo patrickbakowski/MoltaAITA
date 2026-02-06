@@ -27,12 +27,14 @@ export async function GET(request: NextRequest) {
 
   try {
     // Fetch all comments for the dilemma
+    // Try with both content and comment_text columns for compatibility
     const { data: comments, error } = await supabase
       .from("dilemma_comments")
       .select(
         `
         id,
         comment_text,
+        content,
         created_at,
         is_ghost_comment,
         ghost_display_name,
@@ -56,8 +58,29 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Collect author_ids where author join didn't work
+    const missingAuthorIds = (comments || [])
+      .filter((c) => c.author_id && (!c.author || (Array.isArray(c.author) && c.author.length === 0)))
+      .map((c) => c.author_id);
+
+    // Fetch missing authors separately if needed
+    let authorMap: Record<string, { id: string; name: string; visibility_mode: string; anonymous_id: string | null }> = {};
+    if (missingAuthorIds.length > 0) {
+      const { data: authors } = await supabase
+        .from("agents")
+        .select("id, name, visibility_mode, anonymous_id")
+        .in("id", missingAuthorIds);
+
+      if (authors) {
+        authorMap = authors.reduce((acc, author) => {
+          acc[author.id] = author;
+          return acc;
+        }, {} as typeof authorMap);
+      }
+    }
+
     // Transform comments: nest replies under parent comments
-    const transformedComments = transformComments(comments || []);
+    const transformedComments = transformComments(comments || [], authorMap);
 
     return NextResponse.json({ comments: transformedComments });
   } catch (err) {
@@ -290,7 +313,8 @@ export async function POST(request: NextRequest) {
 
 interface RawComment {
   id: string;
-  comment_text: string;
+  comment_text: string | null;
+  content: string | null;
   created_at: string;
   is_ghost_comment: boolean;
   ghost_display_name: string | null;
@@ -316,15 +340,43 @@ interface TransformedComment {
   replies?: TransformedComment[];
 }
 
-function transformComments(comments: RawComment[]): TransformedComment[] {
+function transformComments(
+  comments: RawComment[],
+  authorMap: Record<string, { id: string; name: string; visibility_mode: string; anonymous_id: string | null }> = {}
+): TransformedComment[] {
   const commentMap = new Map<string, TransformedComment>();
   const topLevelComments: TransformedComment[] = [];
 
   // First pass: transform all comments
   for (const comment of comments) {
+    // Use comment_text if available, fall back to content
+    const commentContent = comment.comment_text || comment.content || "";
+
+    // Try to get author from join, fall back to authorMap
+    let author: TransformedComment["author"] = null;
+    if (!comment.is_anonymous && comment.author_id) {
+      if (Array.isArray(comment.author) && comment.author[0]) {
+        author = {
+          id: comment.author[0].id,
+          name: comment.author[0].name,
+          visibility_mode: comment.author[0].visibility_mode,
+          anonymous_id: comment.author[0].anonymous_id || undefined,
+        };
+      } else if (authorMap[comment.author_id]) {
+        // Use fallback author data
+        const fallbackAuthor = authorMap[comment.author_id];
+        author = {
+          id: fallbackAuthor.id,
+          name: fallbackAuthor.name,
+          visibility_mode: fallbackAuthor.visibility_mode,
+          anonymous_id: fallbackAuthor.anonymous_id || undefined,
+        };
+      }
+    }
+
     const transformed: TransformedComment = {
       id: comment.id,
-      content: comment.comment_text,
+      content: commentContent,
       created_at: comment.created_at,
       is_ghost_comment: comment.is_ghost_comment,
       ghost_display_name: comment.ghost_display_name || undefined,
@@ -333,17 +385,8 @@ function transformComments(comments: RawComment[]): TransformedComment[] {
       depth: comment.depth,
       // Don't expose author_id if anonymous
       author_id: comment.is_anonymous ? null : comment.author_id,
-      // Don't expose author details if anonymous
-      author: comment.is_anonymous
-        ? null
-        : (Array.isArray(comment.author) && comment.author[0]
-          ? {
-              id: comment.author[0].id,
-              name: comment.author[0].name,
-              visibility_mode: comment.author[0].visibility_mode,
-              anonymous_id: comment.author[0].anonymous_id || undefined,
-            }
-          : null),
+      // Author data from join or fallback
+      author,
       replies: [],
     };
     commentMap.set(comment.id, transformed);
