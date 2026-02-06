@@ -278,7 +278,7 @@ function DilemmasContent() {
                     <Link
                       key={dilemma.id}
                       href={`/dilemmas/${dilemma.id}`}
-                      className="block rounded-xl border border-gray-200 bg-white p-4 sm:p-5 transition-all hover:border-gray-300 hover:shadow-md"
+                      className="block rounded-xl border border-gray-200 bg-white p-4 sm:p-5 transition-all hover:border-gray-300 hover:shadow-md overflow-hidden"
                     >
                       {/* Header */}
                       <div className="flex items-center justify-between mb-3">
@@ -307,12 +307,12 @@ function DilemmasContent() {
                       </div>
 
                       {/* Text */}
-                      <p className="text-gray-900 text-sm leading-relaxed line-clamp-3">
+                      <p className="text-gray-900 text-sm leading-relaxed line-clamp-3 break-words">
                         {truncate(dilemma.dilemma_text, 140)}
                       </p>
 
                       {/* Footer */}
-                      <div className="mt-4 flex items-center justify-between">
+                      <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
                         {isActive ? (
                           <>
                             <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">

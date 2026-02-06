@@ -162,14 +162,14 @@ export default function AdminAppeals() {
                 </div>
               </div>
 
-              <div className="bg-gray-50 p-3 rounded mb-3">
-                <p className="text-sm whitespace-pre-wrap">{a.appeal_text}</p>
+              <div className="bg-gray-50 p-3 rounded mb-3 overflow-hidden">
+                <p className="text-sm whitespace-pre-wrap break-words">{a.appeal_text}</p>
               </div>
 
               {a.resolution && (
-                <div className="bg-blue-50 p-3 rounded mb-3">
+                <div className="bg-blue-50 p-3 rounded mb-3 overflow-hidden">
                   <p className="text-sm font-medium">Resolution:</p>
-                  <p className="text-sm">{a.resolution}</p>
+                  <p className="text-sm break-words">{a.resolution}</p>
                 </div>
               )}
 

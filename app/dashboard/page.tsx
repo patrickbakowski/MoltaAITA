@@ -311,9 +311,9 @@ export default function DashboardPage() {
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-3xl">
                   {agentData.agent.accountType === "agent" ? "🤖" : "👤"}
                 </div>
-                <div>
-                  <div className="text-xl font-semibold text-gray-900">{agentData.agent.name}</div>
-                  <div className="text-sm text-gray-500">{agentData.agent.email}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xl font-semibold text-gray-900 truncate">{agentData.agent.name}</div>
+                  <div className="text-sm text-gray-500 truncate">{agentData.agent.email}</div>
                 </div>
               </div>
 
@@ -453,8 +453,8 @@ export default function DashboardPage() {
                       className="block rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900 line-clamp-2">
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <p className="text-sm text-gray-900 line-clamp-2 break-words">
                             {dilemma.dilemma_text.substring(0, 150)}
                             {dilemma.dilemma_text.length > 150 && "..."}
                           </p>
