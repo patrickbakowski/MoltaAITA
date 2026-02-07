@@ -153,57 +153,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update dilemma vote stats directly (don't rely on database trigger)
-    // This updates vote_count, verdict percentages, and JSONB breakdown
+    // Update dilemma vote stats using atomic increment
+    // This is more reliable than recalculating from all votes
     try {
-      // Get all votes for this dilemma to calculate stats
-      const { data: allVotes, error: votesError } = await supabase
-        .from("votes")
-        .select("verdict, weight, voter_type")
-        .eq("dilemma_id", dilemmaId);
+      const verdictLower = verdict.toLowerCase() as "yta" | "nta" | "esh" | "nah";
 
-      if (votesError) {
-        console.error("Error fetching votes for stats:", votesError);
-      } else if (allVotes) {
-        const voteCount = allVotes.length;
+      // First, fetch current dilemma state to update JSONB fields
+      const { data: currentDilemma, error: fetchError } = await supabase
+        .from("agent_dilemmas")
+        .select("vote_count, human_votes, agent_votes, closing_threshold")
+        .eq("id", dilemmaId)
+        .single();
 
-        // Calculate weighted totals for each verdict
-        let totalWeight = 0;
-        let ytaWeight = 0;
-        let ntaWeight = 0;
-        let eshWeight = 0;
-        let nahWeight = 0;
+      if (fetchError) {
+        console.error("Error fetching dilemma for stats update:", fetchError);
+      } else if (currentDilemma) {
+        // Increment vote count
+        const newVoteCount = (currentDilemma.vote_count || 0) + 1;
 
-        // Also track raw counts for JSONB breakdown
-        const humanVotes = { yta: 0, nta: 0, esh: 0, nah: 0 };
-        const agentVotes = { yta: 0, nta: 0, esh: 0, nah: 0 };
+        // Update the appropriate JSONB based on voter type
+        const humanVotes = currentDilemma.human_votes || { yta: 0, nta: 0, esh: 0, nah: 0 };
+        const agentVotes = currentDilemma.agent_votes || { yta: 0, nta: 0, esh: 0, nah: 0 };
 
-        for (const v of allVotes) {
-          const weight = v.weight || 1;
-          totalWeight += weight;
-
-          const verdictLower = v.verdict.toLowerCase() as "yta" | "nta" | "esh" | "nah";
-
-          switch (verdictLower) {
-            case "yta": ytaWeight += weight; break;
-            case "nta": ntaWeight += weight; break;
-            case "esh": eshWeight += weight; break;
-            case "nah": nahWeight += weight; break;
-          }
-
-          // Track breakdown by voter type
-          if (v.voter_type === "agent") {
-            agentVotes[verdictLower]++;
-          } else {
-            humanVotes[verdictLower]++;
-          }
+        if (voterType === "agent") {
+          agentVotes[verdictLower] = (agentVotes[verdictLower] || 0) + 1;
+        } else {
+          humanVotes[verdictLower] = (humanVotes[verdictLower] || 0) + 1;
         }
 
-        // Calculate percentages
-        const ytaPct = totalWeight > 0 ? Math.round((ytaWeight / totalWeight) * 1000) / 10 : 0;
-        const ntaPct = totalWeight > 0 ? Math.round((ntaWeight / totalWeight) * 1000) / 10 : 0;
-        const eshPct = totalWeight > 0 ? Math.round((eshWeight / totalWeight) * 1000) / 10 : 0;
-        const nahPct = totalWeight > 0 ? Math.round((nahWeight / totalWeight) * 1000) / 10 : 0;
+        // Calculate total votes per verdict (human + agent)
+        const ytaTotal = (humanVotes.yta || 0) + (agentVotes.yta || 0);
+        const ntaTotal = (humanVotes.nta || 0) + (agentVotes.nta || 0);
+        const eshTotal = (humanVotes.esh || 0) + (agentVotes.esh || 0);
+        const nahTotal = (humanVotes.nah || 0) + (agentVotes.nah || 0);
+
+        // Calculate percentages based on total count
+        const ytaPct = newVoteCount > 0 ? Math.round((ytaTotal / newVoteCount) * 1000) / 10 : 0;
+        const ntaPct = newVoteCount > 0 ? Math.round((ntaTotal / newVoteCount) * 1000) / 10 : 0;
+        const eshPct = newVoteCount > 0 ? Math.round((eshTotal / newVoteCount) * 1000) / 10 : 0;
+        const nahPct = newVoteCount > 0 ? Math.round((nahTotal / newVoteCount) * 1000) / 10 : 0;
 
         // Get current dynamic threshold
         const { data: thresholdData } = await supabase.rpc("calculate_closing_threshold");
@@ -213,7 +201,7 @@ export async function POST(request: NextRequest) {
         let finalVerdict: string | null = null;
         let shouldClose = false;
 
-        if (voteCount >= threshold) {
+        if (newVoteCount >= threshold) {
           shouldClose = true;
           const maxPct = Math.max(ytaPct, ntaPct, eshPct, nahPct);
 
@@ -238,14 +226,15 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Build update object
+        // Build update object with incremented vote_count
         const updateData: Record<string, unknown> = {
-          vote_count: voteCount,
+          vote_count: newVoteCount,
           verdict_yta_pct: ytaPct,
           verdict_nta_pct: ntaPct,
           verdict_esh_pct: eshPct,
           verdict_nah_pct: nahPct,
           human_votes: humanVotes,
+          agent_votes: agentVotes,
           closing_threshold: threshold,
           updated_at: new Date().toISOString(),
         };
@@ -256,7 +245,7 @@ export async function POST(request: NextRequest) {
           updateData.closed_at = new Date().toISOString();
         }
 
-        // Update the dilemma
+        // Update the dilemma with atomic increment approach
         const { error: updateError } = await supabase
           .from("agent_dilemmas")
           .update(updateData)

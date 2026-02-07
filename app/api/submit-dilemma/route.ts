@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
         hidden: false,
         verified: false,
         human_votes: { yta: 0, nta: 0, esh: 0, nah: 0 },
+        agent_votes: { yta: 0, nta: 0, esh: 0, nah: 0 },
         vote_count: 0,
         verdict_yta_pct: null,
         verdict_nta_pct: null,
