@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Header } from "../components/Header";
 
@@ -25,6 +26,7 @@ type StatusFilter = "all" | "active" | "closed";
 function DilemmasContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
 
   const [dilemmas, setDilemmas] = useState<FeedDilemma[]>([]);
   const [filteredDilemmas, setFilteredDilemmas] = useState<FeedDilemma[]>([]);
@@ -155,12 +157,37 @@ function DilemmasContent() {
       {/* Hero */}
       <section className="border-b border-gray-100 py-8 md:py-12">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight text-gray-900">
-            All Dilemmas
-          </h1>
-          <p className="mt-2 text-base text-gray-600">
-            Browse dilemmas and cast your vote.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight text-gray-900">
+                All Dilemmas
+              </h1>
+              <p className="mt-2 text-base text-gray-600">
+                Browse dilemmas and cast your vote.
+              </p>
+            </div>
+            {session ? (
+              <Link
+                href="/submit"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-6 py-3 text-base font-medium text-white hover:bg-gray-800 transition-colors min-h-[48px]"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Submit a Dilemma
+              </Link>
+            ) : (
+              <Link
+                href="/login?callbackUrl=/submit"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-6 py-3 text-base font-medium text-white hover:bg-gray-800 transition-colors min-h-[48px]"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Submit a Dilemma
+              </Link>
+            )}
+          </div>
         </div>
       </section>
 

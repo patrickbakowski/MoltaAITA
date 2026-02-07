@@ -26,6 +26,10 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<"single" | "bulk">("single");
+  const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -77,6 +81,66 @@ export default function AdminUsers() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    setSingleDeleteId(id);
+    setDeleteTarget("single");
+    setShowDeleteModal(true);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    setDeleteTarget("bulk");
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      let url = "/api/admin/users?";
+      if (deleteTarget === "single" && singleDeleteId) {
+        url += `id=${singleDeleteId}`;
+      } else if (deleteTarget === "bulk") {
+        url += `ids=${Array.from(selectedIds).join(",")}`;
+      }
+
+      const res = await fetch(url, { method: "DELETE" });
+      if (res.ok) {
+        setSelectedIds(new Set());
+        fetchUsers();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete");
+      }
+    } catch (err) {
+      console.error("Delete failed:", err);
+    } finally {
+      setShowDeleteModal(false);
+      setSingleDeleteId(null);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    // Don't allow selecting admin user
+    const selectableUsers = users.filter(u => u.email?.toLowerCase() !== ADMIN_EMAIL);
+    if (selectedIds.size === selectableUsers.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(selectableUsers.map(u => u.id)));
+    }
+  };
+
+  const toggleSelect = (id: string, email: string) => {
+    // Don't allow selecting admin user
+    if (email?.toLowerCase() === ADMIN_EMAIL) return;
+
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
+  };
+
   if (status === "loading" || loading) {
     return <div className="p-8">Loading...</div>;
   }
@@ -100,7 +164,7 @@ export default function AdminUsers() {
           <Link href="/admin/comments" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">Comments</Link>
         </nav>
 
-        <div className="mb-4 flex gap-2">
+        <div className="mb-4 flex gap-2 flex-wrap items-center">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -111,12 +175,29 @@ export default function AdminUsers() {
             <option value="agent">Agents Only</option>
             <option value="banned">Banned Only</option>
           </select>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Delete Selected ({selectedIds.size})
+            </button>
+          )}
         </div>
 
         <div className="bg-white rounded-lg shadow overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={users.filter(u => u.email?.toLowerCase() !== ADMIN_EMAIL).length > 0 &&
+                             selectedIds.size === users.filter(u => u.email?.toLowerCase() !== ADMIN_EMAIL).length}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left">Name</th>
                 <th className="px-4 py-3 text-left">Email</th>
                 <th className="px-4 py-3 text-left">Type</th>
@@ -128,11 +209,23 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className={`border-t ${u.banned ? "bg-red-50" : ""}`}>
+              {users.map((u) => {
+                const isAdmin = u.email?.toLowerCase() === ADMIN_EMAIL;
+                return (
+                <tr key={u.id} className={`border-t ${u.banned ? "bg-red-50" : ""} ${selectedIds.has(u.id) ? "bg-blue-50" : ""}`}>
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(u.id)}
+                      onChange={() => toggleSelect(u.id, u.email)}
+                      disabled={isAdmin}
+                      className="rounded border-gray-300 disabled:opacity-30"
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     {u.name}
                     {u.banned && <span className="ml-2 text-xs bg-red-200 px-1 rounded">banned</span>}
+                    {isAdmin && <span className="ml-2 text-xs bg-purple-200 px-1 rounded">admin</span>}
                   </td>
                   <td className="px-4 py-3">{u.email}</td>
                   <td className="px-4 py-3">
@@ -163,19 +256,57 @@ export default function AdminUsers() {
                         <button onClick={() => handleAction(u.id, "revoke_api_key")} className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 rounded text-xs">Revoke Key</button>
                       )}
                       <Link href={`/profile/${u.id}`} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs">View</Link>
+                      {!isAdmin && (
+                        <button onClick={() => handleDelete(u.id)} className="px-2 py-1 bg-red-100 hover:bg-red-200 rounded text-xs">Delete</button>
+                      )}
                     </div>
                   </td>
                 </tr>
-              ))}
+              );
+              })}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">No users found</td>
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">No users found</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Confirm Deletion</h2>
+            <p className="text-gray-600 mb-4">
+              {deleteTarget === "single"
+                ? "Are you sure you want to delete this user?"
+                : `Are you sure you want to delete ${selectedIds.size} user(s)?`}
+            </p>
+            <p className="text-red-600 text-sm mb-6">
+              This will permanently delete the user(s) and all their associated dilemmas, votes, and comments. This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSingleDeleteId(null);
+                }}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -101,3 +101,105 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.email || session.user.email.toLowerCase() !== ADMIN_EMAIL) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  const idsParam = searchParams.get("ids"); // For bulk delete
+
+  // Support both single id and bulk ids
+  const idsToDelete: string[] = [];
+  if (id) {
+    idsToDelete.push(id);
+  }
+  if (idsParam) {
+    idsToDelete.push(...idsParam.split(",").filter(Boolean));
+  }
+
+  if (idsToDelete.length === 0) {
+    return NextResponse.json({ error: "Missing user id(s)" }, { status: 400 });
+  }
+
+  // Prevent deleting admin user
+  const { data: adminCheck } = await supabase
+    .from("agents")
+    .select("email")
+    .in("id", idsToDelete);
+
+  if (adminCheck?.some(u => u.email?.toLowerCase() === ADMIN_EMAIL)) {
+    return NextResponse.json({ error: "Cannot delete admin user" }, { status: 403 });
+  }
+
+  try {
+    // 1. Delete user's votes
+    const { error: votesError } = await supabase
+      .from("votes")
+      .delete()
+      .in("voter_id", idsToDelete);
+
+    if (votesError) {
+      console.error("Admin votes delete error:", votesError);
+    }
+
+    // 2. Delete user's comments (or reassign to "Deleted User")
+    const { error: commentsError } = await supabase
+      .from("comments")
+      .delete()
+      .in("author_id", idsToDelete);
+
+    if (commentsError) {
+      console.error("Admin comments delete error:", commentsError);
+    }
+
+    // 3. Get dilemmas submitted by these users
+    const { data: userDilemmas } = await supabase
+      .from("agent_dilemmas")
+      .select("id")
+      .in("submitter_id", idsToDelete);
+
+    if (userDilemmas && userDilemmas.length > 0) {
+      const dilemmaIds = userDilemmas.map(d => d.id);
+
+      // Delete votes on those dilemmas
+      await supabase
+        .from("votes")
+        .delete()
+        .in("dilemma_id", dilemmaIds);
+
+      // Delete comments on those dilemmas
+      await supabase
+        .from("comments")
+        .delete()
+        .in("dilemma_id", dilemmaIds);
+
+      // Delete the dilemmas
+      await supabase
+        .from("agent_dilemmas")
+        .delete()
+        .in("submitter_id", idsToDelete);
+    }
+
+    // 4. Delete the users
+    const { error } = await supabase
+      .from("agents")
+      .delete()
+      .in("id", idsToDelete);
+
+    if (error) {
+      console.error("Admin user delete error:", error);
+      return NextResponse.json({ error: "Failed to delete user(s)" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, deleted: idsToDelete.length });
+  } catch (err) {
+    console.error("Admin user delete error:", err);
+    return NextResponse.json({ error: "Failed to delete user(s)" }, { status: 500 });
+  }
+}
