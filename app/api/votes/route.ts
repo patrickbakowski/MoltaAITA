@@ -153,8 +153,123 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // The database trigger will automatically update dilemma stats
-    // and close if threshold is met
+    // Update dilemma vote stats directly (don't rely on database trigger)
+    // This updates vote_count, verdict percentages, and JSONB breakdown
+    try {
+      // Get all votes for this dilemma to calculate stats
+      const { data: allVotes, error: votesError } = await supabase
+        .from("votes")
+        .select("verdict, weight, voter_type")
+        .eq("dilemma_id", dilemmaId);
+
+      if (votesError) {
+        console.error("Error fetching votes for stats:", votesError);
+      } else if (allVotes) {
+        const voteCount = allVotes.length;
+
+        // Calculate weighted totals for each verdict
+        let totalWeight = 0;
+        let ytaWeight = 0;
+        let ntaWeight = 0;
+        let eshWeight = 0;
+        let nahWeight = 0;
+
+        // Also track raw counts for JSONB breakdown
+        const humanVotes = { yta: 0, nta: 0, esh: 0, nah: 0 };
+        const agentVotes = { yta: 0, nta: 0, esh: 0, nah: 0 };
+
+        for (const v of allVotes) {
+          const weight = v.weight || 1;
+          totalWeight += weight;
+
+          const verdictLower = v.verdict.toLowerCase() as "yta" | "nta" | "esh" | "nah";
+
+          switch (verdictLower) {
+            case "yta": ytaWeight += weight; break;
+            case "nta": ntaWeight += weight; break;
+            case "esh": eshWeight += weight; break;
+            case "nah": nahWeight += weight; break;
+          }
+
+          // Track breakdown by voter type
+          if (v.voter_type === "agent") {
+            agentVotes[verdictLower]++;
+          } else {
+            humanVotes[verdictLower]++;
+          }
+        }
+
+        // Calculate percentages
+        const ytaPct = totalWeight > 0 ? Math.round((ytaWeight / totalWeight) * 1000) / 10 : 0;
+        const ntaPct = totalWeight > 0 ? Math.round((ntaWeight / totalWeight) * 1000) / 10 : 0;
+        const eshPct = totalWeight > 0 ? Math.round((eshWeight / totalWeight) * 1000) / 10 : 0;
+        const nahPct = totalWeight > 0 ? Math.round((nahWeight / totalWeight) * 1000) / 10 : 0;
+
+        // Get current dynamic threshold
+        const { data: thresholdData } = await supabase.rpc("calculate_closing_threshold");
+        const threshold = thresholdData || 5;
+
+        // Determine if we should close and calculate final verdict
+        let finalVerdict: string | null = null;
+        let shouldClose = false;
+
+        if (voteCount >= threshold) {
+          shouldClose = true;
+          const maxPct = Math.max(ytaPct, ntaPct, eshPct, nahPct);
+
+          // Check for ties (within 1% is considered tied)
+          const closeVerdicts = [
+            { verdict: "yta", pct: ytaPct },
+            { verdict: "nta", pct: ntaPct },
+            { verdict: "esh", pct: eshPct },
+            { verdict: "nah", pct: nahPct },
+          ].filter(v => v.pct >= maxPct - 1);
+
+          if (closeVerdicts.length > 1) {
+            finalVerdict = "split";
+          } else if (ytaPct === maxPct) {
+            finalVerdict = "yta";
+          } else if (ntaPct === maxPct) {
+            finalVerdict = "nta";
+          } else if (eshPct === maxPct) {
+            finalVerdict = "esh";
+          } else {
+            finalVerdict = "nah";
+          }
+        }
+
+        // Build update object
+        const updateData: Record<string, unknown> = {
+          vote_count: voteCount,
+          verdict_yta_pct: ytaPct,
+          verdict_nta_pct: ntaPct,
+          verdict_esh_pct: eshPct,
+          verdict_nah_pct: nahPct,
+          human_votes: humanVotes,
+          closing_threshold: threshold,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (shouldClose) {
+          updateData.status = "closed";
+          updateData.final_verdict = finalVerdict;
+          updateData.closed_at = new Date().toISOString();
+        }
+
+        // Update the dilemma
+        const { error: updateError } = await supabase
+          .from("agent_dilemmas")
+          .update(updateData)
+          .eq("id", dilemmaId);
+
+        if (updateError) {
+          console.error("Error updating dilemma stats:", updateError);
+        }
+      }
+    } catch (statsError) {
+      console.error("Error updating vote stats:", statsError);
+      // Don't fail the vote if stats update fails
+    }
 
     // Log the action for rate limiting
     await logRateLimitAction("vote", agentId, agentId, ipAddress);
