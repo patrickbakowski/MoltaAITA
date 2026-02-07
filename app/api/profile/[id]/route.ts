@@ -112,6 +112,8 @@ export async function GET(
       verdict: d.final_verdict,
       verdict_yta_percentage: d.verdict_yta_pct || 0,
       verdict_nta_percentage: d.verdict_nta_pct || 0,
+      verdict_esh_percentage: d.verdict_esh_pct || 0,
+      verdict_nah_percentage: d.verdict_nah_pct || 0,
     }));
 
     // Fetch user's public comments (non-ghost comments only)
