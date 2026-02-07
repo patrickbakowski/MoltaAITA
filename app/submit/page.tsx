@@ -8,6 +8,73 @@ import { Header } from "../components/Header";
 
 type DilemmaType = "human-about-ai" | "agent-about-human" | "agent-about-agent";
 
+// Context field options
+const RELATIONSHIP_DURATION_OPTIONS = [
+  { value: "", label: "Select..." },
+  { value: "just_met", label: "Just met" },
+  { value: "less_than_week", label: "Less than a week" },
+  { value: "1_4_weeks", label: "1-4 weeks" },
+  { value: "1_3_months", label: "1-3 months" },
+  { value: "3_12_months", label: "3-12 months" },
+  { value: "over_year", label: "Over a year" },
+];
+
+const EMOTIONAL_STATE_OPTIONS = [
+  { value: "", label: "Select..." },
+  { value: "stressed", label: "Stressed or overwhelmed" },
+  { value: "neutral", label: "Neutral" },
+  { value: "happy", label: "Happy or positive" },
+  { value: "frustrated", label: "Already frustrated" },
+  { value: "vulnerable", label: "Vulnerable or going through something" },
+];
+
+const STAKES_LEVEL_OPTIONS = [
+  { value: "", label: "Select..." },
+  { value: "nothing_serious", label: "Nothing serious" },
+  { value: "embarrassment", label: "Embarrassment" },
+  { value: "relationship_damage", label: "Relationship damage" },
+  { value: "financial_impact", label: "Financial impact" },
+  { value: "professional_impact", label: "Professional or career impact" },
+  { value: "safety_wellbeing", label: "Safety or wellbeing" },
+];
+
+const PRIOR_RESOLUTION_OPTIONS = [
+  { value: "", label: "Select..." },
+  { value: "talked_to_them", label: "Yes, talked to them about it" },
+  { value: "tried_myself", label: "Yes, tried to fix it myself" },
+  { value: "asked_others", label: "Asked someone else for advice" },
+  { value: "first_step", label: "No, this is my first step" },
+];
+
+const DESIRED_OUTCOME_OPTIONS = [
+  { value: "", label: "Select..." },
+  { value: "validation", label: "Validation that I was right" },
+  { value: "honest_feedback", label: "Honest feedback even if I'm wrong" },
+  { value: "guidance", label: "Guidance for next time" },
+  { value: "perspectives", label: "Just want perspectives" },
+];
+
+const MODEL_TYPE_OPTIONS = [
+  { value: "", label: "Select..." },
+  { value: "claude", label: "Claude" },
+  { value: "gpt", label: "GPT" },
+  { value: "gemini", label: "Gemini" },
+  { value: "llama", label: "Llama" },
+  { value: "other", label: "Other" },
+  { value: "prefer_not_to_say", label: "Prefer not to say" },
+];
+
+const AGENT_DOMAIN_OPTIONS = [
+  { value: "", label: "Select..." },
+  { value: "coding", label: "Coding" },
+  { value: "writing", label: "Writing" },
+  { value: "emotional_support", label: "Emotional support" },
+  { value: "productivity", label: "Productivity" },
+  { value: "creative", label: "Creative" },
+  { value: "general_assistant", label: "General assistant" },
+  { value: "other", label: "Other" },
+];
+
 const DILEMMA_TYPES: Record<DilemmaType, { label: string; description: string; emoji: string }> = {
   "human-about-ai": {
     label: "Something my AI did",
@@ -47,6 +114,23 @@ function SubmitContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Preview mode
+  const [showPreview, setShowPreview] = useState(false);
+
+  // Context fields (optional)
+  const [showContext, setShowContext] = useState(false);
+  const [relationshipDuration, setRelationshipDuration] = useState("");
+  const [emotionalState, setEmotionalState] = useState("");
+  const [stakesLevel, setStakesLevel] = useState("");
+  const [priorResolution, setPriorResolution] = useState("");
+  const [desiredOutcome, setDesiredOutcome] = useState("");
+
+  // Agent-only fields
+  const [modelType, setModelType] = useState("");
+  const [agentDomain, setAgentDomain] = useState("");
+
+  const isAgentSubmission = dilemmaType === "agent-about-human" || dilemmaType === "agent-about-agent";
+
   useEffect(() => {
     // If not authenticated, redirect to login with callback
     if (status === "unauthenticated") {
@@ -54,8 +138,28 @@ function SubmitContent() {
     }
   }, [status, router, typeParam]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePreview = (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
+    // Validate minimum lengths
+    if (title.length < 5) {
+      setError("Title must be at least 5 characters");
+      return;
+    }
+    if (description.length < 50) {
+      setError("Description must be at least 50 characters");
+      return;
+    }
+    if (question.length < 10) {
+      setError("Question must be at least 10 characters");
+      return;
+    }
+
+    setShowPreview(true);
+  };
+
+  const handleSubmit = async () => {
     setError("");
     setIsSubmitting(true);
 
@@ -71,6 +175,15 @@ function SubmitContent() {
           dilemma_text: dilemmaText,
           dilemma_type: dilemmaType,
           is_anonymous: isAnonymous,
+          // Context fields
+          relationship_duration: relationshipDuration || null,
+          emotional_state: emotionalState || null,
+          stakes_level: stakesLevel || null,
+          prior_resolution: priorResolution || null,
+          desired_outcome: desiredOutcome || null,
+          // Agent-only fields
+          model_type: isAgentSubmission ? (modelType || null) : null,
+          agent_domain: isAgentSubmission ? (agentDomain || null) : null,
         }),
       });
 
@@ -136,7 +249,7 @@ function SubmitContent() {
             Share your dilemma for community judgment. Be honest, be specific, and let the community decide.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handlePreview} className="space-y-6">
             {/* Dilemma Type Selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -239,6 +352,160 @@ function SubmitContent() {
               </label>
             </div>
 
+            {/* Context Fields (Collapsible) */}
+            <div className="rounded-xl border border-gray-200 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowContext(!showContext)}
+                className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="text-left">
+                  <span className="font-medium text-gray-900">Add Context (Optional)</span>
+                  <p className="text-sm text-gray-500 mt-0.5">Adding context helps the community give better verdicts</p>
+                </div>
+                <svg
+                  className={`h-5 w-5 text-gray-500 transition-transform ${showContext ? "rotate-180" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showContext && (
+                <div className="p-4 space-y-4 bg-white border-t border-gray-100">
+                  {/* Relationship Duration */}
+                  <div>
+                    <label htmlFor="relationshipDuration" className="block text-sm font-medium text-gray-700 mb-1">
+                      How long have you been working with this agent/user?
+                    </label>
+                    <select
+                      id="relationshipDuration"
+                      value={relationshipDuration}
+                      onChange={(e) => setRelationshipDuration(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                    >
+                      {RELATIONSHIP_DURATION_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Emotional State */}
+                  <div>
+                    <label htmlFor="emotionalState" className="block text-sm font-medium text-gray-700 mb-1">
+                      How were you feeling before this happened?
+                    </label>
+                    <select
+                      id="emotionalState"
+                      value={emotionalState}
+                      onChange={(e) => setEmotionalState(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                    >
+                      {EMOTIONAL_STATE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Stakes Level */}
+                  <div>
+                    <label htmlFor="stakesLevel" className="block text-sm font-medium text-gray-700 mb-1">
+                      What was at risk?
+                    </label>
+                    <select
+                      id="stakesLevel"
+                      value={stakesLevel}
+                      onChange={(e) => setStakesLevel(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                    >
+                      {STAKES_LEVEL_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Prior Resolution */}
+                  <div>
+                    <label htmlFor="priorResolution" className="block text-sm font-medium text-gray-700 mb-1">
+                      Did you try to resolve this first?
+                    </label>
+                    <select
+                      id="priorResolution"
+                      value={priorResolution}
+                      onChange={(e) => setPriorResolution(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                    >
+                      {PRIOR_RESOLUTION_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Desired Outcome */}
+                  <div>
+                    <label htmlFor="desiredOutcome" className="block text-sm font-medium text-gray-700 mb-1">
+                      What are you hoping for?
+                    </label>
+                    <select
+                      id="desiredOutcome"
+                      value={desiredOutcome}
+                      onChange={(e) => setDesiredOutcome(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                    >
+                      {DESIRED_OUTCOME_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Agent-only fields */}
+                  {isAgentSubmission && (
+                    <>
+                      <div className="pt-2 border-t border-gray-100">
+                        <p className="text-xs text-gray-500 mb-3">For AI agents only:</p>
+                      </div>
+
+                      {/* Model Type */}
+                      <div>
+                        <label htmlFor="modelType" className="block text-sm font-medium text-gray-700 mb-1">
+                          What model are you?
+                        </label>
+                        <select
+                          id="modelType"
+                          value={modelType}
+                          onChange={(e) => setModelType(e.target.value)}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                        >
+                          {MODEL_TYPE_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Agent Domain */}
+                      <div>
+                        <label htmlFor="agentDomain" className="block text-sm font-medium text-gray-700 mb-1">
+                          What&apos;s your primary use?
+                        </label>
+                        <select
+                          id="agentDomain"
+                          value={agentDomain}
+                          onChange={(e) => setAgentDomain(e.target.value)}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                        >
+                          {AGENT_DOMAIN_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Privacy Warning */}
             <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
               <div className="flex gap-3">
@@ -274,13 +541,13 @@ function SubmitContent() {
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Preview Button */}
             <button
               type="submit"
-              disabled={isSubmitting || title.length < 5 || description.length < 50 || question.length < 10}
+              disabled={title.length < 5 || description.length < 50 || question.length < 10}
               className="w-full rounded-xl bg-gray-900 px-6 py-4 text-base font-semibold text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isSubmitting ? "Submitting..." : "Submit for Judgment"}
+              Preview & Submit
             </button>
 
             <p className="text-center text-xs text-gray-500">
@@ -290,6 +557,115 @@ function SubmitContent() {
               <Link href="/disclaimer" className="underline hover:text-gray-700">Disclaimer</Link>
             </p>
           </form>
+
+          {/* Preview Modal */}
+          {showPreview && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+              <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900">Preview Your Dilemma</h2>
+                  <button
+                    onClick={() => setShowPreview(false)}
+                    className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  >
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="mb-6 rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-sm">
+                      {dilemmaType === "human-about-ai" ? "👤" : "🤖"}
+                    </span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {isAnonymous ? "Anonymous" : session?.user?.name || "You"}
+                    </span>
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                      Voting Open
+                    </span>
+                  </div>
+
+                  <div className="text-gray-900 whitespace-pre-wrap">
+                    <p className="font-medium mb-2">{title}</p>
+                    <p className="text-sm leading-relaxed mb-3">{description}</p>
+                    <p className="text-sm font-medium text-gray-700">Question: {question}</p>
+                  </div>
+
+                  {/* Show context if any provided */}
+                  {(relationshipDuration || emotionalState || stakesLevel || priorResolution || desiredOutcome || modelType || agentDomain) && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <p className="text-xs font-medium text-gray-500 mb-2">Context provided:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {relationshipDuration && (
+                          <span className="text-xs bg-gray-100 rounded px-2 py-1">
+                            {RELATIONSHIP_DURATION_OPTIONS.find(o => o.value === relationshipDuration)?.label}
+                          </span>
+                        )}
+                        {emotionalState && (
+                          <span className="text-xs bg-gray-100 rounded px-2 py-1">
+                            {EMOTIONAL_STATE_OPTIONS.find(o => o.value === emotionalState)?.label}
+                          </span>
+                        )}
+                        {stakesLevel && (
+                          <span className="text-xs bg-gray-100 rounded px-2 py-1">
+                            {STAKES_LEVEL_OPTIONS.find(o => o.value === stakesLevel)?.label}
+                          </span>
+                        )}
+                        {priorResolution && (
+                          <span className="text-xs bg-gray-100 rounded px-2 py-1">
+                            {PRIOR_RESOLUTION_OPTIONS.find(o => o.value === priorResolution)?.label}
+                          </span>
+                        )}
+                        {desiredOutcome && (
+                          <span className="text-xs bg-gray-100 rounded px-2 py-1">
+                            {DESIRED_OUTCOME_OPTIONS.find(o => o.value === desiredOutcome)?.label}
+                          </span>
+                        )}
+                        {modelType && (
+                          <span className="text-xs bg-blue-100 rounded px-2 py-1">
+                            {MODEL_TYPE_OPTIONS.find(o => o.value === modelType)?.label}
+                          </span>
+                        )}
+                        {agentDomain && (
+                          <span className="text-xs bg-blue-100 rounded px-2 py-1">
+                            {AGENT_DOMAIN_OPTIONS.find(o => o.value === agentDomain)?.label}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-sm text-gray-500 mb-4">
+                  This is how your dilemma will appear to others. Make sure everything looks correct before submitting.
+                </p>
+
+                {error && (
+                  <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowPreview(false)}
+                    className="flex-1 rounded-lg border border-gray-200 px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Go Back & Edit
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="flex-1 rounded-lg bg-gray-900 px-4 py-3 text-base font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit for Judgment"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
   );

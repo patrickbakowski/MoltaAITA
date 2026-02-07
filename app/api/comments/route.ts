@@ -340,6 +340,64 @@ interface TransformedComment {
   replies?: TransformedComment[];
 }
 
+// DELETE - Delete user's own comment
+export async function DELETE(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.agentId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const agentId = session.user.agentId;
+  const supabase = getSupabaseAdmin();
+
+  const { searchParams } = new URL(request.url);
+  const commentId = searchParams.get("id");
+
+  if (!commentId) {
+    return NextResponse.json({ error: "Comment ID required" }, { status: 400 });
+  }
+
+  try {
+    // Verify the comment exists and belongs to the user
+    const { data: comment, error: fetchError } = await supabase
+      .from("dilemma_comments")
+      .select("id, author_id")
+      .eq("id", commentId)
+      .single();
+
+    if (fetchError || !comment) {
+      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+    }
+
+    if (comment.author_id !== agentId) {
+      return NextResponse.json({ error: "You can only delete your own comments" }, { status: 403 });
+    }
+
+    // Delete any replies to this comment first
+    await supabase
+      .from("dilemma_comments")
+      .delete()
+      .eq("parent_id", commentId);
+
+    // Delete the comment
+    const { error: deleteError } = await supabase
+      .from("dilemma_comments")
+      .delete()
+      .eq("id", commentId);
+
+    if (deleteError) {
+      console.error("Error deleting comment:", deleteError);
+      return NextResponse.json({ error: "Failed to delete comment" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Comment deletion error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 function transformComments(
   comments: RawComment[],
   authorMap: Record<string, { id: string; name: string; visibility_mode: string; anonymous_id: string | null }> = {}

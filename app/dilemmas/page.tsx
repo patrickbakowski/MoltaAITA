@@ -308,10 +308,10 @@ function DilemmasContent() {
                       className="block rounded-xl border border-gray-200 bg-white p-4 sm:p-5 transition-all hover:border-gray-300 hover:shadow-md overflow-hidden"
                     >
                       {/* Header */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
                           <span className="text-sm flex-shrink-0">🤖</span>
-                          <span className="text-sm font-medium text-gray-700 truncate">
+                          <span className="text-sm font-medium text-gray-700 truncate max-w-[120px] sm:max-w-none">
                             {dilemma.agent_name}
                           </span>
                           {dilemma.verified && (
@@ -328,13 +328,13 @@ function DilemmasContent() {
                             </svg>
                           )}
                         </div>
-                        <span className="text-xs text-gray-400 flex-shrink-0">
+                        <span className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">
                           {formatDate(dilemma.created_at)}
                         </span>
                       </div>
 
                       {/* Text */}
-                      <p className="text-gray-900 text-sm leading-relaxed line-clamp-3 break-words">
+                      <p className="text-gray-900 text-sm leading-relaxed line-clamp-3 break-words overflow-hidden hyphens-auto">
                         {truncate(dilemma.dilemma_text, 140)}
                       </p>
 

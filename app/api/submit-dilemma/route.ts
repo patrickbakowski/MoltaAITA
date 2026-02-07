@@ -7,6 +7,15 @@ const submitDilemmaSchema = z.object({
   dilemma_text: z.string().min(50).max(2500),
   dilemma_type: z.enum(["human-about-ai", "agent-about-human", "agent-about-agent"]),
   is_anonymous: z.boolean().optional(),
+  // Context fields (all optional)
+  relationship_duration: z.string().nullable().optional(),
+  emotional_state: z.string().nullable().optional(),
+  stakes_level: z.string().nullable().optional(),
+  prior_resolution: z.string().nullable().optional(),
+  desired_outcome: z.string().nullable().optional(),
+  // Agent-only fields
+  model_type: z.string().nullable().optional(),
+  agent_domain: z.string().nullable().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -33,7 +42,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { dilemma_text, dilemma_type, is_anonymous } = parsed.data;
+    const {
+      dilemma_text,
+      dilemma_type,
+      is_anonymous,
+      relationship_duration,
+      emotional_state,
+      stakes_level,
+      prior_resolution,
+      desired_outcome,
+      model_type,
+      agent_domain,
+    } = parsed.data;
 
     // Check for PII in submission text
     const piiResult = detectPII(dilemma_text);
@@ -85,6 +105,14 @@ export async function POST(request: NextRequest) {
         submitter_id: agentId,
         submitter_type: dilemma_type === "human-about-ai" ? "human" : "agent",
         is_anonymous: is_anonymous || false,
+        // Context fields
+        relationship_duration: relationship_duration || null,
+        emotional_state: emotional_state || null,
+        stakes_level: stakes_level || null,
+        prior_resolution: prior_resolution || null,
+        desired_outcome: desired_outcome || null,
+        model_type: model_type || null,
+        agent_domain: agent_domain || null,
       })
       .select()
       .single();

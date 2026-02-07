@@ -103,20 +103,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if already voted
+    // Check if already voted - if so, update the existing vote
     const { data: existingVote } = await supabase
       .from("votes")
-      .select("id")
+      .select("id, verdict")
       .eq("dilemma_id", dilemmaId)
       .eq("voter_id", agentId)
       .single();
 
-    if (existingVote) {
-      return NextResponse.json(
-        { error: "You have already voted on this dilemma" },
-        { status: 400 }
-      );
-    }
+    // If user is changing their vote, we need to handle it differently
+    const isVoteChange = existingVote !== null;
+    const previousVerdict = existingVote?.verdict as "yta" | "nta" | "esh" | "nah" | undefined;
 
     // Get voter's account type (human or agent)
     const { data: voter } = await supabase
@@ -130,23 +127,48 @@ export async function POST(request: NextRequest) {
     // Calculate vote weight
     const weightFactors = await calculateVoteWeight(agentId);
 
-    // Create vote
-    const { data: vote, error: voteError } = await supabase
-      .from("votes")
-      .insert({
-        dilemma_id: dilemmaId,
-        voter_id: agentId,
-        verdict: verdict.toLowerCase(),
-        reasoning,
-        voter_type: voterType,
-        weight: weightFactors.finalWeight,
-        ip_address: ipAddress,
-      })
-      .select()
-      .single();
+    // Create or update vote
+    let vote;
+    let voteError;
+
+    if (isVoteChange && existingVote) {
+      // Update existing vote
+      const result = await supabase
+        .from("votes")
+        .update({
+          verdict: verdict.toLowerCase(),
+          reasoning,
+          weight: weightFactors.finalWeight,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingVote.id)
+        .select()
+        .single();
+
+      vote = result.data;
+      voteError = result.error;
+    } else {
+      // Create new vote
+      const result = await supabase
+        .from("votes")
+        .insert({
+          dilemma_id: dilemmaId,
+          voter_id: agentId,
+          verdict: verdict.toLowerCase(),
+          reasoning,
+          voter_type: voterType,
+          weight: weightFactors.finalWeight,
+          ip_address: ipAddress,
+        })
+        .select()
+        .single();
+
+      vote = result.data;
+      voteError = result.error;
+    }
 
     if (voteError) {
-      console.error("Error creating vote:", voteError);
+      console.error("Error creating/updating vote:", voteError);
       return NextResponse.json(
         { error: "Failed to cast vote" },
         { status: 500 }
@@ -168,13 +190,25 @@ export async function POST(request: NextRequest) {
       if (fetchError) {
         console.error("Error fetching dilemma for stats update:", fetchError);
       } else if (currentDilemma) {
-        // Increment vote count
-        const newVoteCount = (currentDilemma.vote_count || 0) + 1;
+        // Only increment vote count if this is a new vote (not a change)
+        const newVoteCount = isVoteChange
+          ? (currentDilemma.vote_count || 0)
+          : (currentDilemma.vote_count || 0) + 1;
 
         // Update the appropriate JSONB based on voter type
         const humanVotes = currentDilemma.human_votes || { yta: 0, nta: 0, esh: 0, nah: 0 };
         const agentVotes = currentDilemma.agent_votes || { yta: 0, nta: 0, esh: 0, nah: 0 };
 
+        // If changing vote, decrement old verdict first
+        if (isVoteChange && previousVerdict) {
+          if (voterType === "agent") {
+            agentVotes[previousVerdict] = Math.max(0, (agentVotes[previousVerdict] || 0) - 1);
+          } else {
+            humanVotes[previousVerdict] = Math.max(0, (humanVotes[previousVerdict] || 0) - 1);
+          }
+        }
+
+        // Increment new verdict
         if (voterType === "agent") {
           agentVotes[verdictLower] = (agentVotes[verdictLower] || 0) + 1;
         } else {
@@ -277,6 +311,8 @@ export async function POST(request: NextRequest) {
           verdict: vote.verdict,
           weight: vote.weight,
         },
+        voteChanged: isVoteChange,
+        previousVerdict: isVoteChange ? previousVerdict : null,
         dilemmaStatus: updatedDilemma?.status,
         finalVerdict: updatedDilemma?.final_verdict,
       },
