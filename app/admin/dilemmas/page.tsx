@@ -26,6 +26,10 @@ export default function AdminDilemmas() {
   const [dilemmas, setDilemmas] = useState<Dilemma[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<"single" | "bulk">("single");
+  const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -67,15 +71,55 @@ export default function AdminDilemmas() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this dilemma permanently?")) return;
+    setSingleDeleteId(id);
+    setDeleteTarget("single");
+    setShowDeleteModal(true);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    setDeleteTarget("bulk");
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
     try {
-      const res = await fetch(`/api/admin/dilemmas?id=${id}`, { method: "DELETE" });
+      let url = "/api/admin/dilemmas?";
+      if (deleteTarget === "single" && singleDeleteId) {
+        url += `id=${singleDeleteId}`;
+      } else if (deleteTarget === "bulk") {
+        url += `ids=${Array.from(selectedIds).join(",")}`;
+      }
+
+      const res = await fetch(url, { method: "DELETE" });
       if (res.ok) {
+        setSelectedIds(new Set());
         fetchDilemmas();
       }
     } catch (err) {
       console.error("Delete failed:", err);
+    } finally {
+      setShowDeleteModal(false);
+      setSingleDeleteId(null);
     }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === dilemmas.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(dilemmas.map(d => d.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
   };
 
   const handleCloseVoting = async (id: string) => {
@@ -107,7 +151,7 @@ export default function AdminDilemmas() {
           <Link href="/admin/comments" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">Comments</Link>
         </nav>
 
-        <div className="mb-4 flex gap-2">
+        <div className="mb-4 flex gap-2 flex-wrap items-center">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -118,12 +162,28 @@ export default function AdminDilemmas() {
             <option value="closed">Closed</option>
             <option value="archived">Archived</option>
           </select>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Delete Selected ({selectedIds.size})
+            </button>
+          )}
         </div>
 
         <div className="bg-white rounded-lg shadow overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={dilemmas.length > 0 && selectedIds.size === dilemmas.length}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left">Dilemma</th>
                 <th className="px-4 py-3 text-left">Submitter</th>
                 <th className="px-4 py-3 text-left">Status</th>
@@ -135,7 +195,15 @@ export default function AdminDilemmas() {
             </thead>
             <tbody>
               {dilemmas.map((d) => (
-                <tr key={d.id} className={`border-t ${d.hidden ? "bg-red-50" : ""}`}>
+                <tr key={d.id} className={`border-t ${d.hidden ? "bg-red-50" : ""} ${selectedIds.has(d.id) ? "bg-blue-50" : ""}`}>
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(d.id)}
+                      onChange={() => toggleSelect(d.id)}
+                      className="rounded border-gray-300"
+                    />
+                  </td>
                   <td className="px-4 py-3 max-w-xs truncate">
                     <Link href={`/dilemmas/${d.id}`} className="hover:underline">
                       {d.dilemma_text.substring(0, 80)}...
@@ -186,13 +254,44 @@ export default function AdminDilemmas() {
               ))}
               {dilemmas.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">No dilemmas found</td>
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">No dilemmas found</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Confirm Deletion</h2>
+            <p className="text-gray-600 mb-6">
+              {deleteTarget === "single"
+                ? "Are you sure you want to delete this dilemma? This will also delete all associated votes and comments."
+                : `Are you sure you want to delete ${selectedIds.size} dilemma(s)? This will also delete all associated votes and comments.`}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSingleDeleteId(null);
+                }}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

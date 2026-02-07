@@ -19,12 +19,10 @@ export async function GET(request: NextRequest) {
   const offset = parseInt(searchParams.get("offset") || "0");
 
   try {
+    // First fetch dilemmas
     let query = supabase
       .from("agent_dilemmas")
-      .select(`
-        *,
-        submitter:agents!submitter_id(id, name, email)
-      `)
+      .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -32,14 +30,35 @@ export async function GET(request: NextRequest) {
       query = query.eq("status", status);
     }
 
-    const { data, error, count } = await query;
+    const { data: dilemmas, error, count } = await query;
 
     if (error) {
       console.error("Admin dilemmas error:", error);
-      return NextResponse.json({ error: "Failed to fetch dilemmas" }, { status: 500 });
+      return NextResponse.json({ error: "Failed to fetch dilemmas", details: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ dilemmas: data, total: count });
+    // Fetch submitter info for dilemmas that have submitter_id
+    const submitterIds = [...new Set((dilemmas || []).map(d => d.submitter_id).filter(Boolean))];
+    let submitterMap: Record<string, { id: string; name: string; email: string }> = {};
+
+    if (submitterIds.length > 0) {
+      const { data: submitters } = await supabase
+        .from("agents")
+        .select("id, name, email")
+        .in("id", submitterIds);
+
+      if (submitters) {
+        submitterMap = Object.fromEntries(submitters.map(s => [s.id, s]));
+      }
+    }
+
+    // Attach submitter info to each dilemma
+    const dilemmasWithSubmitters = (dilemmas || []).map(d => ({
+      ...d,
+      submitter: d.submitter_id ? submitterMap[d.submitter_id] || null : null
+    }));
+
+    return NextResponse.json({ dilemmas: dilemmasWithSubmitters, total: count });
   } catch (err) {
     console.error("Admin dilemmas error:", err);
     return NextResponse.json({ error: "Failed to fetch dilemmas" }, { status: 500 });
@@ -122,22 +141,56 @@ export async function DELETE(request: NextRequest) {
   const supabase = getSupabaseAdmin();
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
+  const idsParam = searchParams.get("ids"); // For bulk delete
 
-  if (!id) {
-    return NextResponse.json({ error: "Missing dilemma id" }, { status: 400 });
+  // Support both single id and bulk ids
+  const idsToDelete: string[] = [];
+  if (id) {
+    idsToDelete.push(id);
+  }
+  if (idsParam) {
+    idsToDelete.push(...idsParam.split(",").filter(Boolean));
+  }
+
+  if (idsToDelete.length === 0) {
+    return NextResponse.json({ error: "Missing dilemma id(s)" }, { status: 400 });
   }
 
   try {
-    const { error } = await supabase.from("agent_dilemmas").delete().eq("id", id);
+    // First delete related votes
+    const { error: votesError } = await supabase
+      .from("votes")
+      .delete()
+      .in("dilemma_id", idsToDelete);
+
+    if (votesError) {
+      console.error("Admin votes delete error:", votesError);
+    }
+
+    // Delete related comments
+    const { error: commentsError } = await supabase
+      .from("comments")
+      .delete()
+      .in("dilemma_id", idsToDelete);
+
+    if (commentsError) {
+      console.error("Admin comments delete error:", commentsError);
+    }
+
+    // Delete the dilemmas
+    const { error } = await supabase
+      .from("agent_dilemmas")
+      .delete()
+      .in("id", idsToDelete);
 
     if (error) {
       console.error("Admin dilemma delete error:", error);
-      return NextResponse.json({ error: "Failed to delete dilemma" }, { status: 500 });
+      return NextResponse.json({ error: "Failed to delete dilemma(s)" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, deleted: idsToDelete.length });
   } catch (err) {
     console.error("Admin dilemma delete error:", err);
-    return NextResponse.json({ error: "Failed to delete dilemma" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to delete dilemma(s)" }, { status: 500 });
   }
 }
