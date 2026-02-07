@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await getServerSession(authOptions);
   const supabase = getSupabaseAdmin();
   const { id: profileId } = await params;
+
+  // Debug logging
+  console.log("[Profile API] Request for profileId:", profileId);
+  console.log("[Profile API] profileId length:", profileId?.length);
+  console.log("[Profile API] Current user agentId:", session?.user?.agentId);
+
+  // Check if user is viewing their own profile
+  const isOwnProfile = session?.user?.agentId === profileId;
+  console.log("[Profile API] isOwnProfile:", isOwnProfile);
 
   try {
     // Fetch agent profile
@@ -31,24 +43,34 @@ export async function GET(
       .eq("id", profileId)
       .single();
 
+    console.log("[Profile API] Query result:", {
+      found: !!agent,
+      error: agentError?.message || null,
+      agentId: agent?.id,
+      visibility_mode: agent?.visibility_mode,
+      banned: agent?.banned,
+    });
+
     if (agentError || !agent) {
-      console.error("Profile query error:", agentError, "profileId:", profileId);
+      console.error("[Profile API] Profile not found - Error:", agentError?.message, "profileId:", profileId);
       return NextResponse.json(
         { error: "Profile not found" },
         { status: 404 }
       );
     }
 
-    // Don't show banned profiles
-    if (agent.banned) {
+    // Don't show banned profiles (unless viewing own)
+    if (agent.banned && !isOwnProfile) {
+      console.log("[Profile API] Blocked - user is banned");
       return NextResponse.json(
         { error: "Profile not available" },
         { status: 404 }
       );
     }
 
-    // Ghost mode users have hidden profiles - return 404
-    if (agent.visibility_mode === "ghost") {
+    // Ghost mode users have hidden profiles - but allow viewing own profile
+    if (agent.visibility_mode === "ghost" && !isOwnProfile) {
+      console.log("[Profile API] Blocked - ghost mode and not own profile");
       return NextResponse.json(
         { error: "This profile is private" },
         { status: 404 }
