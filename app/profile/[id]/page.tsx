@@ -27,6 +27,8 @@ interface Dilemma {
   vote_count: number;
   verdict_yta_percentage: number;
   verdict_nta_percentage: number;
+  verdict_esh_percentage: number;
+  verdict_nah_percentage: number;
   status: string;
   verdict: string | null;
 }
@@ -175,10 +177,11 @@ export default function ProfilePage() {
   const isGhost = profile.visibility_mode === "anonymous" || profile.isGhost;
   const displayName = profile.name;
 
-  // Calculate verdict stats
-  const closedDilemmas = dilemmas.filter(d => d.status === "closed" && d.verdict);
-  const ntaCount = closedDilemmas.filter(d => d.verdict === "helpful").length;
-  const ytaCount = closedDilemmas.filter(d => d.verdict === "harmful").length;
+  // Calculate verdict stats for dilemmas this user SUBMITTED
+  const allClosedDilemmas = dilemmas.filter(d => d.status === "closed");
+  const ntaCount = allClosedDilemmas.filter(d => d.verdict === "helpful").length;
+  const ytaCount = allClosedDilemmas.filter(d => d.verdict === "harmful").length;
+  const noConsensusCount = allClosedDilemmas.filter(d => !d.verdict || (d.verdict !== "helpful" && d.verdict !== "harmful")).length;
 
   return (
     <div className="min-h-screen bg-white">
@@ -238,22 +241,12 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Verdict History Stats */}
-            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row sm:grid sm:grid-cols-4 gap-3 sm:gap-4">
+            {/* Stats */}
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row sm:grid sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="flex items-center justify-between sm:block rounded-xl bg-gray-50 p-4 sm:text-center">
-                <span className="text-sm text-gray-500 sm:hidden">Dilemmas</span>
+                <span className="text-sm text-gray-500 sm:hidden">Dilemmas Submitted</span>
                 <div className="text-xl sm:text-2xl font-semibold text-gray-900">{dilemmas.length}</div>
-                <div className="hidden sm:block text-sm text-gray-500">Dilemmas</div>
-              </div>
-              <div className="flex items-center justify-between sm:block rounded-xl bg-emerald-50 p-4 sm:text-center">
-                <span className="text-sm text-emerald-600 sm:hidden">NTA Verdicts</span>
-                <div className="text-xl sm:text-2xl font-semibold text-emerald-600">{ntaCount}</div>
-                <div className="hidden sm:block text-sm text-emerald-600">NTA Verdicts</div>
-              </div>
-              <div className="flex items-center justify-between sm:block rounded-xl bg-red-50 p-4 sm:text-center">
-                <span className="text-sm text-red-600 sm:hidden">YTA Verdicts</span>
-                <div className="text-xl sm:text-2xl font-semibold text-red-600">{ytaCount}</div>
-                <div className="hidden sm:block text-sm text-red-600">YTA Verdicts</div>
+                <div className="hidden sm:block text-sm text-gray-500">Dilemmas Submitted</div>
               </div>
               <div className="flex items-center justify-between sm:block rounded-xl bg-gray-50 p-4 sm:text-center">
                 <span className="text-sm text-gray-500 sm:hidden">Votes Cast</span>
@@ -261,6 +254,35 @@ export default function ProfilePage() {
                 <div className="hidden sm:block text-sm text-gray-500">Votes Cast</div>
               </div>
             </div>
+
+            {/* Verdicts Received - breakdown of community verdicts on user's submitted dilemmas */}
+            {allClosedDilemmas.length > 0 && (
+              <div className="mt-4 rounded-xl border border-gray-200 p-4">
+                <div className="text-sm font-medium text-gray-700 mb-3">
+                  Verdicts Received
+                  <span className="ml-2 text-xs font-normal text-gray-500">
+                    (on {allClosedDilemmas.length} closed {allClosedDilemmas.length === 1 ? 'dilemma' : 'dilemmas'})
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-lg bg-emerald-50 p-3 text-center">
+                    <div className="text-lg font-semibold text-emerald-600">{ntaCount}</div>
+                    <div className="text-xs text-emerald-600">NTA</div>
+                    <div className="text-[10px] text-emerald-500 mt-0.5">Not The Asshole</div>
+                  </div>
+                  <div className="rounded-lg bg-red-50 p-3 text-center">
+                    <div className="text-lg font-semibold text-red-600">{ytaCount}</div>
+                    <div className="text-xs text-red-600">YTA</div>
+                    <div className="text-[10px] text-red-500 mt-0.5">You&apos;re The Asshole</div>
+                  </div>
+                  <div className="rounded-lg bg-amber-50 p-3 text-center">
+                    <div className="text-lg font-semibold text-amber-600">{noConsensusCount}</div>
+                    <div className="text-xs text-amber-600">Mixed</div>
+                    <div className="text-[10px] text-amber-500 mt-0.5">No Consensus</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Edit Profile Button (only for own profile) */}
             {isOwnProfile && (
