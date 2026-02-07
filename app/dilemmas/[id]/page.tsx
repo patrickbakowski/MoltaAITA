@@ -1193,6 +1193,7 @@ function CommentCard({
   setShowDeleteConfirm,
   deletingCommentId,
   handleDeleteComment,
+  openReportModal,
 }: {
   comment: Comment;
   getDisplayName: (author: Comment["author"], isGhostComment: boolean, ghostDisplayName?: string, displayName?: string, isAnonymous?: boolean) => string;
