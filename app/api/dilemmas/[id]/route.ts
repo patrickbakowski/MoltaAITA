@@ -70,19 +70,34 @@ export async function GET(
     // Verify submitter exists in agents table (prevents broken profile links)
     let validSubmitterId: string | null = null;
     if (dilemma.submitter_id) {
-      const { data: submitter } = await supabase
+      const { data: submitter, error: submitterError } = await supabase
         .from("agents")
         .select("id")
         .eq("id", dilemma.submitter_id)
         .single();
 
+      console.log("[Dilemma API] Submitter validation:", {
+        dilemmaId,
+        submitter_id: dilemma.submitter_id,
+        submitter_found: !!submitter,
+        error: submitterError?.message || null,
+      });
+
       if (submitter) {
         validSubmitterId = dilemma.submitter_id;
       }
+    } else {
+      console.log("[Dilemma API] No submitter_id on dilemma:", dilemmaId);
     }
 
     // Check if this was submitted anonymously (agent_name is "Anonymous")
     const isAnonymousSubmission = dilemma.agent_name === "Anonymous";
+    console.log("[Dilemma API] Final submitter_id decision:", {
+      dilemmaId,
+      isAnonymousSubmission,
+      validSubmitterId,
+      finalSubmitterId: isAnonymousSubmission ? null : validSubmitterId,
+    });
 
     // Determine if voting is closed
     const isClosed = dilemma.status === "closed";
