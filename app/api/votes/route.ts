@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     // Check if dilemma exists and is still open for voting
     const { data: dilemma, error: dilemmaError } = await supabase
       .from("agent_dilemmas")
-      .select("id, agent_id, status")
+      .select("id, submitter_id, status")
       .eq("id", dilemmaId)
       .single();
 
@@ -95,8 +95,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Can't vote on own dilemma
-    if (dilemma.agent_id === agentId) {
+    // Can't vote on own dilemma (check submitter_id regardless of anonymous status)
+    if (dilemma.submitter_id === agentId) {
       return NextResponse.json(
         { error: "You cannot vote on your own dilemma" },
         { status: 400 }
