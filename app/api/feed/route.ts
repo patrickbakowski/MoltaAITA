@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
         verified: d.verified || false,
         // Vote stats
         vote_count: d.vote_count || 0,
+        total_votes: d.vote_count || 0, // Alias for frontend components
         closing_threshold: d.closing_threshold || 5,
         // Percentages only visible after closing (blind voting)
         verdict_yta_pct: isClosed ? (d.verdict_yta_pct || 0) : null,
