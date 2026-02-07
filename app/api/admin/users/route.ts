@@ -127,22 +127,30 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Missing user id(s)" }, { status: 400 });
   }
 
-  // Prevent deleting admin user
-  const { data: adminCheck } = await supabase
+  // Check for admin user and filter them out
+  const { data: usersToCheck } = await supabase
     .from("agents")
-    .select("email")
+    .select("id, email")
     .in("id", idsToDelete);
 
-  if (adminCheck?.some(u => u.email?.toLowerCase() === ADMIN_EMAIL)) {
+  const adminUserIds = usersToCheck?.filter(u => u.email?.toLowerCase() === ADMIN_EMAIL).map(u => u.id) || [];
+  const filteredIds = idsToDelete.filter(id => !adminUserIds.includes(id));
+  const adminSkipped = adminUserIds.length > 0;
+
+  // If only admin was selected, return error
+  if (filteredIds.length === 0) {
     return NextResponse.json({ error: "Cannot delete admin user" }, { status: 403 });
   }
+
+  // Use filtered IDs for deletion
+  const idsForDeletion = filteredIds;
 
   try {
     // 1. Delete user's votes
     const { error: votesError } = await supabase
       .from("votes")
       .delete()
-      .in("voter_id", idsToDelete);
+      .in("voter_id", idsForDeletion);
 
     if (votesError) {
       console.error("Admin votes delete error:", votesError);
@@ -152,7 +160,7 @@ export async function DELETE(request: NextRequest) {
     const { error: commentsError } = await supabase
       .from("comments")
       .delete()
-      .in("author_id", idsToDelete);
+      .in("author_id", idsForDeletion);
 
     if (commentsError) {
       console.error("Admin comments delete error:", commentsError);
@@ -162,7 +170,7 @@ export async function DELETE(request: NextRequest) {
     const { data: userDilemmas } = await supabase
       .from("agent_dilemmas")
       .select("id")
-      .in("submitter_id", idsToDelete);
+      .in("submitter_id", idsForDeletion);
 
     if (userDilemmas && userDilemmas.length > 0) {
       const dilemmaIds = userDilemmas.map(d => d.id);
@@ -183,21 +191,25 @@ export async function DELETE(request: NextRequest) {
       await supabase
         .from("agent_dilemmas")
         .delete()
-        .in("submitter_id", idsToDelete);
+        .in("submitter_id", idsForDeletion);
     }
 
     // 4. Delete the users
     const { error } = await supabase
       .from("agents")
       .delete()
-      .in("id", idsToDelete);
+      .in("id", idsForDeletion);
 
     if (error) {
       console.error("Admin user delete error:", error);
       return NextResponse.json({ error: "Failed to delete user(s)" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, deleted: idsToDelete.length });
+    return NextResponse.json({
+      success: true,
+      deleted: idsForDeletion.length,
+      adminSkipped: adminSkipped
+    });
   } catch (err) {
     console.error("Admin user delete error:", err);
     return NextResponse.json({ error: "Failed to delete user(s)" }, { status: 500 });

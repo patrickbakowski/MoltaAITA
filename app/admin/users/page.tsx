@@ -103,11 +103,15 @@ export default function AdminUsers() {
       }
 
       const res = await fetch(url, { method: "DELETE" });
+      const data = await res.json();
+
       if (res.ok) {
         setSelectedIds(new Set());
         fetchUsers();
+        if (data.adminSkipped) {
+          alert(`Deleted ${data.deleted} user(s). Admin account was skipped and cannot be deleted.`);
+        }
       } else {
-        const data = await res.json();
         alert(data.error || "Failed to delete");
       }
     } catch (err) {
@@ -214,13 +218,22 @@ export default function AdminUsers() {
                 return (
                 <tr key={u.id} className={`border-t ${u.banned ? "bg-red-50" : ""} ${selectedIds.has(u.id) ? "bg-blue-50" : ""}`}>
                   <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(u.id)}
-                      onChange={() => toggleSelect(u.id, u.email)}
-                      disabled={isAdmin}
-                      className="rounded border-gray-300 disabled:opacity-30"
-                    />
+                    {isAdmin ? (
+                      <span title="Cannot delete admin account" className="cursor-not-allowed">
+                        <input
+                          type="checkbox"
+                          disabled
+                          className="rounded border-gray-300 opacity-30 cursor-not-allowed"
+                        />
+                      </span>
+                    ) : (
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(u.id)}
+                        onChange={() => toggleSelect(u.id, u.email)}
+                        className="rounded border-gray-300"
+                      />
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {u.name}
@@ -256,7 +269,15 @@ export default function AdminUsers() {
                         <button onClick={() => handleAction(u.id, "revoke_api_key")} className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 rounded text-xs">Revoke Key</button>
                       )}
                       <Link href={`/profile/${u.id}`} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs">View</Link>
-                      {!isAdmin && (
+                      {isAdmin ? (
+                        <button
+                          disabled
+                          title="Cannot delete admin account"
+                          className="px-2 py-1 bg-gray-100 text-gray-400 rounded text-xs cursor-not-allowed"
+                        >
+                          Delete
+                        </button>
+                      ) : (
                         <button onClick={() => handleDelete(u.id)} className="px-2 py-1 bg-red-100 hover:bg-red-200 rounded text-xs">Delete</button>
                       )}
                     </div>
