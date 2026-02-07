@@ -75,6 +75,7 @@ export default function AdminDashboard() {
           <Link href="/admin/appeals" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">Appeals</Link>
           <Link href="/admin/gdpr" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">GDPR</Link>
           <Link href="/admin/comments" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">Comments</Link>
+          <Link href="/admin/reports" className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">Reports</Link>
         </nav>
 
         {/* Stats Grid */}

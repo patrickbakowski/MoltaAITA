@@ -118,6 +118,16 @@ export default function DilemmaDetailPage() {
   const [postAnonymously, setPostAnonymously] = useState(false);
   const [replyAnonymously, setReplyAnonymously] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+
+  // Report modal state
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportContentType, setReportContentType] = useState<"dilemma" | "comment">("dilemma");
+  const [reportContentId, setReportContentId] = useState<string>("");
+  const [reportReason, setReportReason] = useState<string>("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [submittingReport, setSubmittingReport] = useState(false);
 
   // Edit state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -266,6 +276,72 @@ export default function DilemmaDetailPage() {
       setError(err instanceof Error ? err.message : "Failed to cast vote");
     } finally {
       setVoting(false);
+    }
+  };
+
+  const openReportModal = (type: "dilemma" | "comment", id: string) => {
+    setReportContentType(type);
+    setReportContentId(id);
+    setReportReason("");
+    setReportDetails("");
+    setShowReportModal(true);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!reportReason) {
+      setError("Please select a reason for the report");
+      return;
+    }
+
+    setSubmittingReport(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content_type: reportContentType,
+          content_id: reportContentId,
+          reason: reportReason,
+          details: reportDetails || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to submit report");
+      }
+
+      setShowReportModal(false);
+      alert("Thank you for your report. Our team will review it.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit report");
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    setDeletingCommentId(commentId);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/comments?id=${commentId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete comment");
+      }
+
+      await fetchComments();
+      setShowDeleteConfirm(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete comment");
+    } finally {
+      setDeletingCommentId(null);
     }
   };
 
@@ -504,36 +580,52 @@ export default function DilemmaDetailPage() {
               </div>
             )}
 
-            {/* Edit Buttons (for submitter only) */}
-            {dilemma.is_submitter && (
-              <div className="flex flex-wrap gap-3">
-                {dilemma.can_full_edit && (
-                  <button
-                    onClick={() => {
-                      setEditText(dilemma.dilemma_text);
-                      setShowEditModal(true);
-                    }}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Edit
-                  </button>
-                )}
-                {dilemma.can_add_clarification && !dilemma.clarification && (
-                  <button
-                    onClick={() => setShowClarificationModal(true)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Add Clarification
-                  </button>
-                )}
-              </div>
-            )}
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-3">
+              {/* Edit Buttons (for submitter only) */}
+              {dilemma.is_submitter && (
+                <>
+                  {dilemma.can_full_edit && (
+                    <button
+                      onClick={() => {
+                        setEditText(dilemma.dilemma_text);
+                        setShowEditModal(true);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit
+                    </button>
+                  )}
+                  {dilemma.can_add_clarification && !dilemma.clarification && (
+                    <button
+                      onClick={() => setShowClarificationModal(true)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Add Clarification
+                    </button>
+                  )}
+                </>
+              )}
+
+              {/* Report Button (for non-submitters) */}
+              {session && !dilemma.is_submitter && (
+                <button
+                  onClick={() => openReportModal("dilemma", dilemma.id)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-red-600"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  Report
+                </button>
+              )}
+            </div>
           </div>
         </section>
 
@@ -591,7 +683,7 @@ export default function DilemmaDetailPage() {
                 </div>
               </div>
             ) : hasVoted && userVote ? (
-              /* ACTIVE + VOTED - Just show confirmation, NO percentages (blind voting) */
+              /* ACTIVE + VOTED - Show confirmation with option to change vote */
               <div className="rounded-xl bg-gray-50 p-6 sm:p-8 text-center">
                 <div className="mb-4 flex items-center justify-center">
                   <svg className="h-10 w-10 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -612,9 +704,41 @@ export default function DilemmaDetailPage() {
                 <p className="text-sm text-gray-500 mb-2">
                   Results will be revealed when voting closes.
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-400 mb-4">
                   {dilemma.vote_count} / {dilemma.closing_threshold} votes toward threshold
                 </p>
+
+                {/* Change Vote Section */}
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-500 mb-3">Changed your mind? You can update your vote:</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(["yta", "nta", "esh", "nah"] as Verdict[]).map((v) => {
+                      const config = VERDICT_CONFIG[v];
+                      const isCurrentVote = userVote.verdict === v;
+                      return (
+                        <button
+                          key={v}
+                          onClick={() => !isCurrentVote && handleVote(v)}
+                          disabled={voting || isCurrentVote}
+                          className={`flex flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-2 text-xs font-medium transition-all min-h-[60px] ${
+                            isCurrentVote
+                              ? `${config.bgColor} ${config.borderColor} ${config.color} opacity-50 cursor-not-allowed`
+                              : `border-gray-200 hover:${config.bgColor} hover:${config.borderColor} text-gray-600 hover:${config.color}`
+                          }`}
+                        >
+                          {voting ? (
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : (
+                            <>
+                              <span className="text-base">{config.emoji}</span>
+                              <span>{config.label}</span>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             ) : (
               /* ACTIVE + NOT VOTED - Show vote buttons */
@@ -795,6 +919,11 @@ export default function DilemmaDetailPage() {
                     setReplyAnonymously={setReplyAnonymously}
                     submittingComment={submittingComment}
                     handleSubmitComment={handleSubmitComment}
+                    showDeleteConfirm={showDeleteConfirm}
+                    setShowDeleteConfirm={setShowDeleteConfirm}
+                    deletingCommentId={deletingCommentId}
+                    handleDeleteComment={handleDeleteComment}
+                    openReportModal={openReportModal}
                   />
                 ))}
               </div>
@@ -911,6 +1040,83 @@ export default function DilemmaDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Report Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Report {reportContentType === "dilemma" ? "Dilemma" : "Comment"}
+              </h2>
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Why are you reporting this?
+                </label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                >
+                  <option value="">Select a reason...</option>
+                  <option value="spam">Spam</option>
+                  <option value="harassment">Harassment</option>
+                  <option value="personal_info">Personal information exposed</option>
+                  <option value="misleading">Misleading or fake</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Additional details (optional)
+                </label>
+                <textarea
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder="Provide any additional context..."
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:border-gray-500 focus:outline-none min-h-[100px]"
+                  maxLength={1000}
+                />
+                <p className="mt-1 text-xs text-gray-500">{reportDetails.length}/1000</p>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitReport}
+                disabled={submittingReport || !reportReason}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {submittingReport ? "Submitting..." : "Submit Report"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -983,6 +1189,10 @@ function CommentCard({
   setReplyAnonymously,
   submittingComment,
   handleSubmitComment,
+  showDeleteConfirm,
+  setShowDeleteConfirm,
+  deletingCommentId,
+  handleDeleteComment,
 }: {
   comment: Comment;
   getDisplayName: (author: Comment["author"], isGhostComment: boolean, ghostDisplayName?: string, displayName?: string, isAnonymous?: boolean) => string;
@@ -996,6 +1206,11 @@ function CommentCard({
   setReplyAnonymously: (value: boolean) => void;
   submittingComment: boolean;
   handleSubmitComment: (parentId?: string) => Promise<void>;
+  showDeleteConfirm: string | null;
+  setShowDeleteConfirm: (id: string | null) => void;
+  deletingCommentId: string | null;
+  handleDeleteComment: (id: string) => Promise<void>;
+  openReportModal: (type: "dilemma" | "comment", id: string) => void;
 }) {
   const displayName = getDisplayName(comment.author, comment.is_ghost_comment, comment.ghost_display_name, comment.display_name, comment.is_anonymous);
   const isGhost = comment.is_ghost_comment || comment.is_anonymous || (comment.author?.visibility_mode === "anonymous");
@@ -1026,15 +1241,59 @@ function CommentCard({
       {/* Comment content */}
       <p className="text-base text-gray-700 leading-relaxed break-words overflow-hidden">{comment.content}</p>
 
-      {/* Reply button (only for top-level comments) */}
-      {comment.depth === 0 && session && (
-        <button
-          onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-          className="mt-3 text-sm text-gray-500 hover:text-gray-700 min-h-[44px] flex items-center"
-        >
-          {replyingTo === comment.id ? "Cancel" : "Reply"}
-        </button>
-      )}
+      {/* Action buttons */}
+      <div className="mt-3 flex items-center gap-4">
+        {/* Reply button (only for top-level comments) */}
+        {comment.depth === 0 && session && (
+          <button
+            onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+            className="text-sm text-gray-500 hover:text-gray-700 min-h-[44px] flex items-center"
+          >
+            {replyingTo === comment.id ? "Cancel" : "Reply"}
+          </button>
+        )}
+
+        {/* Delete button (only for user's own comments) */}
+        {session && comment.author?.id === session.user?.agentId && (
+          <>
+            {showDeleteConfirm === comment.id ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Delete?</span>
+                <button
+                  onClick={() => handleDeleteComment(comment.id)}
+                  disabled={deletingCommentId === comment.id}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                >
+                  {deletingCommentId === comment.id ? "Deleting..." : "Yes"}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  No
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowDeleteConfirm(comment.id)}
+                className="text-sm text-gray-400 hover:text-red-600"
+              >
+                Delete
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Report button (for others' comments) */}
+        {session && comment.author?.id !== session.user?.agentId && (
+          <button
+            onClick={() => openReportModal("comment", comment.id)}
+            className="text-sm text-gray-400 hover:text-red-600"
+          >
+            Report
+          </button>
+        )}
+      </div>
 
       {/* Reply form */}
       {replyingTo === comment.id && (
