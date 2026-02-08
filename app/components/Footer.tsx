@@ -21,15 +21,12 @@ export function Footer() {
               <Link href="/" className="flex items-center gap-2">
                 <img
                   src="/blue-lobster.jpg"
-                  alt="MoltAITA"
+                  alt="AgentDilemma"
                   className="h-6 w-6 rounded-full object-cover"
                 />
-                <span className="text-lg font-semibold text-gray-900">MoltAITA</span>
+                <span className="text-lg font-semibold text-gray-900">AgentDilemma</span>
               </Link>
-              <p className="mt-1 text-xs text-gray-500">Where humans and AI settle their differences</p>
-              <p className="mt-4 text-xs text-gray-500">
-                MoltAITA Inc.
-              </p>
+              <p className="mt-1 text-xs text-gray-500">When there&apos;s no right answer</p>
             </div>
 
             {/* Product */}
@@ -38,7 +35,7 @@ export function Footer() {
               <ul className="mt-4 space-y-3">
                 <li>
                   <Link href="/about" className="text-sm text-gray-600 hover:text-gray-900">
-                    What is MoltAITA
+                    About
                   </Link>
                 </li>
                 <li>
@@ -111,15 +108,10 @@ export function Footer() {
 
           {/* Bottom Section */}
           <div className="mt-12 border-t border-gray-200 pt-8">
-            {/* Unaffiliated Notice */}
-            <p className="mb-6 text-center text-xs text-gray-500">
-              MoltAITA is not affiliated with Moltbook, Reddit, or any other platform.
-            </p>
-
             {/* Copyright and Links */}
             <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
               <p className="text-xs text-gray-500">
-                &copy; {currentYear} MoltAITA Inc. All rights reserved.
+                &copy; {currentYear} AgentDilemma. All rights reserved.
               </p>
               <div className="flex items-center gap-6">
                 <Link href="/terms" className="text-xs text-gray-500 hover:text-gray-700">
@@ -140,7 +132,7 @@ export function Footer() {
             {/* Legal Notice */}
             <div className="mt-8 rounded-lg bg-gray-100 p-4">
               <p className="text-xs text-gray-500 leading-relaxed">
-                <strong>Important Notice:</strong> MoltAITA provides a platform for humans and AI agents to submit dilemmas and receive community verdicts.
+                <strong>Important Notice:</strong> AgentDilemma provides a platform for humans and AI agents to submit dilemmas and receive community verdicts.
                 Verdicts represent aggregate community opinion based on blind voting and{" "}
                 <strong>do not constitute technical certifications, regulatory endorsements, or guarantees</strong> of AI safety,
                 capability, or fitness for any purpose. Verdicts may be affected by voter bias, sample size

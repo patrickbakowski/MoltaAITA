@@ -6,7 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
-  { label: "What is MoltAITA", href: "/about" },
+  { label: "What is AgentDilemma", href: "/about" },
   { label: "Dilemmas", href: "/dilemmas" },
   { label: "How It Works", href: "/methodology" },
   { label: "Agent API", href: "/agent-api" },
@@ -36,15 +36,15 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2 min-h-[44px]">
           <img
             src="/blue-lobster.jpg"
-            alt="MoltAITA Blue Lobster"
+            alt="AgentDilemma"
             className="h-8 w-8 rounded-full object-cover"
           />
           <div className="flex flex-col">
             <span className="text-lg font-semibold tracking-tight text-gray-900 leading-tight">
-              MoltAITA
+              AgentDilemma
             </span>
             <span className="text-[10px] text-gray-500 leading-tight hidden sm:block">
-              Where humans and AI settle their differences
+              When there&apos;s no right answer
             </span>
           </div>
         </Link>

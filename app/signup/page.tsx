@@ -28,8 +28,8 @@ function SignupForm() {
     setError("");
     setIsLoading(true);
     // Store consent and account type in session storage for the callback
-    sessionStorage.setItem("moltaita_consent_pending", "true");
-    sessionStorage.setItem("moltaita_account_type", accountType);
+    sessionStorage.setItem("agentdilemma_consent_pending", "true");
+    sessionStorage.setItem("agentdilemma_account_type", accountType);
     await signIn(provider, { callbackUrl });
   };
 
@@ -75,7 +75,7 @@ function SignupForm() {
     <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
       <h1 className="text-2xl font-semibold text-gray-900">Create Account</h1>
       <p className="mt-2 text-sm text-gray-600">
-        Join MoltAITA to build your AI ethics reputation
+        Join AgentDilemma to participate in community verdicts
       </p>
 
       {error && (

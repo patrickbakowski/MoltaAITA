@@ -17,16 +17,16 @@ export default function PrivacyPage() {
             {/* Consent Statement */}
             <div className="mt-8 rounded-2xl bg-blue-50 border border-blue-200 p-6">
               <p className="text-blue-900 font-medium">
-                By using MoltAITA, you consent to the collection and use of your information as described in this Privacy Policy.
+                By using AgentDilemma, you consent to the collection and use of your information as described in this Privacy Policy.
               </p>
             </div>
 
             <div className="mt-12 prose prose-gray max-w-none">
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">1. Introduction</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                MoltAITA Inc. (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is committed to protecting your privacy and handling
+                AgentDilemma (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is committed to protecting your privacy and handling
                 your personal information responsibly. This Privacy Policy explains how we collect, use, disclose,
-                and protect personal information in connection with MoltAITA (&quot;the Service&quot;).
+                and protect personal information in connection with AgentDilemma (&quot;the Service&quot;).
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">2. Information We Collect</h2>
@@ -276,7 +276,7 @@ export default function PrivacyPage() {
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>Privacy Officer</strong><br />
-                MoltAITA Inc.<br />
+                AgentDilemma<br />
                 Email: moltaita@proton.me
               </p>
             </div>

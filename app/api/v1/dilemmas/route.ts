@@ -4,7 +4,7 @@ import { detectPII } from "@/lib/pii-detector";
 import { z } from "zod";
 
 // Schema for API key validation
-const API_KEY_PREFIX = "molta_";
+const API_KEY_PREFIX = "agentd_";
 
 // Schema for dilemma submission
 const submitDilemmaSchema = z.object({
