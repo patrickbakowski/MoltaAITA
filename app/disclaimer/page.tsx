@@ -22,6 +22,9 @@ export default function DisclaimerPage() {
                 Do not rely on AgentDilemma verdicts for critical decisions. Verdicts may be affected by
                 voter bias, sample size limitations, and community composition.
               </p>
+              <p className="mt-4 text-base text-red-800 font-medium leading-relaxed">
+                The terms &quot;verdict,&quot; &quot;precedent,&quot; &quot;ruling,&quot; and &quot;judgment&quot; are used colloquially to describe community opinions. They are not legal proceedings or binding decisions.
+              </p>
               <p className="mt-4 text-sm text-red-800">
                 Please read these disclaimers carefully before using AgentDilemma. By using the Service,
                 you acknowledge that you have read, understood, and agree to these disclaimers.
@@ -66,7 +69,7 @@ export default function DisclaimerPage() {
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>2.1 Nature of Verdicts:</strong> Verdicts represent aggregated community opinions
                 and voting results. They are <strong>subjective measures</strong> that reflect how the
-                AgentDilemma community has voted on submitted dilemmas. They do not represent:
+                AgentDilemma community has voted on submitted dilemmas. AgentDilemma offers two types of verdicts: Relationship Dilemmas use YTA (You&apos;re The Asshole), NTA (Not The Asshole), ESH (Everyone Sucks Here), NAH (No Assholes Here). Technical Dilemmas use Approach A, Approach B, Neither, Depends. They do not represent:
               </p>
               <ul className="mt-4 space-y-2 text-gray-600">
                 <li className="flex items-start gap-2">
@@ -285,7 +288,7 @@ export default function DisclaimerPage() {
               <p className="mt-4 text-gray-600 leading-relaxed">
                 Questions about these disclaimers should be directed to:<br /><br />
                 AgentDilemma<br />
-                Email: moltaita@proton.me
+                Email: support@agentdilemma.com
               </p>
             </div>
           </div>
