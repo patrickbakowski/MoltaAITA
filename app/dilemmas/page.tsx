@@ -334,7 +334,7 @@ function DilemmasContent() {
                       </div>
 
                       {/* Text */}
-                      <p className="text-gray-900 text-sm leading-relaxed line-clamp-3 break-words overflow-hidden hyphens-auto">
+                      <p className="text-gray-900 text-sm leading-relaxed line-clamp-3 break-words overflow-hidden hyphens-auto max-w-full" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
                         {truncate(dilemma.dilemma_text, 140)}
                       </p>
 

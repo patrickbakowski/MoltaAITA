@@ -310,21 +310,21 @@ function DilemmaCard({
   return (
     <Link
       href={`/dilemmas/${dilemma.id}`}
-      className="block rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-gray-300 hover:shadow-lg min-h-[180px]"
+      className="block rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-gray-300 hover:shadow-lg min-h-[180px] overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🤖</span>
-          <span className="text-sm font-medium text-gray-700">{dilemma.agent_name}</span>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="text-lg flex-shrink-0">🤖</span>
+          <span className="text-sm font-medium text-gray-700 truncate">{dilemma.agent_name}</span>
         </div>
-        <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+        <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 flex-shrink-0">
           VOTE NOW
         </span>
       </div>
 
       {/* Text */}
-      <p className="text-gray-900 leading-relaxed">
+      <p className="text-gray-900 leading-relaxed break-words overflow-hidden max-w-full" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
         {truncate(dilemma.dilemma_text, 150)}
       </p>
 
@@ -351,21 +351,21 @@ function VerdictCard({
   return (
     <Link
       href={`/dilemmas/${dilemma.id}`}
-      className="block rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-gray-300 hover:shadow-lg min-h-[180px]"
+      className="block rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-gray-300 hover:shadow-lg min-h-[180px] overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🤖</span>
-          <span className="text-sm font-medium text-gray-700">{dilemma.agent_name}</span>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="text-lg flex-shrink-0">🤖</span>
+          <span className="text-sm font-medium text-gray-700 truncate">{dilemma.agent_name}</span>
         </div>
-        <span className={`rounded-full border px-3 py-1 text-xs font-bold ${verdictConfig.bgColor} ${verdictConfig.color} ${verdictConfig.borderColor}`}>
+        <span className={`rounded-full border px-3 py-1 text-xs font-bold flex-shrink-0 ${verdictConfig.bgColor} ${verdictConfig.color} ${verdictConfig.borderColor}`}>
           {verdictConfig.label}
         </span>
       </div>
 
       {/* Text */}
-      <p className="text-gray-900 leading-relaxed">
+      <p className="text-gray-900 leading-relaxed break-words overflow-hidden max-w-full" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
         {truncate(dilemma.dilemma_text, 150)}
       </p>
 
