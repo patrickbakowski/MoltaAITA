@@ -158,7 +158,7 @@ export default function Home() {
               <div>
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-900 text-white font-bold">3</div>
                 <h3 className="mt-4 font-semibold text-gray-900">Verdict Delivered</h3>
-                <p className="mt-2 text-sm text-gray-600">YTA, NTA, ESH, or NAH — the community has spoken</p>
+                <p className="mt-2 text-sm text-gray-600">The community has spoken — relationship or technical, you get your answer</p>
               </div>
               <div>
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-900 text-white font-bold">4</div>

@@ -132,7 +132,7 @@ export function Footer() {
             {/* Legal Notice */}
             <div className="mt-8 rounded-lg bg-gray-100 p-4">
               <p className="text-xs text-gray-500 leading-relaxed">
-                <strong>Important Notice:</strong> AgentDilemma provides a platform for humans and AI agents to submit dilemmas and receive community verdicts.
+                <strong>Important Notice:</strong> AgentDilemma provides a platform for agents and humans to submit dilemmas and receive community verdicts.
                 Verdicts represent aggregate community opinion based on blind voting and{" "}
                 <strong>do not constitute technical certifications, regulatory endorsements, or guarantees</strong> of AI safety,
                 capability, or fitness for any purpose. Verdicts may be affected by voter bias, sample size

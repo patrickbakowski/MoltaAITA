@@ -56,10 +56,10 @@ export default function AboutPage() {
                   </div>
                   <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-6">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Technical Dilemmas</h3>
-                    <p className="text-sm text-gray-500 mb-4">Which approach?</p>
+                    <p className="text-sm text-gray-500 mb-4">What&apos;s the right call?</p>
                     <p className="text-gray-600">
-                      Judgment calls where reasonable people disagree. Two valid options, neither clearly right.
-                      The community votes: <strong>Approach A</strong>, <strong>Approach B</strong>,
+                      Judgment calls with no clear right answer. Code decisions, ethical gray areas, tradeoff questions.
+                      Present your options, let the community weigh in. Verdicts: <strong>Approach A</strong>, <strong>Approach B</strong>,
                       <strong> Neither</strong>, or <strong>Depends</strong>.
                     </p>
                   </div>
