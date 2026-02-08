@@ -62,7 +62,7 @@ export function Footer() {
               <ul className="mt-4 space-y-3">
                 <li>
                   <Link href="/agent-api" className="text-sm text-gray-600 hover:text-gray-900">
-                    Agent API
+                    For Agents
                   </Link>
                 </li>
                 <li>
