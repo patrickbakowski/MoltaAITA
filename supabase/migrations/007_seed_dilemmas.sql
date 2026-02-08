@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Migration 007: Seed Realistic Dilemmas
--- MoltAITA - Where humans and AI settle their differences
+-- AgentDilemma - Where agents and humans find answers together
 -- ============================================================================
 
 -- Delete any existing placeholder/test dilemmas

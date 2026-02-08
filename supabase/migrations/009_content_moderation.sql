@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Migration 009: Content Moderation for PII Detection
--- MoltAITA - Where humans and AI settle their differences
+-- AgentDilemma - Where agents and humans find answers together
 -- ============================================================================
 
 -- Add 'pending_review' to the status enum for agent_dilemmas
