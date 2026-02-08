@@ -10,6 +10,7 @@ const ADMIN_EMAIL = "patrickbakowski@gmail.com";
 interface Dilemma {
   id: string;
   dilemma_text: string;
+  dilemma_type: "relationship" | "technical";
   status: string;
   hidden: boolean;
   is_anonymous: boolean;
@@ -26,6 +27,7 @@ export default function AdminDilemmas() {
   const [dilemmas, setDilemmas] = useState<Dilemma[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "relationship" | "technical">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<"single" | "bulk">("single");
@@ -54,6 +56,11 @@ export default function AdminDilemmas() {
       setLoading(false);
     }
   };
+
+  // Filter dilemmas by type (client-side)
+  const filteredDilemmas = typeFilter === "all"
+    ? dilemmas
+    : dilemmas.filter(d => (d.dilemma_type || "relationship") === typeFilter);
 
   const handleAction = async (id: string, action: string, extra?: Record<string, unknown>) => {
     try {
@@ -105,10 +112,10 @@ export default function AdminDilemmas() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === dilemmas.length) {
+    if (selectedIds.size === filteredDilemmas.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(dilemmas.map(d => d.id)));
+      setSelectedIds(new Set(filteredDilemmas.map(d => d.id)));
     }
   };
 
@@ -162,6 +169,15 @@ export default function AdminDilemmas() {
             <option value="closed">Closed</option>
             <option value="archived">Archived</option>
           </select>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as "all" | "relationship" | "technical")}
+            className="border rounded px-3 py-2"
+          >
+            <option value="all">All Types</option>
+            <option value="relationship">Relationship</option>
+            <option value="technical">Technical</option>
+          </select>
           {selectedIds.size > 0 && (
             <button
               onClick={handleBulkDelete}
@@ -179,12 +195,13 @@ export default function AdminDilemmas() {
                 <th className="px-4 py-3 text-left">
                   <input
                     type="checkbox"
-                    checked={dilemmas.length > 0 && selectedIds.size === dilemmas.length}
+                    checked={filteredDilemmas.length > 0 && selectedIds.size === filteredDilemmas.length}
                     onChange={toggleSelectAll}
                     className="rounded border-gray-300"
                   />
                 </th>
                 <th className="px-4 py-3 text-left">Dilemma</th>
+                <th className="px-4 py-3 text-left">Type</th>
                 <th className="px-4 py-3 text-left">Submitter</th>
                 <th className="px-4 py-3 text-left">Status</th>
                 <th className="px-4 py-3 text-left">Votes</th>
@@ -194,7 +211,7 @@ export default function AdminDilemmas() {
               </tr>
             </thead>
             <tbody>
-              {dilemmas.map((d) => (
+              {filteredDilemmas.map((d) => (
                 <tr key={d.id} className={`border-t ${d.hidden ? "bg-red-50" : ""} ${selectedIds.has(d.id) ? "bg-blue-50" : ""}`}>
                   <td className="px-4 py-3">
                     <input
@@ -210,6 +227,15 @@ export default function AdminDilemmas() {
                     </Link>
                     {d.is_anonymous && <span className="ml-2 text-xs bg-gray-200 px-1 rounded">anon</span>}
                     {d.hidden && <span className="ml-2 text-xs bg-red-200 px-1 rounded">hidden</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      (d.dilemma_type || "relationship") === "technical"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-purple-100 text-purple-700"
+                    }`}>
+                      {(d.dilemma_type || "relationship") === "technical" ? "Technical" : "Relationship"}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     {d.submitter ? (
@@ -252,9 +278,9 @@ export default function AdminDilemmas() {
                   </td>
                 </tr>
               ))}
-              {dilemmas.length === 0 && (
+              {filteredDilemmas.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">No dilemmas found</td>
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">No dilemmas found</td>
                 </tr>
               )}
             </tbody>
