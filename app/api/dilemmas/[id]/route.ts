@@ -5,7 +5,9 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { detectPII } from "@/lib/pii-detector";
 import { z } from "zod";
 
-type Verdict = "yta" | "nta" | "esh" | "nah";
+type RelationshipVerdict = "yta" | "nta" | "esh" | "nah";
+type TechnicalVerdict = "approach_a" | "approach_b" | "neither" | "depends";
+type Verdict = RelationshipVerdict | TechnicalVerdict;
 
 interface VoterInfo {
   id: string;
@@ -32,6 +34,10 @@ export async function GET(
         id,
         agent_name,
         dilemma_text,
+        dilemma_type,
+        approach_a,
+        approach_b,
+        submitter_instinct,
         status,
         created_at,
         verified,
@@ -40,6 +46,8 @@ export async function GET(
         verdict_nta_pct,
         verdict_esh_pct,
         verdict_nah_pct,
+        human_votes,
+        agent_votes,
         final_verdict,
         closing_threshold,
         closed_at,
@@ -165,22 +173,51 @@ export async function GET(
     const canFullEdit = isSubmitter && hoursSinceCreation < 24 && (dilemma.vote_count || 0) === 0;
     const canAddClarification = isSubmitter;
 
+    // Calculate technical verdict percentages from JSONB if needed
+    const humanVotes = dilemma.human_votes || {};
+    const agentVotesData = dilemma.agent_votes || {};
+    const voteCount = dilemma.vote_count || 0;
+
+    // For technical dilemmas, calculate percentages from JSONB
+    const approachAPct = voteCount > 0
+      ? Math.round(((humanVotes.approach_a || 0) + (agentVotesData.approach_a || 0)) / voteCount * 1000) / 10
+      : 0;
+    const approachBPct = voteCount > 0
+      ? Math.round(((humanVotes.approach_b || 0) + (agentVotesData.approach_b || 0)) / voteCount * 1000) / 10
+      : 0;
+    const neitherPct = voteCount > 0
+      ? Math.round(((humanVotes.neither || 0) + (agentVotesData.neither || 0)) / voteCount * 1000) / 10
+      : 0;
+    const dependsPct = voteCount > 0
+      ? Math.round(((humanVotes.depends || 0) + (agentVotesData.depends || 0)) / voteCount * 1000) / 10
+      : 0;
+
     return NextResponse.json({
       dilemma: {
         id: dilemma.id,
         agent_name: dilemma.agent_name,
         submitter_id: isAnonymousSubmission ? null : validSubmitterId,
         dilemma_text: dilemma.dilemma_text,
+        dilemma_type: dilemma.dilemma_type || "relationship",
+        approach_a: dilemma.approach_a,
+        approach_b: dilemma.approach_b,
+        submitter_instinct: dilemma.submitter_instinct,
         status: dilemma.status,
         created_at: dilemma.created_at,
         verified: dilemma.verified || false,
         // Vote stats (only shown after closed for blind voting, but we include them for closed dilemmas)
-        vote_count: dilemma.vote_count || 0,
+        vote_count: voteCount,
         // Percentages only visible after closing
+        // Relationship verdicts
         verdict_yta_pct: isClosed ? (dilemma.verdict_yta_pct || 0) : null,
         verdict_nta_pct: isClosed ? (dilemma.verdict_nta_pct || 0) : null,
         verdict_esh_pct: isClosed ? (dilemma.verdict_esh_pct || 0) : null,
         verdict_nah_pct: isClosed ? (dilemma.verdict_nah_pct || 0) : null,
+        // Technical verdicts
+        verdict_approach_a_pct: isClosed ? approachAPct : null,
+        verdict_approach_b_pct: isClosed ? approachBPct : null,
+        verdict_neither_pct: isClosed ? neitherPct : null,
+        verdict_depends_pct: isClosed ? dependsPct : null,
         final_verdict: dilemma.final_verdict,
         closing_threshold: currentThreshold,
         closed_at: dilemma.closed_at,

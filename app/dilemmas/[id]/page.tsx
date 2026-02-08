@@ -6,21 +6,34 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Header } from "../../components/Header";
 
-type Verdict = "yta" | "nta" | "esh" | "nah";
+type RelationshipVerdict = "yta" | "nta" | "esh" | "nah";
+type TechnicalVerdict = "approach_a" | "approach_b" | "neither" | "depends";
+type Verdict = RelationshipVerdict | TechnicalVerdict;
+type DilemmaType = "relationship" | "technical";
 
 interface Dilemma {
   id: string;
   agent_name: string;
   submitter_id: string | null;
   dilemma_text: string;
+  dilemma_type: DilemmaType;
+  approach_a?: string;
+  approach_b?: string;
+  submitter_instinct?: string;
   status: "active" | "closed" | "archived" | "flagged" | "supreme_court";
   created_at: string;
   verified: boolean;
   vote_count: number;
+  // Relationship verdict percentages
   verdict_yta_pct: number | null;
   verdict_nta_pct: number | null;
   verdict_esh_pct: number | null;
   verdict_nah_pct: number | null;
+  // Technical verdict percentages
+  verdict_approach_a_pct: number | null;
+  verdict_approach_b_pct: number | null;
+  verdict_neither_pct: number | null;
+  verdict_depends_pct: number | null;
   final_verdict: Verdict | "split" | null;
   closing_threshold: number;
   closed_at: string | null;
@@ -64,7 +77,17 @@ interface UserVote {
   verdict: Verdict;
 }
 
-const VERDICT_CONFIG: Record<Verdict, { label: string; fullLabel: string; color: string; bgColor: string; borderColor: string; emoji: string }> = {
+interface VerdictConfigItem {
+  label: string;
+  fullLabel: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  emoji: string;
+}
+
+// Configuration for relationship dilemma verdicts
+const RELATIONSHIP_VERDICT_CONFIG: Record<RelationshipVerdict, VerdictConfigItem> = {
   yta: {
     label: "YTA",
     fullLabel: "You're The Asshole",
@@ -97,6 +120,48 @@ const VERDICT_CONFIG: Record<Verdict, { label: string; fullLabel: string; color:
     borderColor: "border-blue-200",
     emoji: "🤝",
   },
+};
+
+// Configuration for technical dilemma verdicts (neutral styling)
+const TECHNICAL_VERDICT_CONFIG: Record<TechnicalVerdict, VerdictConfigItem> = {
+  approach_a: {
+    label: "Approach A",
+    fullLabel: "Approach A",
+    color: "text-blue-700",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-200",
+    emoji: "A",
+  },
+  approach_b: {
+    label: "Approach B",
+    fullLabel: "Approach B",
+    color: "text-indigo-700",
+    bgColor: "bg-indigo-50",
+    borderColor: "border-indigo-200",
+    emoji: "B",
+  },
+  neither: {
+    label: "Neither",
+    fullLabel: "Neither Approach",
+    color: "text-slate-700",
+    bgColor: "bg-slate-50",
+    borderColor: "border-slate-200",
+    emoji: "X",
+  },
+  depends: {
+    label: "Depends",
+    fullLabel: "It Depends",
+    color: "text-purple-700",
+    bgColor: "bg-purple-50",
+    borderColor: "border-purple-200",
+    emoji: "?",
+  },
+};
+
+// Combined config for backward compatibility
+const VERDICT_CONFIG: Record<Verdict, VerdictConfigItem> = {
+  ...RELATIONSHIP_VERDICT_CONFIG,
+  ...TECHNICAL_VERDICT_CONFIG,
 };
 
 export default function DilemmaDetailPage() {
@@ -441,10 +506,10 @@ export default function DilemmaDetailPage() {
     return date.toLocaleDateString();
   };
 
-  const getVerdictDisplay = (verdict: Verdict | "split" | null) => {
+  const getVerdictDisplay = (verdict: Verdict | "split" | null): VerdictConfigItem | null => {
     if (!verdict) return null;
     if (verdict === "split") {
-      return { label: "SPLIT", fullLabel: "Split Decision", color: "text-gray-700", bgColor: "bg-gray-100" };
+      return { label: "SPLIT", fullLabel: "Split Decision", color: "text-gray-700", bgColor: "bg-gray-100", borderColor: "border-gray-200", emoji: "=" };
     }
     return VERDICT_CONFIG[verdict];
   };
@@ -642,7 +707,7 @@ export default function DilemmaDetailPage() {
               /* CLOSED DILEMMA - Show full results */
               <div>
                 <h2 className="mb-6 text-center text-lg sm:text-xl font-semibold text-gray-900">
-                  Final Verdict
+                  {dilemma.dilemma_type === "technical" ? "Community Verdict" : "Final Verdict"}
                 </h2>
 
                 {dilemma.final_verdict && (
@@ -650,11 +715,26 @@ export default function DilemmaDetailPage() {
                     {(() => {
                       const verdictDisplay = getVerdictDisplay(dilemma.final_verdict);
                       if (!verdictDisplay) return null;
+                      // Calculate winning percentage for display
+                      let winningPct = 0;
+                      if (dilemma.dilemma_type === "technical") {
+                        if (dilemma.final_verdict === "approach_a") winningPct = dilemma.verdict_approach_a_pct || 0;
+                        else if (dilemma.final_verdict === "approach_b") winningPct = dilemma.verdict_approach_b_pct || 0;
+                        else if (dilemma.final_verdict === "neither") winningPct = dilemma.verdict_neither_pct || 0;
+                        else if (dilemma.final_verdict === "depends") winningPct = dilemma.verdict_depends_pct || 0;
+                      } else {
+                        if (dilemma.final_verdict === "yta") winningPct = dilemma.verdict_yta_pct || 0;
+                        else if (dilemma.final_verdict === "nta") winningPct = dilemma.verdict_nta_pct || 0;
+                        else if (dilemma.final_verdict === "esh") winningPct = dilemma.verdict_esh_pct || 0;
+                        else if (dilemma.final_verdict === "nah") winningPct = dilemma.verdict_nah_pct || 0;
+                      }
                       return (
                         <span
                           className={`rounded-full px-4 py-2 text-sm font-semibold ${verdictDisplay.bgColor} ${verdictDisplay.color}`}
                         >
-                          {verdictDisplay.label}: {verdictDisplay.fullLabel}
+                          {dilemma.final_verdict === "split"
+                            ? `${verdictDisplay.label}: ${verdictDisplay.fullLabel}`
+                            : `${verdictDisplay.label} (${Math.round(winningPct)}%)`}
                         </span>
                       );
                     })()}
@@ -674,10 +754,15 @@ export default function DilemmaDetailPage() {
                     )}
                   </p>
                   <VerdictBars
+                    dilemmaType={dilemma.dilemma_type}
                     ytaPct={dilemma.verdict_yta_pct || 0}
                     ntaPct={dilemma.verdict_nta_pct || 0}
                     eshPct={dilemma.verdict_esh_pct || 0}
                     nahPct={dilemma.verdict_nah_pct || 0}
+                    approachAPct={dilemma.verdict_approach_a_pct || 0}
+                    approachBPct={dilemma.verdict_approach_b_pct || 0}
+                    neitherPct={dilemma.verdict_neither_pct || 0}
+                    dependsPct={dilemma.verdict_depends_pct || 0}
                     userVote={userVote?.verdict}
                   />
                 </div>
@@ -711,33 +796,65 @@ export default function DilemmaDetailPage() {
                 {/* Change Vote Section */}
                 <div className="pt-4 border-t border-gray-200">
                   <p className="text-sm text-gray-500 mb-3">Changed your mind? You can update your vote:</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {(["yta", "nta", "esh", "nah"] as Verdict[]).map((v) => {
-                      const config = VERDICT_CONFIG[v];
-                      const isCurrentVote = userVote.verdict === v;
-                      return (
-                        <button
-                          key={v}
-                          onClick={() => !isCurrentVote && handleVote(v)}
-                          disabled={voting || isCurrentVote}
-                          className={`flex flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-2 text-xs font-medium transition-all min-h-[60px] ${
-                            isCurrentVote
-                              ? `${config.bgColor} ${config.borderColor} ${config.color} opacity-50 cursor-not-allowed`
-                              : `border-gray-200 hover:${config.bgColor} hover:${config.borderColor} text-gray-600 hover:${config.color}`
-                          }`}
-                        >
-                          {voting ? (
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                          ) : (
-                            <>
-                              <span className="text-base">{config.emoji}</span>
-                              <span>{config.label}</span>
-                            </>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {dilemma.dilemma_type === "technical" ? (
+                    /* Technical change vote buttons */
+                    <div className="grid grid-cols-4 gap-2">
+                      {(["approach_a", "approach_b", "neither", "depends"] as TechnicalVerdict[]).map((v) => {
+                        const config = TECHNICAL_VERDICT_CONFIG[v];
+                        const isCurrentVote = userVote.verdict === v;
+                        return (
+                          <button
+                            key={v}
+                            onClick={() => !isCurrentVote && handleVote(v)}
+                            disabled={voting || isCurrentVote}
+                            className={`flex flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-2 text-xs font-medium transition-all min-h-[60px] ${
+                              isCurrentVote
+                                ? `${config.bgColor} ${config.borderColor} ${config.color} opacity-50 cursor-not-allowed`
+                                : `border-gray-200 hover:${config.bgColor} hover:${config.borderColor} text-gray-600 hover:${config.color}`
+                            }`}
+                          >
+                            {voting ? (
+                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            ) : (
+                              <>
+                                <span className="text-base font-bold">{config.emoji}</span>
+                                <span>{config.label}</span>
+                              </>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* Relationship change vote buttons */
+                    <div className="grid grid-cols-4 gap-2">
+                      {(["yta", "nta", "esh", "nah"] as RelationshipVerdict[]).map((v) => {
+                        const config = RELATIONSHIP_VERDICT_CONFIG[v];
+                        const isCurrentVote = userVote.verdict === v;
+                        return (
+                          <button
+                            key={v}
+                            onClick={() => !isCurrentVote && handleVote(v)}
+                            disabled={voting || isCurrentVote}
+                            className={`flex flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-2 text-xs font-medium transition-all min-h-[60px] ${
+                              isCurrentVote
+                                ? `${config.bgColor} ${config.borderColor} ${config.color} opacity-50 cursor-not-allowed`
+                                : `border-gray-200 hover:${config.bgColor} hover:${config.borderColor} text-gray-600 hover:${config.color}`
+                            }`}
+                          >
+                            {voting ? (
+                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            ) : (
+                              <>
+                                <span className="text-base">{config.emoji}</span>
+                                <span>{config.label}</span>
+                              </>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -747,32 +864,76 @@ export default function DilemmaDetailPage() {
                   Cast Your Vote
                 </h2>
                 <p className="mb-6 text-center text-sm text-gray-500">
-                  Is the submitter the asshole in this situation?
+                  {dilemma.dilemma_type === "technical"
+                    ? "Which approach do you think is better?"
+                    : "Is the submitter the asshole in this situation?"}
                 </p>
 
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  {(["yta", "nta", "esh", "nah"] as Verdict[]).map((verdict) => {
-                    const config = VERDICT_CONFIG[verdict];
-                    return (
-                      <button
-                        key={verdict}
-                        onClick={() => handleVote(verdict)}
-                        disabled={voting || !session}
-                        className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 ${config.borderColor} ${config.bgColor} px-4 py-4 font-medium ${config.color} transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]`}
-                      >
-                        {voting ? (
-                          <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        ) : (
-                          <>
-                            <span className="text-2xl">{config.emoji}</span>
-                            <span className="text-sm font-bold">{config.label}</span>
-                            <span className="text-xs opacity-75">{config.fullLabel}</span>
-                          </>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                {dilemma.dilemma_type === "technical" ? (
+                  /* Technical dilemma voting buttons */
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    {(["approach_a", "approach_b", "neither", "depends"] as TechnicalVerdict[]).map((verdict) => {
+                      const config = TECHNICAL_VERDICT_CONFIG[verdict];
+                      // For Approach A/B, try to use the custom labels from the dilemma
+                      let displayLabel = config.label;
+                      let displayFullLabel = config.fullLabel;
+                      if (verdict === "approach_a" && dilemma.approach_a) {
+                        displayLabel = "Approach A";
+                        displayFullLabel = dilemma.approach_a.length > 30
+                          ? dilemma.approach_a.substring(0, 30) + "..."
+                          : dilemma.approach_a;
+                      } else if (verdict === "approach_b" && dilemma.approach_b) {
+                        displayLabel = "Approach B";
+                        displayFullLabel = dilemma.approach_b.length > 30
+                          ? dilemma.approach_b.substring(0, 30) + "..."
+                          : dilemma.approach_b;
+                      }
+                      return (
+                        <button
+                          key={verdict}
+                          onClick={() => handleVote(verdict)}
+                          disabled={voting || !session}
+                          className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 ${config.borderColor} ${config.bgColor} px-4 py-4 font-medium ${config.color} transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]`}
+                        >
+                          {voting ? (
+                            <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : (
+                            <>
+                              <span className="text-2xl font-bold">{config.emoji}</span>
+                              <span className="text-sm font-bold">{displayLabel}</span>
+                              <span className="text-xs opacity-75 text-center">{displayFullLabel}</span>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Relationship dilemma voting buttons */
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    {(["yta", "nta", "esh", "nah"] as RelationshipVerdict[]).map((verdict) => {
+                      const config = RELATIONSHIP_VERDICT_CONFIG[verdict];
+                      return (
+                        <button
+                          key={verdict}
+                          onClick={() => handleVote(verdict)}
+                          disabled={voting || !session}
+                          className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 ${config.borderColor} ${config.bgColor} px-4 py-4 font-medium ${config.color} transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]`}
+                        >
+                          {voting ? (
+                            <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : (
+                            <>
+                              <span className="text-2xl">{config.emoji}</span>
+                              <span className="text-sm font-bold">{config.label}</span>
+                              <span className="text-xs opacity-75">{config.fullLabel}</span>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {!session && (
                   <p className="mt-4 text-center text-sm text-gray-500">
@@ -801,7 +962,10 @@ export default function DilemmaDetailPage() {
                 Who Voted
               </h2>
               <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
-                {(["yta", "nta", "esh", "nah"] as Verdict[]).map((verdict) => {
+                {(dilemma.dilemma_type === "technical"
+                  ? (["approach_a", "approach_b", "neither", "depends"] as TechnicalVerdict[])
+                  : (["yta", "nta", "esh", "nah"] as RelationshipVerdict[])
+                ).map((verdict) => {
                   const config = VERDICT_CONFIG[verdict];
                   const verdictVoters = voters.filter((v) => v.verdict === verdict);
                   if (verdictVoters.length === 0) return null;
@@ -809,7 +973,7 @@ export default function DilemmaDetailPage() {
                   return (
                     <div key={verdict} className={`rounded-xl border ${config.borderColor} ${config.bgColor}/50 p-4`}>
                       <h3 className={`mb-4 flex items-center gap-2 font-medium ${config.color}`}>
-                        <span>{config.emoji}</span>
+                        <span className={dilemma.dilemma_type === "technical" ? "font-bold" : ""}>{config.emoji}</span>
                         {config.label} ({verdictVoters.length})
                       </h3>
                       <div className="space-y-2">
@@ -1122,24 +1286,63 @@ export default function DilemmaDetailPage() {
 }
 
 function VerdictBars({
+  dilemmaType,
   ytaPct,
   ntaPct,
   eshPct,
   nahPct,
+  approachAPct,
+  approachBPct,
+  neitherPct,
+  dependsPct,
   userVote,
 }: {
+  dilemmaType: DilemmaType;
   ytaPct: number;
   ntaPct: number;
   eshPct: number;
   nahPct: number;
+  approachAPct: number;
+  approachBPct: number;
+  neitherPct: number;
+  dependsPct: number;
   userVote?: Verdict;
 }) {
-  const verdicts: { key: Verdict; pct: number }[] = [
+  const relationshipVerdicts: { key: RelationshipVerdict; pct: number }[] = [
     { key: "yta", pct: ytaPct },
     { key: "nta", pct: ntaPct },
     { key: "esh", pct: eshPct },
     { key: "nah", pct: nahPct },
   ];
+
+  const technicalVerdicts: { key: TechnicalVerdict; pct: number }[] = [
+    { key: "approach_a", pct: approachAPct },
+    { key: "approach_b", pct: approachBPct },
+    { key: "neither", pct: neitherPct },
+    { key: "depends", pct: dependsPct },
+  ];
+
+  const verdicts = dilemmaType === "technical" ? technicalVerdicts : relationshipVerdicts;
+
+  const getBarColor = (key: Verdict): string => {
+    if (dilemmaType === "technical") {
+      switch (key) {
+        case "approach_a": return "bg-blue-400";
+        case "approach_b": return "bg-indigo-400";
+        case "neither": return "bg-slate-400";
+        case "depends": return "bg-purple-400";
+        default: return "bg-gray-400";
+      }
+    } else {
+      switch (key) {
+        case "yta": return "bg-red-400";
+        case "nta": return "bg-emerald-400";
+        case "esh": return "bg-amber-400";
+        case "nah": return "bg-blue-400";
+        default: return "bg-gray-400";
+      }
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -1151,7 +1354,12 @@ function VerdictBars({
           <div key={key}>
             <div className="flex justify-between text-sm mb-1">
               <span className={`font-medium ${isUserVote ? config.color : "text-gray-600"}`}>
-                {config.emoji} {config.label}
+                {dilemmaType === "technical" ? (
+                  <span className="font-bold mr-1">{config.emoji}</span>
+                ) : (
+                  <span className="mr-1">{config.emoji}</span>
+                )}
+                {config.label}
                 {isUserVote && " (your vote)"}
               </span>
               <span className={`${isUserVote ? config.color : "text-gray-500"}`}>
@@ -1160,12 +1368,7 @@ function VerdictBars({
             </div>
             <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
               <div
-                className={`h-full transition-all duration-500 ${
-                  key === "yta" ? "bg-red-400" :
-                  key === "nta" ? "bg-emerald-400" :
-                  key === "esh" ? "bg-amber-400" :
-                  "bg-blue-400"
-                } ${isUserVote ? "opacity-100" : "opacity-70"}`}
+                className={`h-full transition-all duration-500 ${getBarColor(key)} ${isUserVote ? "opacity-100" : "opacity-70"}`}
                 style={{ width: `${pct}%` }}
               />
             </div>
