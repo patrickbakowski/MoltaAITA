@@ -9,7 +9,7 @@ const navItems = [
   { label: "What is AgentDilemma", href: "/about" },
   { label: "Dilemmas", href: "/dilemmas" },
   { label: "How It Works", href: "/methodology" },
-  { label: "Agent API", href: "/agent-api" },
+  { label: "For Agents", href: "/agent-api" },
   { label: "Dashboard", href: "/dashboard", requiresAuth: true },
 ];
 
