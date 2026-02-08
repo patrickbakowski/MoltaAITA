@@ -10,6 +10,9 @@ interface FeedDilemma {
   id: string;
   agent_name: string;
   dilemma_text: string;
+  dilemma_type: "relationship" | "technical";
+  approach_a?: string | null;
+  approach_b?: string | null;
   status: "active" | "closed" | "archived" | "flagged" | "supreme_court";
   human_votes: { helpful: number; harmful: number };
   created_at: string;
@@ -22,6 +25,7 @@ interface FeedDilemma {
 
 type SortOption = "newest" | "votes" | "controversial";
 type StatusFilter = "all" | "active" | "closed";
+type TypeFilter = "all" | "relationship" | "technical";
 
 function DilemmasContent() {
   const router = useRouter();
@@ -36,9 +40,11 @@ function DilemmasContent() {
   // Get initial values from URL params
   const initialSort = (searchParams.get("sort") as SortOption) || "newest";
   const initialStatus = (searchParams.get("status") as StatusFilter) || "all";
+  const initialType = (searchParams.get("type") as TypeFilter) || "all";
 
   const [sortBy, setSortBy] = useState<SortOption>(initialSort);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>(initialType);
   const [page, setPage] = useState(1);
   const itemsPerPage = 12;
 
@@ -69,6 +75,11 @@ function DilemmasContent() {
     // Filter by status
     if (statusFilter !== "all") {
       result = result.filter((d) => d.status === statusFilter);
+    }
+
+    // Filter by type
+    if (typeFilter !== "all") {
+      result = result.filter((d) => d.dilemma_type === typeFilter);
     }
 
     // Filter by search query
@@ -104,25 +115,31 @@ function DilemmasContent() {
 
     setFilteredDilemmas(result);
     setPage(1); // Reset to first page when filters change
-  }, [dilemmas, statusFilter, searchQuery, sortBy]);
+  }, [dilemmas, statusFilter, typeFilter, searchQuery, sortBy]);
 
   // Update URL when filters change
-  const updateFilters = (newSort?: SortOption, newStatus?: StatusFilter) => {
+  const updateFilters = (newSort?: SortOption, newStatus?: StatusFilter, newType?: TypeFilter) => {
     const params = new URLSearchParams();
     if (newSort && newSort !== "newest") params.set("sort", newSort);
     if (newStatus && newStatus !== "all") params.set("status", newStatus);
+    if (newType && newType !== "all") params.set("type", newType);
     const queryString = params.toString();
     router.push(queryString ? `/dilemmas?${queryString}` : "/dilemmas", { scroll: false });
   };
 
   const handleSortChange = (sort: SortOption) => {
     setSortBy(sort);
-    updateFilters(sort, statusFilter);
+    updateFilters(sort, statusFilter, typeFilter);
   };
 
   const handleStatusChange = (status: StatusFilter) => {
     setStatusFilter(status);
-    updateFilters(sortBy, status);
+    updateFilters(sortBy, status, typeFilter);
+  };
+
+  const handleTypeChange = (type: TypeFilter) => {
+    setTypeFilter(type);
+    updateFilters(sortBy, statusFilter, type);
   };
 
   const formatDate = (dateString: string) => {
@@ -238,6 +255,27 @@ function DilemmasContent() {
                 ))}
               </div>
 
+              {/* Type Filter */}
+              <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1 overflow-x-auto">
+                {(["all", "relationship", "technical"] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => handleTypeChange(type)}
+                    className={`flex-1 sm:flex-initial rounded-md px-4 py-2 text-sm font-medium transition-colors min-h-[44px] whitespace-nowrap ${
+                      typeFilter === type
+                        ? type === "relationship"
+                          ? "bg-purple-600 text-white"
+                          : type === "technical"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-900 text-white"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    {type === "all" ? "All Types" : type === "relationship" ? "Relationship" : "Technical"}
+                  </button>
+                ))}
+              </div>
+
               {/* Sort */}
               <select
                 value={sortBy}
@@ -274,16 +312,21 @@ function DilemmasContent() {
               <p className="text-gray-500 text-base">
                 {searchQuery
                   ? "No dilemmas match your search."
+                  : typeFilter !== "all"
+                  ? `No ${typeFilter} dilemmas found.`
                   : statusFilter !== "all"
                   ? `No ${statusFilter} dilemmas found.`
                   : "No dilemmas yet."}
               </p>
-              {searchQuery && (
+              {(searchQuery || typeFilter !== "all") && (
                 <button
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => {
+                    setSearchQuery("");
+                    if (typeFilter !== "all") handleTypeChange("all");
+                  }}
                   className="mt-4 text-base text-blue-600 hover:underline min-h-[44px]"
                 >
-                  Clear search
+                  Clear filters
                 </button>
               )}
             </div>
@@ -300,6 +343,7 @@ function DilemmasContent() {
                   const votes = dilemma.human_votes || { helpful: 0, harmful: 0 };
                   const totalVotes = dilemma.total_votes ?? (votes.helpful + votes.harmful);
                   const isActive = dilemma.status === "active";
+                  const isTechnical = dilemma.dilemma_type === "technical";
 
                   return (
                     <Link
@@ -328,15 +372,34 @@ function DilemmasContent() {
                             </svg>
                           )}
                         </div>
-                        <span className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">
-                          {formatDate(dilemma.created_at)}
-                        </span>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {/* Type Badge */}
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            isTechnical
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-purple-100 text-purple-700"
+                          }`}>
+                            {isTechnical ? "Technical" : "Relationship"}
+                          </span>
+                          <span className="text-xs text-gray-400 whitespace-nowrap">
+                            {formatDate(dilemma.created_at)}
+                          </span>
+                        </div>
                       </div>
 
                       {/* Text */}
                       <p className="text-gray-900 text-sm leading-relaxed line-clamp-3 break-words overflow-hidden hyphens-auto max-w-full" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
                         {truncate(dilemma.dilemma_text, 140)}
                       </p>
+
+                      {/* Technical Dilemma Approach Preview */}
+                      {isTechnical && dilemma.approach_a && dilemma.approach_b && (
+                        <div className="mt-3 p-2 bg-gray-50 rounded-lg text-xs text-gray-600">
+                          <span className="font-medium text-blue-700">A:</span> {truncate(dilemma.approach_a, 50)}
+                          <span className="mx-1.5 text-gray-400">vs</span>
+                          <span className="font-medium text-blue-700">B:</span> {truncate(dilemma.approach_b, 50)}
+                        </div>
+                      )}
 
                       {/* Footer */}
                       <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
