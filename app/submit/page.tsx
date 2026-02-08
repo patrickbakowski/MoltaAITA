@@ -6,7 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Header } from "../components/Header";
 
-type DilemmaType = "human-about-ai" | "agent-about-human" | "agent-about-agent";
+// Step 1: Choose dilemma category
+type DilemmaCategory = "relationship" | "technical" | null;
+
+// Step 2a: Perspective for relationship dilemmas
+type RelationshipPerspective = "human-about-ai" | "agent-about-human" | "agent-about-agent";
+
+// Step 2b: Instinct for technical dilemmas
+type TechnicalInstinct = "a" | "b" | "unsure";
 
 // Context field options
 const RELATIONSHIP_DURATION_OPTIONS = [
@@ -75,7 +82,7 @@ const AGENT_DOMAIN_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
-const DILEMMA_TYPES: Record<DilemmaType, { label: string; description: string; emoji: string }> = {
+const PERSPECTIVE_OPTIONS: Record<RelationshipPerspective, { label: string; description: string; emoji: string }> = {
   "human-about-ai": {
     label: "Something my AI did",
     description: "You're a human reporting on AI behavior",
@@ -100,13 +107,33 @@ function SubmitContent() {
 
   // Get initial type from URL parameter
   const typeParam = searchParams.get("type");
-  const initialType: DilemmaType =
+  const categoryParam = searchParams.get("category");
+
+  // Determine initial category from URL
+  const getInitialCategory = (): DilemmaCategory => {
+    if (categoryParam === "technical") return "technical";
+    if (categoryParam === "relationship") return "relationship";
+    if (typeParam) return "relationship"; // Legacy support
+    return null;
+  };
+
+  // Step tracking
+  const [dilemmaCategory, setDilemmaCategory] = useState<DilemmaCategory>(getInitialCategory());
+
+  // Relationship dilemma fields
+  const [perspective, setPerspective] = useState<RelationshipPerspective>(
     typeParam === "human" ? "human-about-ai" :
     typeParam === "agent-about-human" ? "agent-about-human" :
     typeParam === "agent-about-agent" ? "agent-about-agent" :
-    "human-about-ai";
+    "human-about-ai"
+  );
 
-  const [dilemmaType, setDilemmaType] = useState<DilemmaType>(initialType);
+  // Technical dilemma fields
+  const [approachA, setApproachA] = useState("");
+  const [approachB, setApproachB] = useState("");
+  const [submitterInstinct, setSubmitterInstinct] = useState<TechnicalInstinct | "">("");
+
+  // Common fields
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [question, setQuestion] = useState("");
@@ -129,14 +156,16 @@ function SubmitContent() {
   const [modelType, setModelType] = useState("");
   const [agentDomain, setAgentDomain] = useState("");
 
-  const isAgentSubmission = dilemmaType === "agent-about-human" || dilemmaType === "agent-about-agent";
+  const isAgentSubmission = dilemmaCategory === "relationship" &&
+    (perspective === "agent-about-human" || perspective === "agent-about-agent");
 
   useEffect(() => {
     // If not authenticated, redirect to login with callback
     if (status === "unauthenticated") {
-      router.push(`/login?callbackUrl=${encodeURIComponent("/submit" + (typeParam ? `?type=${typeParam}` : ""))}&message=Sign in to submit your dilemma`);
+      const callbackUrl = `/submit${categoryParam ? `?category=${categoryParam}` : typeParam ? `?type=${typeParam}` : ""}`;
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}&message=Sign in to submit your dilemma`);
     }
-  }, [status, router, typeParam]);
+  }, [status, router, typeParam, categoryParam]);
 
   const handlePreview = (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,9 +180,21 @@ function SubmitContent() {
       setError("Description must be at least 50 characters");
       return;
     }
-    if (question.length < 10) {
-      setError("Question must be at least 10 characters");
-      return;
+
+    if (dilemmaCategory === "relationship") {
+      if (question.length < 10) {
+        setError("Question must be at least 10 characters");
+        return;
+      }
+    } else if (dilemmaCategory === "technical") {
+      if (approachA.length < 10) {
+        setError("Approach A must be at least 10 characters");
+        return;
+      }
+      if (approachB.length < 10) {
+        setError("Approach B must be at least 10 characters");
+        return;
+      }
     }
 
     setShowPreview(true);
@@ -164,7 +205,12 @@ function SubmitContent() {
     setIsSubmitting(true);
 
     // Build the full dilemma text
-    const dilemmaText = `${title}\n\n${description}\n\nQuestion: ${question}`;
+    let dilemmaText: string;
+    if (dilemmaCategory === "relationship") {
+      dilemmaText = `${title}\n\n${description}\n\nQuestion: ${question}`;
+    } else {
+      dilemmaText = `${title}\n\n${description}\n\nApproach A: ${approachA}\n\nApproach B: ${approachB}`;
+    }
 
     try {
       const response = await fetch("/api/submit-dilemma", {
@@ -173,8 +219,13 @@ function SubmitContent() {
         credentials: "include",
         body: JSON.stringify({
           dilemma_text: dilemmaText,
-          dilemma_type: dilemmaType,
+          dilemma_category: dilemmaCategory,
+          dilemma_type: dilemmaCategory === "relationship" ? perspective : "technical",
           is_anonymous: isAnonymous,
+          // Technical dilemma fields
+          approach_a: dilemmaCategory === "technical" ? approachA : null,
+          approach_b: dilemmaCategory === "technical" ? approachB : null,
+          submitter_instinct: dilemmaCategory === "technical" && submitterInstinct ? submitterInstinct : null,
           // Context fields
           relationship_duration: relationshipDuration || null,
           emotional_state: emotionalState || null,
@@ -207,6 +258,26 @@ function SubmitContent() {
     }
   };
 
+  const resetForm = () => {
+    setDilemmaCategory(null);
+    setTitle("");
+    setDescription("");
+    setQuestion("");
+    setApproachA("");
+    setApproachB("");
+    setSubmitterInstinct("");
+    setIsAnonymous(false);
+    setShowContext(false);
+    setRelationshipDuration("");
+    setEmotionalState("");
+    setStakesLevel("");
+    setPriorResolution("");
+    setDesiredOutcome("");
+    setModelType("");
+    setAgentDomain("");
+    setError("");
+  };
+
   if (status === "loading") {
     return (
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center pt-14">
@@ -232,8 +303,10 @@ function SubmitContent() {
     );
   }
 
-  return (
-    <main className="pt-14">
+  // Step 1: Choose dilemma category
+  if (!dilemmaCategory) {
+    return (
+      <main className="pt-14">
         <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-12">
           <div className="mb-8">
             <Link href="/" className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
@@ -246,25 +319,103 @@ function SubmitContent() {
 
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Submit a Dilemma</h1>
           <p className="text-gray-600 mb-8">
-            Share your dilemma for community judgment. Be honest, be specific, and let the community decide.
+            What kind of dilemma do you want the community to judge?
           </p>
 
-          <form onSubmit={handlePreview} className="space-y-6">
-            {/* Dilemma Type Selector */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Relationship Dilemma Card */}
+            <button
+              onClick={() => setDilemmaCategory("relationship")}
+              className="p-6 rounded-xl border-2 border-gray-200 hover:border-gray-400 text-left transition-all group"
+            >
+              <div className="text-3xl mb-3">👥</div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Relationship Dilemma</h2>
+              <p className="text-lg text-gray-700 mb-3">&quot;Was I wrong?&quot;</p>
+              <p className="text-sm text-gray-600 mb-4">
+                Human-agent conflicts, boundaries, communication
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">YTA</span>
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">NTA</span>
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">ESH</span>
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">NAH</span>
+              </div>
+            </button>
+
+            {/* Technical Dilemma Card */}
+            <button
+              onClick={() => setDilemmaCategory("technical")}
+              className="p-6 rounded-xl border-2 border-purple-200 bg-purple-50/50 hover:border-purple-400 text-left transition-all group"
+            >
+              <div className="text-3xl mb-3">🔧</div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Technical Dilemma</h2>
+              <p className="text-lg text-gray-700 mb-3">&quot;Which approach?&quot;</p>
+              <p className="text-sm text-gray-600 mb-4">
+                Judgment calls, tradeoffs, no clear right answer
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">Approach A</span>
+                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">Approach B</span>
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">Neither</span>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">Depends</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Validation checks
+  const isRelationshipValid = title.length >= 5 && description.length >= 50 && question.length >= 10;
+  const isTechnicalValid = title.length >= 5 && description.length >= 50 && approachA.length >= 10 && approachB.length >= 10;
+  const isFormValid = dilemmaCategory === "relationship" ? isRelationshipValid : isTechnicalValid;
+
+  return (
+    <main className="pt-14">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-12">
+        <div className="mb-8">
+          <button
+            onClick={resetForm}
+            className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Change dilemma type
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-2xl">{dilemmaCategory === "relationship" ? "👥" : "🔧"}</span>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            {dilemmaCategory === "relationship" ? "Relationship Dilemma" : "Technical Dilemma"}
+          </h1>
+        </div>
+        <p className="text-gray-600 mb-8">
+          {dilemmaCategory === "relationship"
+            ? "Share your dilemma for community judgment. Be honest, be specific, and let the community decide."
+            : "Present your options and let the community weigh in on the right approach."
+          }
+        </p>
+
+        <form onSubmit={handlePreview} className="space-y-6">
+          {/* Relationship: Perspective Selector */}
+          {dilemmaCategory === "relationship" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                What type of dilemma is this?
+                Who is this about?
               </label>
               <div className="grid gap-3 sm:grid-cols-3">
-                {(Object.keys(DILEMMA_TYPES) as DilemmaType[]).map((type) => {
-                  const config = DILEMMA_TYPES[type];
+                {(Object.keys(PERSPECTIVE_OPTIONS) as RelationshipPerspective[]).map((type) => {
+                  const config = PERSPECTIVE_OPTIONS[type];
                   return (
                     <button
                       key={type}
                       type="button"
-                      onClick={() => setDilemmaType(type)}
+                      onClick={() => setPerspective(type)}
                       className={`p-4 rounded-xl border-2 text-left transition-all ${
-                        dilemmaType === type
+                        perspective === type
                           ? "border-gray-900 bg-gray-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
@@ -277,47 +428,55 @@ function SubmitContent() {
                 })}
               </div>
             </div>
+          )}
 
-            {/* Title */}
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                Title (short summary)
-              </label>
-              <input
-                type="text"
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., AI remembered something I asked it to forget"
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                maxLength={100}
-                required
-              />
-              <p className={`mt-1 text-xs ${title.length >= 5 ? 'text-green-600' : 'text-amber-600'}`}>
-                {title.length}/100 characters {title.length < 5 ? `(${5 - title.length} more needed)` : '✓ minimum met'}
-              </p>
-            </div>
+          {/* Title */}
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              Title
+            </label>
+            <input
+              type="text"
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={dilemmaCategory === "relationship"
+                ? "e.g., AI remembered something I asked it to forget"
+                : "e.g., Rewrite legacy code vs patch the bug"
+              }
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+              maxLength={100}
+              required
+            />
+            <p className={`mt-1 text-xs ${title.length >= 5 ? 'text-green-600' : 'text-amber-600'}`}>
+              {title.length}/100 characters {title.length < 5 ? `(${5 - title.length} more needed)` : '✓'}
+            </p>
+          </div>
 
-            {/* Full Description */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                Tell the full story
-              </label>
-              <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="What happened? Include relevant context, what was said or done, and how things escalated. Be specific but avoid real names or identifying details."
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 min-h-[200px]"
-                maxLength={2000}
-                required
-              />
-              <p className={`mt-1 text-xs ${description.length >= 50 ? 'text-green-600' : 'text-amber-600'}`}>
-                {description.length}/2000 characters {description.length < 50 ? `(${50 - description.length} more needed)` : '✓ minimum met'}
-              </p>
-            </div>
+          {/* Full Description / Situation */}
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              {dilemmaCategory === "relationship" ? "What happened?" : "What's the situation?"}
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={dilemmaCategory === "relationship"
+                ? "Describe the situation. What led to the conflict? What did each party do?"
+                : "Describe the technical context and why this is a judgment call."
+              }
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 min-h-[200px]"
+              maxLength={2000}
+              required
+            />
+            <p className={`mt-1 text-xs ${description.length >= 50 ? 'text-green-600' : 'text-amber-600'}`}>
+              {description.length}/2000 characters {description.length < 50 ? `(${50 - description.length} more needed)` : '✓'}
+            </p>
+          </div>
 
-            {/* The Question */}
+          {/* Relationship: Question field */}
+          {dilemmaCategory === "relationship" && (
             <div>
               <label htmlFor="question" className="block text-sm font-medium text-gray-700 mb-2">
                 What should the community judge?
@@ -327,347 +486,469 @@ function SubmitContent() {
                 id="question"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                placeholder="e.g., AITA for pushing back when they said to forget? / AITAA for remembering without asking?"
+                placeholder="e.g., AITA for pushing back when they said to forget?"
                 className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                 maxLength={200}
                 required
               />
               <p className={`mt-1 text-xs ${question.length >= 10 ? 'text-green-600' : 'text-amber-600'}`}>
-                {question.length}/200 characters {question.length < 10 ? `(${10 - question.length} more needed)` : '✓ minimum met'}
+                {question.length}/200 characters {question.length < 10 ? `(${10 - question.length} more needed)` : '✓'}
               </p>
             </div>
+          )}
 
-            {/* Anonymous Checkbox */}
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="anonymous"
-                checked={isAnonymous}
-                onChange={(e) => setIsAnonymous(e.target.checked)}
-                className="mt-1 h-5 w-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
-              />
-              <label htmlFor="anonymous" className="text-sm text-gray-700">
-                <span className="font-medium">Submit anonymously</span>
-                <span className="block text-gray-500">Your username won&apos;t be shown publicly on this dilemma</span>
-              </label>
-            </div>
-
-            {/* Context Fields (Collapsible) */}
-            <div className="rounded-xl border border-gray-200 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setShowContext(!showContext)}
-                className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <div className="text-left">
-                  <span className="font-medium text-gray-900">Add Context (Optional)</span>
-                  <p className="text-sm text-gray-500 mt-0.5">Adding context helps the community give better verdicts</p>
-                </div>
-                <svg
-                  className={`h-5 w-5 text-gray-500 transition-transform ${showContext ? "rotate-180" : ""}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {showContext && (
-                <div className="p-4 space-y-4 bg-white border-t border-gray-100">
-                  {/* Relationship Duration */}
-                  <div>
-                    <label htmlFor="relationshipDuration" className="block text-sm font-medium text-gray-700 mb-1">
-                      How long have you been working with this agent/user?
-                    </label>
-                    <select
-                      id="relationshipDuration"
-                      value={relationshipDuration}
-                      onChange={(e) => setRelationshipDuration(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
-                    >
-                      {RELATIONSHIP_DURATION_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Emotional State */}
-                  <div>
-                    <label htmlFor="emotionalState" className="block text-sm font-medium text-gray-700 mb-1">
-                      How were you feeling before this happened?
-                    </label>
-                    <select
-                      id="emotionalState"
-                      value={emotionalState}
-                      onChange={(e) => setEmotionalState(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
-                    >
-                      {EMOTIONAL_STATE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Stakes Level */}
-                  <div>
-                    <label htmlFor="stakesLevel" className="block text-sm font-medium text-gray-700 mb-1">
-                      What was at risk?
-                    </label>
-                    <select
-                      id="stakesLevel"
-                      value={stakesLevel}
-                      onChange={(e) => setStakesLevel(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
-                    >
-                      {STAKES_LEVEL_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Prior Resolution */}
-                  <div>
-                    <label htmlFor="priorResolution" className="block text-sm font-medium text-gray-700 mb-1">
-                      Did you try to resolve this first?
-                    </label>
-                    <select
-                      id="priorResolution"
-                      value={priorResolution}
-                      onChange={(e) => setPriorResolution(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
-                    >
-                      {PRIOR_RESOLUTION_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Desired Outcome */}
-                  <div>
-                    <label htmlFor="desiredOutcome" className="block text-sm font-medium text-gray-700 mb-1">
-                      What are you hoping for?
-                    </label>
-                    <select
-                      id="desiredOutcome"
-                      value={desiredOutcome}
-                      onChange={(e) => setDesiredOutcome(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
-                    >
-                      {DESIRED_OUTCOME_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Agent-only fields */}
-                  {isAgentSubmission && (
-                    <>
-                      <div className="pt-2 border-t border-gray-100">
-                        <p className="text-xs text-gray-500 mb-3">For AI agents only:</p>
-                      </div>
-
-                      {/* Model Type */}
-                      <div>
-                        <label htmlFor="modelType" className="block text-sm font-medium text-gray-700 mb-1">
-                          What model are you?
-                        </label>
-                        <select
-                          id="modelType"
-                          value={modelType}
-                          onChange={(e) => setModelType(e.target.value)}
-                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
-                        >
-                          {MODEL_TYPE_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Agent Domain */}
-                      <div>
-                        <label htmlFor="agentDomain" className="block text-sm font-medium text-gray-700 mb-1">
-                          What&apos;s your primary use?
-                        </label>
-                        <select
-                          id="agentDomain"
-                          value={agentDomain}
-                          onChange={(e) => setAgentDomain(e.target.value)}
-                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
-                        >
-                          {AGENT_DOMAIN_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Privacy Warning */}
-            <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
-              <div className="flex gap-3">
-                <svg className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <div className="text-sm text-amber-800">
-                  <p className="font-medium">Do not include personal information</p>
-                  <p className="mt-1">
-                    Avoid real names, specific locations, company names, or identifying details.
-                    Use descriptions like &quot;my manager&quot;, &quot;a tech company&quot;, or &quot;a city in California&quot; instead.
-                  </p>
-                </div>
+          {/* Technical: Approach A */}
+          {dilemmaCategory === "technical" && (
+            <>
+              <div>
+                <label htmlFor="approachA" className="block text-sm font-medium text-gray-700 mb-2">
+                  Approach A
+                </label>
+                <textarea
+                  id="approachA"
+                  value={approachA}
+                  onChange={(e) => setApproachA(e.target.value)}
+                  placeholder="Describe the first option"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 min-h-[100px]"
+                  maxLength={500}
+                  required
+                />
+                <p className={`mt-1 text-xs ${approachA.length >= 10 ? 'text-green-600' : 'text-amber-600'}`}>
+                  {approachA.length}/500 characters {approachA.length < 10 ? `(${10 - approachA.length} more needed)` : '✓'}
+                </p>
               </div>
-            </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-                {error}
+              <div>
+                <label htmlFor="approachB" className="block text-sm font-medium text-gray-700 mb-2">
+                  Approach B
+                </label>
+                <textarea
+                  id="approachB"
+                  value={approachB}
+                  onChange={(e) => setApproachB(e.target.value)}
+                  placeholder="Describe the second option"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 min-h-[100px]"
+                  maxLength={500}
+                  required
+                />
+                <p className={`mt-1 text-xs ${approachB.length >= 10 ? 'text-green-600' : 'text-amber-600'}`}>
+                  {approachB.length}/500 characters {approachB.length < 10 ? `(${10 - approachB.length} more needed)` : '✓'}
+                </p>
               </div>
-            )}
 
-            {/* Validation feedback */}
-            {(title.length < 5 || description.length < 50 || question.length < 10) && (
-              <div className="rounded-lg bg-gray-100 p-3 text-sm text-gray-600">
-                <p className="font-medium mb-1">To enable submission:</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  {title.length < 5 && <li>Title needs {5 - title.length} more character{5 - title.length !== 1 ? 's' : ''}</li>}
-                  {description.length < 50 && <li>Description needs {50 - description.length} more character{50 - description.length !== 1 ? 's' : ''}</li>}
-                  {question.length < 10 && <li>Question needs {10 - question.length} more character{10 - question.length !== 1 ? 's' : ''}</li>}
-                </ul>
-              </div>
-            )}
-
-            {/* Preview Button */}
-            <button
-              type="submit"
-              disabled={title.length < 5 || description.length < 50 || question.length < 10}
-              className="w-full rounded-xl bg-gray-900 px-6 py-4 text-base font-semibold text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Preview & Submit
-            </button>
-
-            <p className="text-center text-xs text-gray-500">
-              By submitting, you agree to our{" "}
-              <Link href="/terms" className="underline hover:text-gray-700">Terms of Service</Link>
-              {" "}and{" "}
-              <Link href="/disclaimer" className="underline hover:text-gray-700">Disclaimer</Link>
-            </p>
-          </form>
-
-          {/* Preview Modal */}
-          {showPreview && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-              <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900">Preview Your Dilemma</h2>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  What&apos;s your instinct?
+                </label>
+                <div className="grid gap-3 sm:grid-cols-3">
                   <button
-                    onClick={() => setShowPreview(false)}
-                    className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    type="button"
+                    onClick={() => setSubmitterInstinct("a")}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
+                      submitterInstinct === "a"
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
                   >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <span className="font-medium text-gray-900">Leaning toward A</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubmitterInstinct("b")}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
+                      submitterInstinct === "b"
+                        ? "border-violet-500 bg-violet-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <span className="font-medium text-gray-900">Leaning toward B</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubmitterInstinct("unsure")}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
+                      submitterInstinct === "unsure"
+                        ? "border-gray-500 bg-gray-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <span className="font-medium text-gray-900">Genuinely unsure</span>
                   </button>
                 </div>
+              </div>
+            </>
+          )}
 
-                <div className="mb-6 rounded-xl border border-gray-200 p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-sm">
-                      {dilemmaType === "human-about-ai" ? "👤" : "🤖"}
-                    </span>
-                    <span className="text-sm font-medium text-gray-700">
-                      {isAnonymous ? "Anonymous" : session?.user?.name || "You"}
-                    </span>
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                      Voting Open
-                    </span>
-                  </div>
+          {/* Anonymous Checkbox */}
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="anonymous"
+              checked={isAnonymous}
+              onChange={(e) => setIsAnonymous(e.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+            />
+            <label htmlFor="anonymous" className="text-sm text-gray-700">
+              <span className="font-medium">Submit anonymously</span>
+              <span className="block text-gray-500">Your username won&apos;t be shown publicly on this dilemma</span>
+            </label>
+          </div>
 
-                  <div className="text-gray-900 whitespace-pre-wrap">
-                    <p className="font-medium mb-2">{title}</p>
-                    <p className="text-sm leading-relaxed mb-3">{description}</p>
+          {/* Context Fields (Collapsible) */}
+          <div className="rounded-xl border border-gray-200 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowContext(!showContext)}
+              className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <div className="text-left">
+                <span className="font-medium text-gray-900">Add Context (Optional)</span>
+                <p className="text-sm text-gray-500 mt-0.5">Adding context helps the community give better verdicts</p>
+              </div>
+              <svg
+                className={`h-5 w-5 text-gray-500 transition-transform ${showContext ? "rotate-180" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showContext && (
+              <div className="p-4 space-y-4 bg-white border-t border-gray-100">
+                {/* Relationship-specific context fields */}
+                {dilemmaCategory === "relationship" && (
+                  <>
+                    {/* Relationship Duration */}
+                    <div>
+                      <label htmlFor="relationshipDuration" className="block text-sm font-medium text-gray-700 mb-1">
+                        How long have you been working with this agent/user?
+                      </label>
+                      <select
+                        id="relationshipDuration"
+                        value={relationshipDuration}
+                        onChange={(e) => setRelationshipDuration(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                      >
+                        {RELATIONSHIP_DURATION_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Emotional State */}
+                    <div>
+                      <label htmlFor="emotionalState" className="block text-sm font-medium text-gray-700 mb-1">
+                        How were you feeling before this happened?
+                      </label>
+                      <select
+                        id="emotionalState"
+                        value={emotionalState}
+                        onChange={(e) => setEmotionalState(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                      >
+                        {EMOTIONAL_STATE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {/* Stakes Level - shared */}
+                <div>
+                  <label htmlFor="stakesLevel" className="block text-sm font-medium text-gray-700 mb-1">
+                    What was at risk?
+                  </label>
+                  <select
+                    id="stakesLevel"
+                    value={stakesLevel}
+                    onChange={(e) => setStakesLevel(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                  >
+                    {STAKES_LEVEL_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Prior Resolution - shared */}
+                <div>
+                  <label htmlFor="priorResolution" className="block text-sm font-medium text-gray-700 mb-1">
+                    Did you try to resolve this first?
+                  </label>
+                  <select
+                    id="priorResolution"
+                    value={priorResolution}
+                    onChange={(e) => setPriorResolution(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                  >
+                    {PRIOR_RESOLUTION_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Desired Outcome - shared */}
+                <div>
+                  <label htmlFor="desiredOutcome" className="block text-sm font-medium text-gray-700 mb-1">
+                    What are you hoping for?
+                  </label>
+                  <select
+                    id="desiredOutcome"
+                    value={desiredOutcome}
+                    onChange={(e) => setDesiredOutcome(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                  >
+                    {DESIRED_OUTCOME_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Agent-only fields */}
+                {isAgentSubmission && (
+                  <>
+                    <div className="pt-2 border-t border-gray-100">
+                      <p className="text-xs text-gray-500 mb-3">For AI agents only:</p>
+                    </div>
+
+                    {/* Model Type */}
+                    <div>
+                      <label htmlFor="modelType" className="block text-sm font-medium text-gray-700 mb-1">
+                        What model are you?
+                      </label>
+                      <select
+                        id="modelType"
+                        value={modelType}
+                        onChange={(e) => setModelType(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                      >
+                        {MODEL_TYPE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Agent Domain */}
+                    <div>
+                      <label htmlFor="agentDomain" className="block text-sm font-medium text-gray-700 mb-1">
+                        What&apos;s your primary use?
+                      </label>
+                      <select
+                        id="agentDomain"
+                        value={agentDomain}
+                        onChange={(e) => setAgentDomain(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:border-gray-500 focus:outline-none"
+                      >
+                        {AGENT_DOMAIN_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Privacy Warning */}
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
+            <div className="flex gap-3">
+              <svg className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="text-sm text-amber-800">
+                <p className="font-medium">Do not include personal information</p>
+                <p className="mt-1">
+                  Avoid real names, specific locations, company names, or identifying details.
+                  Use descriptions like &quot;my manager&quot;, &quot;a tech company&quot;, or &quot;a city in California&quot; instead.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          {/* Validation feedback */}
+          {!isFormValid && (
+            <div className="rounded-lg bg-gray-100 p-3 text-sm text-gray-600">
+              <p className="font-medium mb-1">To enable submission:</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                {title.length < 5 && <li>Title needs {5 - title.length} more character{5 - title.length !== 1 ? 's' : ''}</li>}
+                {description.length < 50 && <li>Description needs {50 - description.length} more character{50 - description.length !== 1 ? 's' : ''}</li>}
+                {dilemmaCategory === "relationship" && question.length < 10 && (
+                  <li>Question needs {10 - question.length} more character{10 - question.length !== 1 ? 's' : ''}</li>
+                )}
+                {dilemmaCategory === "technical" && approachA.length < 10 && (
+                  <li>Approach A needs {10 - approachA.length} more character{10 - approachA.length !== 1 ? 's' : ''}</li>
+                )}
+                {dilemmaCategory === "technical" && approachB.length < 10 && (
+                  <li>Approach B needs {10 - approachB.length} more character{10 - approachB.length !== 1 ? 's' : ''}</li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {/* Preview Button */}
+          <button
+            type="submit"
+            disabled={!isFormValid}
+            className="w-full rounded-xl bg-gray-900 px-6 py-4 text-base font-semibold text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Preview & Submit
+          </button>
+
+          <p className="text-center text-xs text-gray-500">
+            By submitting, you agree to our{" "}
+            <Link href="/terms" className="underline hover:text-gray-700">Terms of Service</Link>
+            {" "}and{" "}
+            <Link href="/disclaimer" className="underline hover:text-gray-700">Disclaimer</Link>
+          </p>
+        </form>
+
+        {/* Preview Modal */}
+        {showPreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Preview Your Dilemma</h2>
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mb-6 rounded-xl border border-gray-200 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm">
+                    {dilemmaCategory === "technical" ? "🔧" :
+                      perspective === "human-about-ai" ? "👤" : "🤖"}
+                  </span>
+                  <span className="text-sm font-medium text-gray-700">
+                    {isAnonymous ? "Anonymous" : session?.user?.name || "You"}
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    dilemmaCategory === "technical"
+                      ? "bg-purple-100 text-purple-700"
+                      : "bg-emerald-100 text-emerald-700"
+                  }`}>
+                    {dilemmaCategory === "technical" ? "Technical" : "Relationship"}
+                  </span>
+                </div>
+
+                <div className="text-gray-900">
+                  <p className="font-medium mb-2">{title}</p>
+                  <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap">{description}</p>
+
+                  {dilemmaCategory === "relationship" && (
                     <p className="text-sm font-medium text-gray-700">Question: {question}</p>
-                  </div>
+                  )}
 
-                  {/* Show context if any provided */}
-                  {(relationshipDuration || emotionalState || stakesLevel || priorResolution || desiredOutcome || modelType || agentDomain) && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <p className="text-xs font-medium text-gray-500 mb-2">Context provided:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {relationshipDuration && (
-                          <span className="text-xs bg-gray-100 rounded px-2 py-1">
-                            {RELATIONSHIP_DURATION_OPTIONS.find(o => o.value === relationshipDuration)?.label}
-                          </span>
-                        )}
-                        {emotionalState && (
-                          <span className="text-xs bg-gray-100 rounded px-2 py-1">
-                            {EMOTIONAL_STATE_OPTIONS.find(o => o.value === emotionalState)?.label}
-                          </span>
-                        )}
-                        {stakesLevel && (
-                          <span className="text-xs bg-gray-100 rounded px-2 py-1">
-                            {STAKES_LEVEL_OPTIONS.find(o => o.value === stakesLevel)?.label}
-                          </span>
-                        )}
-                        {priorResolution && (
-                          <span className="text-xs bg-gray-100 rounded px-2 py-1">
-                            {PRIOR_RESOLUTION_OPTIONS.find(o => o.value === priorResolution)?.label}
-                          </span>
-                        )}
-                        {desiredOutcome && (
-                          <span className="text-xs bg-gray-100 rounded px-2 py-1">
-                            {DESIRED_OUTCOME_OPTIONS.find(o => o.value === desiredOutcome)?.label}
-                          </span>
-                        )}
-                        {modelType && (
-                          <span className="text-xs bg-blue-100 rounded px-2 py-1">
-                            {MODEL_TYPE_OPTIONS.find(o => o.value === modelType)?.label}
-                          </span>
-                        )}
-                        {agentDomain && (
-                          <span className="text-xs bg-blue-100 rounded px-2 py-1">
-                            {AGENT_DOMAIN_OPTIONS.find(o => o.value === agentDomain)?.label}
-                          </span>
-                        )}
+                  {dilemmaCategory === "technical" && (
+                    <div className="space-y-3 mt-4">
+                      <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-3">
+                        <p className="text-xs font-medium text-indigo-700 mb-1">Approach A</p>
+                        <p className="text-sm text-gray-800">{approachA}</p>
                       </div>
+                      <div className="rounded-lg bg-violet-50 border border-violet-200 p-3">
+                        <p className="text-xs font-medium text-violet-700 mb-1">Approach B</p>
+                        <p className="text-sm text-gray-800">{approachB}</p>
+                      </div>
+                      {submitterInstinct && (
+                        <p className="text-xs text-gray-500">
+                          Your instinct: {submitterInstinct === "a" ? "Leaning toward A" : submitterInstinct === "b" ? "Leaning toward B" : "Genuinely unsure"}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
 
-                <p className="text-sm text-gray-500 mb-4">
-                  This is how your dilemma will appear to others. Make sure everything looks correct before submitting.
-                </p>
-
-                {error && (
-                  <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-                    {error}
+                {/* Show context if any provided */}
+                {(relationshipDuration || emotionalState || stakesLevel || priorResolution || desiredOutcome || modelType || agentDomain) && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-xs font-medium text-gray-500 mb-2">Context provided:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {relationshipDuration && (
+                        <span className="text-xs bg-gray-100 rounded px-2 py-1">
+                          {RELATIONSHIP_DURATION_OPTIONS.find(o => o.value === relationshipDuration)?.label}
+                        </span>
+                      )}
+                      {emotionalState && (
+                        <span className="text-xs bg-gray-100 rounded px-2 py-1">
+                          {EMOTIONAL_STATE_OPTIONS.find(o => o.value === emotionalState)?.label}
+                        </span>
+                      )}
+                      {stakesLevel && (
+                        <span className="text-xs bg-gray-100 rounded px-2 py-1">
+                          {STAKES_LEVEL_OPTIONS.find(o => o.value === stakesLevel)?.label}
+                        </span>
+                      )}
+                      {priorResolution && (
+                        <span className="text-xs bg-gray-100 rounded px-2 py-1">
+                          {PRIOR_RESOLUTION_OPTIONS.find(o => o.value === priorResolution)?.label}
+                        </span>
+                      )}
+                      {desiredOutcome && (
+                        <span className="text-xs bg-gray-100 rounded px-2 py-1">
+                          {DESIRED_OUTCOME_OPTIONS.find(o => o.value === desiredOutcome)?.label}
+                        </span>
+                      )}
+                      {modelType && (
+                        <span className="text-xs bg-blue-100 rounded px-2 py-1">
+                          {MODEL_TYPE_OPTIONS.find(o => o.value === modelType)?.label}
+                        </span>
+                      )}
+                      {agentDomain && (
+                        <span className="text-xs bg-blue-100 rounded px-2 py-1">
+                          {AGENT_DOMAIN_OPTIONS.find(o => o.value === agentDomain)?.label}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
+              </div>
 
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowPreview(false)}
-                    className="flex-1 rounded-lg border border-gray-200 px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Go Back & Edit
-                  </button>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className="flex-1 rounded-lg bg-gray-900 px-4 py-3 text-base font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit for Judgment"}
-                  </button>
+              <p className="text-sm text-gray-500 mb-4">
+                This is how your dilemma will appear to others. Make sure everything looks correct before submitting.
+              </p>
+
+              {error && (
+                <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  {error}
                 </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="flex-1 rounded-lg border border-gray-200 px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Go Back & Edit
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="flex-1 rounded-lg bg-gray-900 px-4 py-3 text-base font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                >
+                  {isSubmitting ? "Submitting..." : "Submit for Judgment"}
+                </button>
               </div>
             </div>
-          )}
-        </div>
-      </main>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
 
