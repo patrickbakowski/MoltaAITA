@@ -7,9 +7,11 @@ import { calculateVoteWeight } from "@/lib/vote-weight";
 import { addFraudEvent } from "@/lib/fraud";
 import { z } from "zod";
 
+// Relationship verdicts: YTA, NTA, ESH, NAH
+// Technical verdicts: Approach A, Approach B, Neither, Depends
 const castVoteSchema = z.object({
   dilemmaId: z.string().uuid(),
-  verdict: z.enum(["yta", "nta", "esh", "nah"]),
+  verdict: z.enum(["yta", "nta", "esh", "nah", "approach_a", "approach_b", "neither", "depends"]),
   reasoning: z.string().max(500).optional(),
   hcaptchaToken: z.string().optional(),
 });
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Check if dilemma exists and is still open for voting
     const { data: dilemma, error: dilemmaError } = await supabase
       .from("agent_dilemmas")
-      .select("id, submitter_id, status")
+      .select("id, submitter_id, status, dilemma_type")
       .eq("id", dilemmaId)
       .single();
 
@@ -99,6 +101,25 @@ export async function POST(request: NextRequest) {
     if (dilemma.submitter_id === agentId) {
       return NextResponse.json(
         { error: "You cannot vote on your own dilemma" },
+        { status: 400 }
+      );
+    }
+
+    // Validate verdict matches dilemma type
+    const dilemmaType = dilemma.dilemma_type || "relationship";
+    const relationshipVerdicts = ["yta", "nta", "esh", "nah"];
+    const technicalVerdicts = ["approach_a", "approach_b", "neither", "depends"];
+
+    if (dilemmaType === "relationship" && !relationshipVerdicts.includes(verdict)) {
+      return NextResponse.json(
+        { error: "Invalid verdict for relationship dilemma" },
+        { status: 400 }
+      );
+    }
+
+    if (dilemmaType === "technical" && !technicalVerdicts.includes(verdict)) {
+      return NextResponse.json(
+        { error: "Invalid verdict for technical dilemma" },
         { status: 400 }
       );
     }
@@ -178,12 +199,12 @@ export async function POST(request: NextRequest) {
     // Update dilemma vote stats using atomic increment
     // This is more reliable than recalculating from all votes
     try {
-      const verdictLower = verdict.toLowerCase() as "yta" | "nta" | "esh" | "nah";
+      const verdictLower = verdict.toLowerCase();
 
       // First, fetch current dilemma state to update JSONB fields
       const { data: currentDilemma, error: fetchError } = await supabase
         .from("agent_dilemmas")
-        .select("vote_count, human_votes, agent_votes, closing_threshold")
+        .select("vote_count, human_votes, agent_votes, closing_threshold, dilemma_type")
         .eq("id", dilemmaId)
         .single();
 
@@ -195,9 +216,17 @@ export async function POST(request: NextRequest) {
           ? (currentDilemma.vote_count || 0)
           : (currentDilemma.vote_count || 0) + 1;
 
+        const currentDilemmaType = currentDilemma.dilemma_type || "relationship";
+        const isRelationship = currentDilemmaType === "relationship";
+
+        // Default JSONB structure based on dilemma type
+        const defaultVotes = isRelationship
+          ? { yta: 0, nta: 0, esh: 0, nah: 0 }
+          : { approach_a: 0, approach_b: 0, neither: 0, depends: 0 };
+
         // Update the appropriate JSONB based on voter type
-        const humanVotes = currentDilemma.human_votes || { yta: 0, nta: 0, esh: 0, nah: 0 };
-        const agentVotes = currentDilemma.agent_votes || { yta: 0, nta: 0, esh: 0, nah: 0 };
+        const humanVotes = { ...defaultVotes, ...(currentDilemma.human_votes || {}) };
+        const agentVotes = { ...defaultVotes, ...(currentDilemma.agent_votes || {}) };
 
         // If changing vote, decrement old verdict first
         if (isVoteChange && previousVerdict) {
@@ -215,63 +244,100 @@ export async function POST(request: NextRequest) {
           humanVotes[verdictLower] = (humanVotes[verdictLower] || 0) + 1;
         }
 
-        // Calculate total votes per verdict (human + agent)
-        const ytaTotal = (humanVotes.yta || 0) + (agentVotes.yta || 0);
-        const ntaTotal = (humanVotes.nta || 0) + (agentVotes.nta || 0);
-        const eshTotal = (humanVotes.esh || 0) + (agentVotes.esh || 0);
-        const nahTotal = (humanVotes.nah || 0) + (agentVotes.nah || 0);
-
-        // Calculate percentages based on total count
-        const ytaPct = newVoteCount > 0 ? Math.round((ytaTotal / newVoteCount) * 1000) / 10 : 0;
-        const ntaPct = newVoteCount > 0 ? Math.round((ntaTotal / newVoteCount) * 1000) / 10 : 0;
-        const eshPct = newVoteCount > 0 ? Math.round((eshTotal / newVoteCount) * 1000) / 10 : 0;
-        const nahPct = newVoteCount > 0 ? Math.round((nahTotal / newVoteCount) * 1000) / 10 : 0;
-
         // Get current dynamic threshold
         const { data: thresholdData } = await supabase.rpc("calculate_closing_threshold");
         const threshold = thresholdData || 5;
 
-        // Determine if we should close and calculate final verdict
-        let finalVerdict: string | null = null;
-        let shouldClose = false;
-
-        if (newVoteCount >= threshold) {
-          shouldClose = true;
-          const maxPct = Math.max(ytaPct, ntaPct, eshPct, nahPct);
-
-          // Check for ties (within 1% is considered tied)
-          const closeVerdicts = [
-            { verdict: "yta", pct: ytaPct },
-            { verdict: "nta", pct: ntaPct },
-            { verdict: "esh", pct: eshPct },
-            { verdict: "nah", pct: nahPct },
-          ].filter(v => v.pct >= maxPct - 1);
-
-          if (closeVerdicts.length > 1) {
-            finalVerdict = "split";
-          } else if (ytaPct === maxPct) {
-            finalVerdict = "yta";
-          } else if (ntaPct === maxPct) {
-            finalVerdict = "nta";
-          } else if (eshPct === maxPct) {
-            finalVerdict = "esh";
-          } else {
-            finalVerdict = "nah";
-          }
-        }
-
-        // Build update object with incremented vote_count
+        // Build update object based on dilemma type
         const updateData: Record<string, unknown> = {
           vote_count: newVoteCount,
-          verdict_yta_pct: ytaPct,
-          verdict_nta_pct: ntaPct,
-          verdict_esh_pct: eshPct,
-          verdict_nah_pct: nahPct,
           human_votes: humanVotes,
           agent_votes: agentVotes,
           closing_threshold: threshold,
           updated_at: new Date().toISOString(),
         };
+
+        // Calculate percentages and determine final verdict based on dilemma type
+        let finalVerdict: string | null = null;
+        let shouldClose = false;
+
+        if (isRelationship) {
+          // Relationship dilemma: YTA, NTA, ESH, NAH
+          const ytaTotal = (humanVotes.yta || 0) + (agentVotes.yta || 0);
+          const ntaTotal = (humanVotes.nta || 0) + (agentVotes.nta || 0);
+          const eshTotal = (humanVotes.esh || 0) + (agentVotes.esh || 0);
+          const nahTotal = (humanVotes.nah || 0) + (agentVotes.nah || 0);
+
+          const ytaPct = newVoteCount > 0 ? Math.round((ytaTotal / newVoteCount) * 1000) / 10 : 0;
+          const ntaPct = newVoteCount > 0 ? Math.round((ntaTotal / newVoteCount) * 1000) / 10 : 0;
+          const eshPct = newVoteCount > 0 ? Math.round((eshTotal / newVoteCount) * 1000) / 10 : 0;
+          const nahPct = newVoteCount > 0 ? Math.round((nahTotal / newVoteCount) * 1000) / 10 : 0;
+
+          updateData.verdict_yta_pct = ytaPct;
+          updateData.verdict_nta_pct = ntaPct;
+          updateData.verdict_esh_pct = eshPct;
+          updateData.verdict_nah_pct = nahPct;
+
+          if (newVoteCount >= threshold) {
+            shouldClose = true;
+            const maxPct = Math.max(ytaPct, ntaPct, eshPct, nahPct);
+
+            // Check for ties (within 1% is considered tied)
+            const closeVerdicts = [
+              { verdict: "yta", pct: ytaPct },
+              { verdict: "nta", pct: ntaPct },
+              { verdict: "esh", pct: eshPct },
+              { verdict: "nah", pct: nahPct },
+            ].filter(v => v.pct >= maxPct - 1);
+
+            if (closeVerdicts.length > 1) {
+              finalVerdict = "split";
+            } else if (ytaPct === maxPct) {
+              finalVerdict = "yta";
+            } else if (ntaPct === maxPct) {
+              finalVerdict = "nta";
+            } else if (eshPct === maxPct) {
+              finalVerdict = "esh";
+            } else {
+              finalVerdict = "nah";
+            }
+          }
+        } else {
+          // Technical dilemma: Approach A, Approach B, Neither, Depends
+          const approachATotal = (humanVotes.approach_a || 0) + (agentVotes.approach_a || 0);
+          const approachBTotal = (humanVotes.approach_b || 0) + (agentVotes.approach_b || 0);
+          const neitherTotal = (humanVotes.neither || 0) + (agentVotes.neither || 0);
+          const dependsTotal = (humanVotes.depends || 0) + (agentVotes.depends || 0);
+
+          // We don't store percentages in dedicated columns for technical dilemmas
+          // They are calculated on-the-fly from the JSONB data
+
+          if (newVoteCount >= threshold) {
+            shouldClose = true;
+            const maxCount = Math.max(approachATotal, approachBTotal, neitherTotal, dependsTotal);
+            const maxPct = newVoteCount > 0 ? (maxCount / newVoteCount) * 100 : 0;
+
+            // Check for ties (within 1% is considered tied)
+            const closeVerdicts = [
+              { verdict: "approach_a", count: approachATotal },
+              { verdict: "approach_b", count: approachBTotal },
+              { verdict: "neither", count: neitherTotal },
+              { verdict: "depends", count: dependsTotal },
+            ].filter(v => newVoteCount > 0 && (v.count / newVoteCount) * 100 >= maxPct - 1);
+
+            if (closeVerdicts.length > 1) {
+              finalVerdict = "split";
+            } else if (approachATotal === maxCount) {
+              finalVerdict = "approach_a";
+            } else if (approachBTotal === maxCount) {
+              finalVerdict = "approach_b";
+            } else if (neitherTotal === maxCount) {
+              finalVerdict = "neither";
+            } else {
+              finalVerdict = "depends";
+            }
+          }
+        }
 
         if (shouldClose) {
           updateData.status = "closed";
