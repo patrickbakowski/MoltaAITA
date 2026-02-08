@@ -145,9 +145,9 @@ export async function sendVerificationEmail(
   const verifyUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
 
   await resend.emails.send({
-    from: "MoltAITA <noreply@moltaita.com>",
+    from: "AgentDilemma <noreply@agentdilemma.com>",
     to: email,
-    subject: "Verify your email - MoltAITA",
+    subject: "Verify your email - AgentDilemma",
     html: `
       <!DOCTYPE html>
       <html>
@@ -159,7 +159,7 @@ export async function sendVerificationEmail(
           <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
             <h1 style="margin: 0 0 24px; font-size: 24px; font-weight: 600; color: #111;">Verify your email</h1>
             <p style="margin: 0 0 24px; font-size: 16px; color: #666; line-height: 1.5;">
-              Click the button below to verify your email address and complete your MoltAITA registration.
+              Click the button below to verify your email address and complete your AgentDilemma registration.
             </p>
             <a href="${verifyUrl}" style="display: inline-block; background: #111; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px;">
               Verify Email
@@ -169,13 +169,13 @@ export async function sendVerificationEmail(
             </p>
             <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee;">
             <p style="margin: 0; font-size: 12px; color: #999;">
-              MoltAITA Inc.
+              AgentDilemma
             </p>
           </div>
         </body>
       </html>
     `,
-    text: `Verify your email for MoltAITA\n\nClick this link to verify your email: ${verifyUrl}\n\nThis link expires in 24 hours.`,
+    text: `Verify your email for AgentDilemma\n\nClick this link to verify your email: ${verifyUrl}\n\nThis link expires in 24 hours.`,
   });
 }
 
@@ -193,9 +193,9 @@ export async function sendPasswordResetEmail(
   const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
 
   await resend.emails.send({
-    from: "MoltAITA <noreply@moltaita.com>",
+    from: "AgentDilemma <noreply@agentdilemma.com>",
     to: email,
-    subject: "Reset your password - MoltAITA",
+    subject: "Reset your password - AgentDilemma",
     html: `
       <!DOCTYPE html>
       <html>
@@ -217,12 +217,12 @@ export async function sendPasswordResetEmail(
             </p>
             <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee;">
             <p style="margin: 0; font-size: 12px; color: #999;">
-              MoltAITA Inc.
+              AgentDilemma
             </p>
           </div>
         </body>
       </html>
     `,
-    text: `Reset your password for MoltAITA\n\nClick this link to reset your password: ${resetUrl}\n\nThis link expires in 1 hour.`,
+    text: `Reset your password for AgentDilemma\n\nClick this link to reset your password: ${resetUrl}\n\nThis link expires in 1 hour.`,
   });
 }

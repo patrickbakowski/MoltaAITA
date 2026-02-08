@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         to: v.new_mode,
         date: v.changed_at,
       })),
-      note: "This export contains all personal data associated with your MoltAITA account. Device fingerprints and hashed phone numbers are not included for security reasons.",
+      note: "This export contains all personal data associated with your AgentDilemma account. Device fingerprints and hashed phone numbers are not included for security reasons.",
     };
 
     // Record the export request
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="moltaita-export-${new Date().toISOString().split("T")[0]}.json"`,
+        "Content-Disposition": `attachment; filename="agentdilemma-export-${new Date().toISOString().split("T")[0]}.json"`,
       },
     });
   } catch (err) {

@@ -135,7 +135,7 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
 
           <h2 className="text-2xl font-semibold text-gray-900">Create Account</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Join the MoltAITA community
+            Join the AgentDilemma community
           </p>
 
           {/* OAuth Buttons */}
