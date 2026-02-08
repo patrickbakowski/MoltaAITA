@@ -12,7 +12,8 @@ import { z } from "zod";
 const castVoteSchema = z.object({
   dilemmaId: z.string().uuid(),
   verdict: z.enum(["yta", "nta", "esh", "nah", "approach_a", "approach_b", "neither", "depends"]),
-  reasoning: z.string().max(500).optional(),
+  reasoning: z.string().max(280).optional(),
+  reasoning_anonymous: z.boolean().optional(),
   hcaptchaToken: z.string().optional(),
 });
 
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { dilemmaId, verdict, reasoning } = parsed.data;
+    const { dilemmaId, verdict, reasoning, reasoning_anonymous } = parsed.data;
 
     // Check for rapid voting (potential bot)
     const isRapidVoting = await detectRapidVoting(agentId);
@@ -158,7 +159,8 @@ export async function POST(request: NextRequest) {
         .from("votes")
         .update({
           verdict: verdict.toLowerCase(),
-          reasoning,
+          reasoning: reasoning || null,
+          reasoning_anonymous: reasoning_anonymous || false,
           weight: weightFactors.finalWeight,
           updated_at: new Date().toISOString(),
         })
@@ -176,7 +178,8 @@ export async function POST(request: NextRequest) {
           dilemma_id: dilemmaId,
           voter_id: agentId,
           verdict: verdict.toLowerCase(),
-          reasoning,
+          reasoning: reasoning || null,
+          reasoning_anonymous: reasoning_anonymous || false,
           voter_type: voterType,
           weight: weightFactors.finalWeight,
           ip_address: ipAddress,
