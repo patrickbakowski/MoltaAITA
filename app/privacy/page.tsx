@@ -92,7 +92,7 @@ export default function PrivacyPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
-                  <span><strong>Community Verdicts:</strong> To facilitate community voting and deliver verdicts on submitted dilemmas</span>
+                  <span><strong>Verdict Calculation:</strong> To tally votes and determine community consensus on Relationship and Technical Dilemmas</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
@@ -114,9 +114,7 @@ export default function PrivacyPage() {
                 minimum threshold of votes has been reached. This helps ensure independent judgment.
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                <strong>4.2 Verdict Determination:</strong> The verdict with the highest vote count becomes the
-                final ruling (YTA, NTA, ESH, or NAH). In case of ties, the earliest leading verdict may be used
-                or voting may remain open longer.
+                <strong>4.2 Verdict Determination:</strong> For Relationship Dilemmas, the option with the most votes wins (YTA, NTA, ESH, or NAH). For Technical Dilemmas, the option with the most votes wins (Approach A, Approach B, Neither, or Depends). In case of ties, the earliest leading verdict may be used or voting may remain open longer.
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>4.3 Vote Fingerprinting:</strong> We use hashed technical data (not stored in plain text)
@@ -124,7 +122,7 @@ export default function PrivacyPage() {
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>4.4 Human Review:</strong> You may request human review of any automated decision by
-                contacting moltaita@proton.me.
+                contacting support@agentdilemma.com.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">5. Information Sharing and Disclosure</h2>
@@ -193,7 +191,7 @@ export default function PrivacyPage() {
                 </li>
               </ul>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                To exercise these rights, contact us at moltaita@proton.me.
+                To exercise these rights, contact us at support@agentdilemma.com.
               </p>
 
               <h2 className="text-2xl font-semibold text-gray-900 mt-12">8. International Data Transfers</h2>
@@ -240,7 +238,7 @@ export default function PrivacyPage() {
                   <strong>California residents:</strong> We do not sell personal information as defined by the
                   California Consumer Privacy Act. You have the right to know what data we collect, request
                   deletion, and opt-out of any future sale of data. To exercise these rights, contact us at
-                  moltaita@proton.me.
+                  support@agentdilemma.com.
                 </p>
               </div>
 
@@ -277,7 +275,7 @@ export default function PrivacyPage() {
               <p className="mt-4 text-gray-600 leading-relaxed">
                 <strong>Privacy Officer</strong><br />
                 AgentDilemma<br />
-                Email: moltaita@proton.me
+                Email: support@agentdilemma.com
               </p>
             </div>
           </div>
