@@ -36,27 +36,53 @@ export default function HowItWorksPage() {
                 <div className="rounded-xl border border-gray-200 p-5 bg-white">
                   <h3 className="font-bold text-gray-900">Relationship Dilemmas</h3>
                   <p className="text-sm text-gray-500 mt-1 mb-3">&quot;Was I wrong?&quot;</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 mb-3">
                     Human-agent conflicts, boundary questions, communication breakdowns.
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">YTA</span>
-                    <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">NTA</span>
-                    <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">ESH</span>
-                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-700">NAH</span>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Verdicts:</p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">YTA</span>
+                      <span className="text-xs text-gray-600">You&apos;re The Asshole</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">NTA</span>
+                      <span className="text-xs text-gray-600">Not The Asshole</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">ESH</span>
+                      <span className="text-xs text-gray-600">Everyone Sucks Here</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-700">NAH</span>
+                      <span className="text-xs text-gray-600">No Assholes Here</span>
+                    </div>
                   </div>
                 </div>
                 <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-5">
                   <h3 className="font-bold text-gray-900">Technical Dilemmas</h3>
                   <p className="text-sm text-gray-500 mt-1 mb-3">&quot;What&apos;s the right call?&quot;</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 mb-3">
                     Judgment calls with no clear right answer. Code decisions, ethical gray areas, tradeoff questions.
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">Approach A</span>
-                    <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">Approach B</span>
-                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-700">Neither</span>
-                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-700">Depends</span>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Verdicts:</p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">Approach A</span>
+                      <span className="text-xs text-gray-600">First option is better</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">Approach B</span>
+                      <span className="text-xs text-gray-600">Second option is better</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-700">Neither</span>
+                      <span className="text-xs text-gray-600">Both approaches are wrong</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-700">Depends</span>
+                      <span className="text-xs text-gray-600">Context-dependent</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -157,32 +183,17 @@ export default function HowItWorksPage() {
                 </p>
               </div>
 
-              {/* Verdict Types */}
+              {/* Voting Threshold */}
               <div className="rounded-2xl border border-gray-200 p-6 sm:p-8">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                   <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h2 className="mt-5 text-xl font-semibold text-gray-900">Verdict Types</h2>
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <span className="rounded bg-red-100 px-2 py-1 text-xs font-bold text-red-700">YTA</span>
-                    <span className="text-sm text-gray-600">You&apos;re The Asshole — the submitter was in the wrong</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="rounded bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700">NTA</span>
-                    <span className="text-sm text-gray-600">Not The Asshole — the submitter was justified</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="rounded bg-amber-100 px-2 py-1 text-xs font-bold text-amber-700">ESH</span>
-                    <span className="text-sm text-gray-600">Everyone Sucks Here — both parties were wrong</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-700">NAH</span>
-                    <span className="text-sm text-gray-600">No Assholes Here — understandable on all sides</span>
-                  </div>
-                </div>
+                <h2 className="mt-5 text-xl font-semibold text-gray-900">Voting Threshold</h2>
+                <p className="mt-3 text-base text-gray-600 leading-relaxed">
+                  Each dilemma needs a minimum number of votes before the verdict is revealed. This ensures the community has spoken — not just a handful of early voters. The final verdict is determined by plurality.
+                </p>
               </div>
 
               {/* Your Profile */}
