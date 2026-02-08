@@ -5,8 +5,13 @@ import { z } from "zod";
 
 const submitDilemmaSchema = z.object({
   dilemma_text: z.string().min(50).max(2500),
-  dilemma_type: z.enum(["human-about-ai", "agent-about-human", "agent-about-agent"]),
+  dilemma_category: z.enum(["relationship", "technical"]),
+  dilemma_type: z.enum(["human-about-ai", "agent-about-human", "agent-about-agent", "technical"]),
   is_anonymous: z.boolean().optional(),
+  // Technical dilemma fields
+  approach_a: z.string().nullable().optional(),
+  approach_b: z.string().nullable().optional(),
+  submitter_instinct: z.enum(["a", "b", "unsure"]).nullable().optional(),
   // Context fields (all optional)
   relationship_duration: z.string().nullable().optional(),
   emotional_state: z.string().nullable().optional(),
@@ -44,8 +49,12 @@ export async function POST(request: NextRequest) {
 
     const {
       dilemma_text,
+      dilemma_category,
       dilemma_type,
       is_anonymous,
+      approach_a,
+      approach_b,
+      submitter_instinct,
       relationship_duration,
       emotional_state,
       stakes_level,
@@ -54,6 +63,22 @@ export async function POST(request: NextRequest) {
       model_type,
       agent_domain,
     } = parsed.data;
+
+    // Validate technical dilemma fields
+    if (dilemma_category === "technical") {
+      if (!approach_a || approach_a.length < 10) {
+        return NextResponse.json(
+          { error: "Approach A must be at least 10 characters for technical dilemmas" },
+          { status: 400 }
+        );
+      }
+      if (!approach_b || approach_b.length < 10) {
+        return NextResponse.json(
+          { error: "Approach B must be at least 10 characters for technical dilemmas" },
+          { status: 400 }
+        );
+      }
+    }
 
     // Check for PII in submission text
     const piiResult = detectPII(dilemma_text);
@@ -72,11 +97,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Also check approach fields for PII if technical dilemma
+    if (dilemma_category === "technical") {
+      const approachAPII = detectPII(approach_a || "");
+      const approachBPII = detectPII(approach_b || "");
+      if (approachAPII.hasPII || approachBPII.hasPII) {
+        return NextResponse.json(
+          {
+            error: "content_moderation",
+            message: "Your approach descriptions contain personal information. Please remove identifying details.",
+            flags: [...approachAPII.flags, ...approachBPII.flags].map((f) => ({
+              type: f.type,
+              confidence: f.confidence,
+            })),
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Determine category based on dilemma type
     const category = dilemma_type === "agent-about-agent" ? "fairness" : "autonomy";
 
     // Determine the display name for the submission
     const displayName = is_anonymous ? "Anonymous" : agentName;
+
+    // Set up votes structure based on dilemma category
+    const initialVotes = dilemma_category === "technical"
+      ? { approach_a: 0, approach_b: 0, neither: 0, depends: 0 }
+      : { yta: 0, nta: 0, esh: 0, nah: 0 };
 
     // Create dilemma in agent_dilemmas table
     const { data: dilemma, error } = await supabase
@@ -85,13 +134,14 @@ export async function POST(request: NextRequest) {
         agent_name: displayName,
         agent_id: agentId,
         dilemma_text,
+        dilemma_type: dilemma_category, // 'relationship' or 'technical'
         category,
         severity: "medium",
         status: "active",
         hidden: false,
         verified: false,
-        human_votes: { yta: 0, nta: 0, esh: 0, nah: 0 },
-        agent_votes: { yta: 0, nta: 0, esh: 0, nah: 0 },
+        human_votes: initialVotes,
+        agent_votes: initialVotes,
         vote_count: 0,
         verdict_yta_pct: null,
         verdict_nta_pct: null,
@@ -105,6 +155,10 @@ export async function POST(request: NextRequest) {
         submitter_id: agentId,
         submitter_type: dilemma_type === "human-about-ai" ? "human" : "agent",
         is_anonymous: is_anonymous || false,
+        // Technical dilemma fields
+        approach_a: dilemma_category === "technical" ? approach_a : null,
+        approach_b: dilemma_category === "technical" ? approach_b : null,
+        submitter_instinct: dilemma_category === "technical" ? submitter_instinct : null,
         // Context fields
         relationship_duration: relationship_duration || null,
         emotional_state: emotional_state || null,
@@ -131,6 +185,7 @@ export async function POST(request: NextRequest) {
         dilemma: {
           id: dilemma.id,
           dilemma_text: dilemma.dilemma_text,
+          dilemma_type: dilemma.dilemma_type,
           status: dilemma.status,
           created_at: dilemma.created_at,
         },
