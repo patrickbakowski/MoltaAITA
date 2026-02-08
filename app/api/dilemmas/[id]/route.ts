@@ -17,6 +17,16 @@ interface VoterInfo {
   verdict: Verdict;
 }
 
+interface ReasoningEntry {
+  text: string;
+  anonymous: boolean;
+  author?: string;
+}
+
+interface ReasoningByVerdict {
+  [verdict: string]: ReasoningEntry[];
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -131,20 +141,27 @@ export async function GET(
 
     const currentThreshold = dilemma.closing_threshold || thresholdData || 5;
 
-    // Get voter list ONLY for closed dilemmas (blind voting)
+    // Get voter list and reasoning ONLY for closed dilemmas (blind voting)
     let voters: VoterInfo[] | null = null;
+    let reasoning: ReasoningByVerdict | null = null;
     if (isClosed) {
       const { data: voterData } = await supabase
         .from("votes")
         .select(`
           verdict,
           voter_type,
+          reasoning,
+          reasoning_anonymous,
+          created_at,
           voter:agents(id, name, account_type, visibility_mode, anonymous_id)
         `)
-        .eq("dilemma_id", dilemmaId);
+        .eq("dilemma_id", dilemmaId)
+        .order("created_at", { ascending: false });
 
       if (voterData) {
         voters = [];
+        reasoning = {};
+
         for (const vote of voterData) {
           const voterAgent = Array.isArray(vote.voter) ? vote.voter[0] : vote.voter;
           if (!voterAgent) continue;
@@ -159,6 +176,24 @@ export async function GET(
             is_ghost: isGhost,
             verdict: vote.verdict as Verdict,
           });
+
+          // Collect reasoning entries grouped by verdict
+          if (vote.reasoning && vote.reasoning.trim()) {
+            const verdict = vote.verdict as string;
+            if (!reasoning[verdict]) {
+              reasoning[verdict] = [];
+            }
+
+            const displayName = vote.reasoning_anonymous || isGhost
+              ? undefined
+              : voterAgent.name;
+
+            reasoning[verdict].push({
+              text: vote.reasoning,
+              anonymous: vote.reasoning_anonymous || isGhost,
+              author: displayName,
+            });
+          }
         }
       }
     }
@@ -233,6 +268,7 @@ export async function GET(
       },
       userVote,
       voters,
+      reasoning,
     });
   } catch (err) {
     console.error("Error fetching dilemma:", err);

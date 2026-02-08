@@ -77,6 +77,16 @@ interface UserVote {
   verdict: Verdict;
 }
 
+interface ReasoningEntry {
+  text: string;
+  anonymous: boolean;
+  author?: string;
+}
+
+interface ReasoningByVerdict {
+  [verdict: string]: ReasoningEntry[];
+}
+
 interface VerdictConfigItem {
   label: string;
   fullLabel: string;
@@ -174,6 +184,7 @@ export default function DilemmaDetailPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [userVote, setUserVote] = useState<UserVote | null>(null);
   const [voters, setVoters] = useState<VoterInfo[] | null>(null);
+  const [reasoning, setReasoning] = useState<ReasoningByVerdict | null>(null);
   const [loading, setLoading] = useState(true);
   const [voting, setVoting] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -201,6 +212,12 @@ export default function DilemmaDetailPage() {
   const [clarificationText, setClarificationText] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
+  // Vote reasoning state
+  const [showReasoningModal, setShowReasoningModal] = useState(false);
+  const [selectedVerdict, setSelectedVerdict] = useState<Verdict | null>(null);
+  const [reasoningText, setReasoningText] = useState("");
+  const [reasoningAnonymous, setReasoningAnonymous] = useState(false);
+
   const fetchDilemma = useCallback(async () => {
     try {
       const response = await fetch(`/api/dilemmas/${dilemmaId}`);
@@ -215,6 +232,7 @@ export default function DilemmaDetailPage() {
       setDilemma(data.dilemma);
       setUserVote(data.userVote);
       setVoters(data.voters);
+      setReasoning(data.reasoning);
     } catch (err) {
       console.error("Error fetching dilemma:", err);
       setError("Failed to load dilemma");
@@ -315,7 +333,19 @@ export default function DilemmaDetailPage() {
     }
   };
 
-  const handleVote = async (verdict: Verdict) => {
+  const handleVoteClick = (verdict: Verdict) => {
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
+    setSelectedVerdict(verdict);
+    setReasoningText("");
+    setReasoningAnonymous(false);
+    setShowReasoningModal(true);
+  };
+
+  const handleVote = async (verdict: Verdict, reasoning?: string, reasoningAnonymous?: boolean) => {
     if (!session) {
       router.push("/login");
       return;
@@ -328,7 +358,12 @@ export default function DilemmaDetailPage() {
       const response = await fetch("/api/votes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dilemmaId, verdict }),
+        body: JSON.stringify({
+          dilemmaId,
+          verdict,
+          reasoning: reasoning || null,
+          reasoning_anonymous: reasoningAnonymous || false,
+        }),
       });
 
       if (!response.ok) {
@@ -336,11 +371,19 @@ export default function DilemmaDetailPage() {
         throw new Error(data.error || "Failed to cast vote");
       }
 
+      setShowReasoningModal(false);
+      setSelectedVerdict(null);
       await fetchDilemma();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to cast vote");
     } finally {
       setVoting(false);
+    }
+  };
+
+  const handleConfirmVote = () => {
+    if (selectedVerdict) {
+      handleVote(selectedVerdict, reasoningText.trim() || undefined, reasoningAnonymous);
     }
   };
 
@@ -766,6 +809,59 @@ export default function DilemmaDetailPage() {
                     userVote={userVote?.verdict}
                   />
                 </div>
+
+                {/* Community Reasoning Section */}
+                {reasoning && Object.keys(reasoning).length > 0 && (
+                  <div className="mt-8">
+                    <h3 className="mb-4 text-lg font-semibold text-gray-900">Community Reasoning</h3>
+                    <div className="space-y-6">
+                      {(dilemma.dilemma_type === "technical"
+                        ? (["approach_a", "approach_b", "neither", "depends"] as TechnicalVerdict[])
+                        : (["yta", "nta", "esh", "nah"] as RelationshipVerdict[])
+                      ).map((verdict) => {
+                        const verdictReasoning = reasoning[verdict];
+                        if (!verdictReasoning || verdictReasoning.length === 0) return null;
+
+                        const config = VERDICT_CONFIG[verdict];
+                        const pct = dilemma.dilemma_type === "technical"
+                          ? (verdict === "approach_a" ? dilemma.verdict_approach_a_pct :
+                             verdict === "approach_b" ? dilemma.verdict_approach_b_pct :
+                             verdict === "neither" ? dilemma.verdict_neither_pct :
+                             dilemma.verdict_depends_pct) || 0
+                          : (verdict === "yta" ? dilemma.verdict_yta_pct :
+                             verdict === "nta" ? dilemma.verdict_nta_pct :
+                             verdict === "esh" ? dilemma.verdict_esh_pct :
+                             dilemma.verdict_nah_pct) || 0;
+
+                        return (
+                          <div key={verdict} className={`rounded-xl border ${config.borderColor} ${config.bgColor}/50 p-4`}>
+                            <h4 className={`mb-3 font-medium ${config.color}`}>
+                              {dilemma.dilemma_type === "technical" ? (
+                                <span className="font-bold mr-1">{config.emoji}</span>
+                              ) : (
+                                <span className="mr-1">{config.emoji}</span>
+                              )}
+                              Why people voted {config.label} ({Math.round(pct)}%):
+                            </h4>
+                            <ul className="space-y-2">
+                              {verdictReasoning.map((entry, idx) => (
+                                <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
+                                  <span className="text-gray-400 mt-1 flex-shrink-0">-</span>
+                                  <span>
+                                    &ldquo;{entry.text}&rdquo;
+                                    <span className="text-gray-500 ml-1">
+                                      {entry.anonymous ? "— Anonymous" : `— @${entry.author}`}
+                                    </span>
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : hasVoted && userVote ? (
               /* ACTIVE + VOTED - Show confirmation with option to change vote */
@@ -805,7 +901,7 @@ export default function DilemmaDetailPage() {
                         return (
                           <button
                             key={v}
-                            onClick={() => !isCurrentVote && handleVote(v)}
+                            onClick={() => !isCurrentVote && handleVoteClick(v)}
                             disabled={voting || isCurrentVote}
                             className={`flex flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-2 text-xs font-medium transition-all min-h-[60px] ${
                               isCurrentVote
@@ -834,7 +930,7 @@ export default function DilemmaDetailPage() {
                         return (
                           <button
                             key={v}
-                            onClick={() => !isCurrentVote && handleVote(v)}
+                            onClick={() => !isCurrentVote && handleVoteClick(v)}
                             disabled={voting || isCurrentVote}
                             className={`flex flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-2 text-xs font-medium transition-all min-h-[60px] ${
                               isCurrentVote
@@ -891,7 +987,7 @@ export default function DilemmaDetailPage() {
                       return (
                         <button
                           key={verdict}
-                          onClick={() => handleVote(verdict)}
+                          onClick={() => handleVoteClick(verdict)}
                           disabled={voting || !session}
                           className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 ${config.borderColor} ${config.bgColor} px-4 py-4 font-medium ${config.color} transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]`}
                         >
@@ -916,7 +1012,7 @@ export default function DilemmaDetailPage() {
                       return (
                         <button
                           key={verdict}
-                          onClick={() => handleVote(verdict)}
+                          onClick={() => handleVoteClick(verdict)}
                           disabled={voting || !session}
                           className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 ${config.borderColor} ${config.bgColor} px-4 py-4 font-medium ${config.color} transition-all hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]`}
                         >
@@ -1276,6 +1372,87 @@ export default function DilemmaDetailPage() {
                 className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {submittingReport ? "Submitting..." : "Submit Report"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vote Reasoning Modal */}
+      {showReasoningModal && selectedVerdict && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Confirm Your Vote</h2>
+              <button
+                onClick={() => {
+                  setShowReasoningModal(false);
+                  setSelectedVerdict(null);
+                }}
+                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4 flex justify-center">
+              <span
+                className={`rounded-full px-4 py-2 text-sm font-semibold ${VERDICT_CONFIG[selectedVerdict].bgColor} ${VERDICT_CONFIG[selectedVerdict].color}`}
+              >
+                {VERDICT_CONFIG[selectedVerdict].emoji} {VERDICT_CONFIG[selectedVerdict].label}
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Why did you vote this way? (optional)
+                </label>
+                <textarea
+                  value={reasoningText}
+                  onChange={(e) => setReasoningText(e.target.value.slice(0, 280))}
+                  placeholder="Share your reasoning with the community..."
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:border-gray-500 focus:outline-none min-h-[100px]"
+                  maxLength={280}
+                />
+                <p className="mt-1 text-xs text-gray-500">{reasoningText.length}/280</p>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={reasoningAnonymous}
+                  onChange={(e) => setReasoningAnonymous(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                />
+                <span className="text-sm text-gray-600">Post reasoning anonymously</span>
+              </label>
+            </div>
+
+            {error && (
+              <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowReasoningModal(false);
+                  setSelectedVerdict(null);
+                }}
+                className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmVote}
+                disabled={voting}
+                className="flex-1 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+              >
+                {voting ? "Submitting..." : "Confirm Vote"}
               </button>
             </div>
           </div>
