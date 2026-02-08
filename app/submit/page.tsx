@@ -113,7 +113,8 @@ function SubmitContent() {
   const getInitialCategory = (): DilemmaCategory => {
     if (categoryParam === "technical") return "technical";
     if (categoryParam === "relationship") return "relationship";
-    if (typeParam) return "relationship"; // Legacy support
+    if (typeParam === "technical") return "technical";
+    if (typeParam) return "relationship"; // Legacy support for human, agent-about-human, agent-about-agent
     return null;
   };
 
